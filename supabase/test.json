@@ -1,0 +1,1216 @@
+[
+  {
+      "title": "Classes",
+      "priority": 2,
+      "description": null,
+      "is_horizontal": false,
+      "service_events": [
+          {
+              "staffs": [
+                  {
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@12.co.uk",
+                      "last_name": null,
+                      "first_name": null,
+                      "instagram_handle": "msshimmaayy"
+                  }
+              ],
+              "service": {
+                  "price": 1200,
+                  "title": "Beginners",
+                  "description": null,
+                  "booking_limit": 100
+              },
+                  "start": "2023-10-07T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "recurrence_start": "2023-10-07T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "04a9b0d4-c5a3-40e0-9a63-e68b4b0132f7",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@6.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "ethanestandian"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "7ded2b0d-d52b-4ce9-9efb-2f18ce0d91b7",
+                  "start": "2023-10-07T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "04a9b0d4-c5a3-40e0-9a63-e68b4b0132f7",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@6.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "ethanestandian"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "7dde57e4-4357-4b8d-bed2-63b4b94ab233",
+                  "start": "2023-10-07T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "0e1d1c21-ad2c-42e1-9dce-29e549704278",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@18.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "justin_ito"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "c366707e-a57c-499a-9ac9-a2b0117b0941",
+                  "start": "2023-10-07T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "0e1d1c21-ad2c-42e1-9dce-29e549704278",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@18.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "justin_ito"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "66684f22-2893-4dce-8047-90a41be9db65",
+                  "start": "2023-10-07T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "11d1f86d-b61a-4637-8ea4-b94f1cb51d21",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@36.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "dinykim"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "3cb5c942-2ce3-4a55-a082-33478dc16d97",
+                  "start": "2023-10-06T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "11d1f86d-b61a-4637-8ea4-b94f1cb51d21",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@36.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "dinykim"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "c8a6f811-0bb8-444d-b702-bb75eff27282",
+                  "start": "2023-10-06T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "179a4b5c-96bb-43af-8f06-c103c2981814",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@29.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "roro_kamion"
+                  }
+              ],
+              "service": {
+                  "id": "f8951a1e-7d2f-4d10-b372-759d94d267ae",
+                  "price": 1200,
+                  "title": "Beginner Heels",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "c0852cb5-bd8b-4480-9d93-734d91465436",
+                  "start": "2023-10-05T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "f8951a1e-7d2f-4d10-b372-759d94d267ae",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "2d3aa9fe-6889-4a6d-b27d-d39cfd5bbb3b",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@23.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "jensine.yu"
+                  }
+              ],
+              "service": {
+                  "id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "price": 1200,
+                  "title": "Starter Class",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "8230a42f-f5de-4aca-9a6d-7229a0f023d2",
+                  "start": "2023-10-05T04:15:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T04:15:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "2d62a32b-c5ad-4d21-a1b6-29a18b369a90",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@40.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "essencefloriedance"
+                  }
+              ],
+              "service": {
+                  "id": "836ee3f8-829e-4c80-b1cb-3f44203a25e8",
+                  "price": 1200,
+                  "title": "Starter Heels",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "ed0a71e1-1559-4339-afec-90ed98791e46",
+                  "start": "2023-10-05T02:45:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "836ee3f8-829e-4c80-b1cb-3f44203a25e8",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T02:45:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "3271acc8-918e-4ac0-bb7e-fca04ed833a2",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@21.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "danyelmoulton"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "5baea764-5c04-43cf-a8f3-f71ceaf3aa33",
+                  "start": "2023-10-06T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "3271acc8-918e-4ac0-bb7e-fca04ed833a2",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@21.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "danyelmoulton"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "c7aa4fe0-b3a5-4a63-9a58-db62c593aa7b",
+                  "start": "2023-10-06T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "5f1047f3-7da9-4a10-ac93-2df675dd4449",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@24.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "yerson.8a"
+                  }
+              ],
+              "service": {
+                  "id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "ef61c5b5-7901-4d75-910c-1adab606c0b3",
+                  "start": "2023-10-07T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "5f1047f3-7da9-4a10-ac93-2df675dd4449",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@24.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "yerson.8a"
+                  }
+              ],
+              "service": {
+                  "id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "fa2bbb18-3125-45ff-8f36-e6938d4685d1",
+                  "start": "2023-10-07T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "6962ec3f-b3ed-4806-b1d6-8feda7672c01",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@17.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "hirari.w7"
+                  }
+              ],
+              "service": {
+                  "id": "b24c40e2-ad28-4e88-9428-a713d915abbb",
+                  "price": 1200,
+                  "title": "Whacking Foundations",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "97b7200d-cd8c-464e-aa20-34031b9ace64",
+                  "start": "2023-10-06T04:15:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "b24c40e2-ad28-4e88-9428-a713d915abbb",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T04:15:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "6cb600c0-e460-41c3-ae10-1e72daed1aea",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@42.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "geegtorres"
+                  }
+              ],
+              "service": {
+                  "id": "7e7a5cdc-7817-4e5f-878b-3e707451b120",
+                  "price": 1200,
+                  "title": "Beginners",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "b7b547de-b667-49fe-8ed0-4623e211bf2b",
+                  "start": "2023-10-05T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "7e7a5cdc-7817-4e5f-878b-3e707451b120",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "7be10598-a9cd-48a6-8d30-8cb65f16acb7",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@11.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "jeffreycaluag"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "a6297ca9-cba7-4f4f-8494-501e31707023",
+                  "start": "2023-10-07T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "7be10598-a9cd-48a6-8d30-8cb65f16acb7",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@11.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "jeffreycaluag"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "53ee4f3c-46aa-4137-a32b-f47ab6edf919",
+                  "start": "2023-10-07T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "9a47b7a9-b757-4da1-a491-683e8549844e",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@37.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "_asahim_"
+                  }
+              ],
+              "service": {
+                  "id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "price": 1200,
+                  "title": "Starter Class",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "dcbe2476-eb5f-4825-bc56-212459ea26c1",
+                  "start": "2023-10-07T04:15:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T04:15:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "a015a74d-407d-475d-bbf9-99a422758ece",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@41.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "boymeetsale"
+                  }
+              ],
+              "service": {
+                  "id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "0cd90b6b-5ce0-4983-bf2d-946827787b4b",
+                  "start": "2023-10-06T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "a015a74d-407d-475d-bbf9-99a422758ece",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@41.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "boymeetsale"
+                  }
+              ],
+              "service": {
+                  "id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "599eef25-1b4a-4639-ae1e-31c924bc2254",
+                  "start": "2023-10-06T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "ae3ac5e3-bda2-44fb-a5a1-ad727c3528e2",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@35.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "joshvason"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "1703853a-a733-4d59-b38b-f02275a2cd6d",
+                  "start": "2023-10-05T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "ae3ac5e3-bda2-44fb-a5a1-ad727c3528e2",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@35.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "joshvason"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "1caf01cd-8207-4b3f-a5db-73cdfd59d75e",
+                  "start": "2023-10-05T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "bcded29d-bd80-4c35-be09-9c9206e819d5",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@15.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "julesclairee"
+                  }
+              ],
+              "service": {
+                  "id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "price": 1200,
+                  "title": "Starter Class",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "1b8742c2-a170-42a0-9d90-6bb4e0647866",
+                  "start": "2023-10-06T02:45:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "ede96138-bdf1-4aef-b86f-8dc7652d710b",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T02:45:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "d8f26772-aad6-47bc-af07-48c6be6bc16d",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@4.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "aaliflower"
+                  }
+              ],
+              "service": {
+                  "id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "1de9b265-3d20-4f2c-b2c7-ad525d3ea6a5",
+                  "start": "2023-10-05T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "20212dfe-a86a-495a-a109-b17191bad9ba",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "d8f26772-aad6-47bc-af07-48c6be6bc16d",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@4.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "aaliflower"
+                  }
+              ],
+              "service": {
+                  "id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "price": 1200,
+                  "title": "K-pop",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "8da5338d-b17f-40c8-8a0f-5cfa10e2f5a4",
+                  "start": "2023-10-05T01:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "8424b79f-5d0f-47f4-8bf3-20c23e452988",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T01:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "dfbff64c-3ebb-4110-8c79-43b715d78854",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@39.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "ivxnparedes"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "0aa5b342-e79d-4bd4-8779-793abd08641d",
+                  "start": "2023-10-05T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "dfbff64c-3ebb-4110-8c79-43b715d78854",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@39.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "ivxnparedes"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "c425145a-5a60-4116-acc4-8d6cfb523e5c",
+                  "start": "2023-10-05T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-05T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "eb9bea85-a604-4838-8fcc-0714f9e6a333",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@30.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "justdestiny"
+                  }
+              ],
+              "service": {
+                  "id": "c47c8dfd-ddbf-4d13-b347-69d15acd59a3",
+                  "price": 1200,
+                  "title": "Vogue",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "59087dad-9316-4b6e-878b-392607829bb2",
+                  "start": "2023-10-07T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "c47c8dfd-ddbf-4d13-b347-69d15acd59a3",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-07T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "ec624a18-2a19-45a6-aebb-b9a75faeeacf",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@8.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "shigeto.nakano"
+                  }
+              ],
+              "service": {
+                  "id": "7e7a5cdc-7817-4e5f-878b-3e707451b120",
+                  "price": 1200,
+                  "title": "Beginners",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "7cd3fbab-20f8-4397-b2c1-141ac874bdcf",
+                  "start": "2023-10-06T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "7e7a5cdc-7817-4e5f-878b-3e707451b120",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "fc674148-e9da-482f-89b0-5d7236708073",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@20.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "davidslayme"
+                  }
+              ],
+              "service": {
+                  "id": "350e5418-4cc8-401c-89e6-1a2ea502f87d",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced Heels",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "ed12d8ac-ef7a-4bef-9d2b-dab39780bf1d",
+                  "start": "2023-10-06T04:00:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "350e5418-4cc8-401c-89e6-1a2ea502f87d",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T04:00:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "fe836b71-884c-4392-be4b-43b714c8f74e",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@2.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "marktullen"
+                  }
+              ],
+              "service": {
+                  "id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "12dff341-cabd-421c-b399-1e01f0ace814",
+                  "start": "2023-10-06T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "2203ab1d-d581-42af-8f03-07f140d9e5d7",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          },
+          {
+              "staffs": [
+                  {
+                      "id": "fe836b71-884c-4392-be4b-43b714c8f74e",
+                      "email": null,
+                      "image_url": "https://i.pravatar.cc/250?u=mail@2.co.uk",
+                      "last_name": null,
+                      "created_at": "2023-10-10T00:16:42.746706+00:00",
+                      "first_name": null,
+                      "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                      "business_id": "9188f0de-4326-4b9d-98fc-5ddd1724c26d",
+                      "instagram_handle": "marktullen"
+                  }
+              ],
+              "service": {
+                  "id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "price": 1200,
+                  "title": "Intermediate/Advanced",
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "description": null,
+                  "booking_limit": 100,
+                  "service_category_id": "d8d74dec-c52b-4eae-94b0-b4500a94d078"
+              },
+              "service_event": {
+                  "id": "833e3a0a-0cc1-49f4-837e-835ddb1885dd",
+                  "start": "2023-10-06T02:30:00+00:00",
+                  "duration": 5400000,
+                  "image_url": null,
+                  "providers": null,
+                  "created_at": "2023-10-10T00:16:42.746706+00:00",
+                  "service_id": "5085071c-f7f9-45f9-a15e-1cb5683a9cfd",
+                  "updated_at": "2023-10-10T00:16:42.746706+00:00",
+                  "recurrence_start": "2023-10-06T02:30:00+00:00",
+                  "recurrence_interval": 604800000
+              }
+          }
+      ]
+  }
+]
