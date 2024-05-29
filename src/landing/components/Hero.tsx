@@ -44,7 +44,7 @@ export const Hero = async () => {
         </div>
 
         <div className="space-y-4 md:space-x-4 md:space-y-0">
-          <Link href={data.user ? `/app/student/explore` : "/sign-in"}>
+          <Link href={data.user ? `/app/sources` : "/sign-in"}>
             <Button className="w-full rounded-full md:w-1/3">
               Get Started
             </Button>

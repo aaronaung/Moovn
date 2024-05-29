@@ -92,7 +92,7 @@ export default function Navbar() {
                     </a>
                   ))}
                 </nav>
-                <Link href="/sign-in?return_path=/app/student/explore">
+                <Link href="/sign-in?return_path=/app/sources">
                   <Button className="w-full rounded-full">
                     <ArrowRightEndOnRectangleIcon
                       className={"mr-2 h-5 w-5 shrink-0 text-secondary"}
@@ -122,7 +122,7 @@ export default function Navbar() {
 
           <div className="hidden gap-2 md:flex">
             <ModeToggle />
-            <Link href="/sign-in?return_path=/app/student/explore">
+            <Link href="/sign-in?return_path=/app/sources">
               <Button className="w-full rounded-full">
                 <ArrowRightEndOnRectangleIcon
                   className={"mr-2 h-5 w-5 shrink-0 text-secondary"}

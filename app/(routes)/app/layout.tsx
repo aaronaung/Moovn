@@ -1,8 +1,8 @@
 import AuthProvider from "@/src/providers/auth-provider";
-import { getLoggedInUserBusinesses } from "@/src/data/businesses";
 import { supaServerComponentClient } from "@/src/data/clients/server";
 import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
+import { getAuthUser } from "@/src/data/users";
 
 const Dashboard = dynamic(() => import("./_components/dashboard-layout"), {
   ssr: false,
@@ -18,7 +18,7 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, businesses } = await getLoggedInUserBusinesses({
+  const user = await getAuthUser({
     client: supaServerComponentClient(),
   });
   if (!user) {
@@ -27,9 +27,7 @@ export default async function Layout({
 
   return (
     <AuthProvider redirectOnUnauthed>
-      <Dashboard user={user ?? undefined} businesses={businesses}>
-        {children}
-      </Dashboard>
+      <Dashboard user={user ?? undefined}>{children}</Dashboard>
     </AuthProvider>
   );
 }

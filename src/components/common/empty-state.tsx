@@ -27,7 +27,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   const renderActionButton = () => {
     if (actionButtonOverride) {
-      return actionButtonOverride;
+      return <div className="mt-4">{actionButtonOverride}</div>;
     }
     return (
       onAction &&

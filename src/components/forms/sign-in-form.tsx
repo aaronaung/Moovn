@@ -34,7 +34,7 @@ const formSchema = z.object({
 type SignInFormSchema = z.infer<typeof formSchema>;
 
 export function SignInForm({
-  returnPath = "/app/student/explore",
+  returnPath = "/app/sources",
 }: {
   returnPath?: string;
 }) {

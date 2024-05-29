@@ -1,6 +1,6 @@
 "use client";
 import { env } from "@/env.mjs";
-import Uppy, { UploadResult } from "@uppy/core";
+import Uppy, { UploadResult, UploadSuccessCallback } from "@uppy/core";
 import Tus, { TusOptions } from "@uppy/tus";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { generateThumbnailFromVideoFile } from "../libs/image";
 
 type UploadOptions = TusOptions & {
   upsert?: boolean;
-  onSuccess?: () => void;
+  onSuccess?: UploadSuccessCallback<any>;
   onError?: (error: any) => void;
   onProgress?: (progress: number) => void;
   onComplete?: (
@@ -225,6 +225,7 @@ function AsyncFileUploadProvider({ ...props }) {
         contentType: t.contentType,
       },
     }));
+
     const thumbnailGenResults = await Promise.all(
       task.targets
         .filter((t) => Boolean(t.thumbnailObjectPath))

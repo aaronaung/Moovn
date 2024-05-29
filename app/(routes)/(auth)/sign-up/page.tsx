@@ -17,7 +17,7 @@ export default async function SignUpPage({
 }) {
   const user = await getAuthUser({ client: supaServerComponentClient() });
   if (user) {
-    redirect(searchParams.return_path || "/app/student/explore");
+    redirect(searchParams.return_path || "/app/sources");
   }
 
   return <SignUpForm returnPath={searchParams.return_path} />;

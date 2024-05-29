@@ -1,4 +1,3 @@
-import { Tables } from "@/types/db.extension";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import {
   AccessorFnColumnDef,
@@ -8,34 +7,38 @@ import {
 import { DataTable } from "../ui/data-table";
 import { useMemo } from "react";
 import { RowAction } from "./types";
+import { getTemplatesForAuthUser } from "@/src/data/templates";
 
-const columnHelper = createColumnHelper<Tables<"questions">>();
+export type TemplatesTableSchema = Awaited<
+  ReturnType<typeof getTemplatesForAuthUser>
+>[0];
 
-type QuestionsTableProp = {
-  data: Tables<"questions">[];
-  onRowAction: (row: Row<Tables<"questions">>, action: RowAction) => void;
+const columnHelper = createColumnHelper<TemplatesTableSchema>();
+
+type TemplatesTableProp = {
+  data: TemplatesTableSchema[];
+  onRowAction: (row: Row<TemplatesTableSchema>, action: RowAction) => void;
 };
-
-export default function QuestionsTable({
+export default function TemplatesTable({
   data,
   onRowAction,
-}: QuestionsTableProp) {
+}: TemplatesTableProp) {
   const columns = useMemo(
     () => [
       columnHelper.accessor("id", {
         header: "",
         enableHiding: true,
       }),
-      columnHelper.accessor("question", {
-        header: "Question",
+      columnHelper.accessor("name", {
+        header: "Name",
       }),
-      columnHelper.accessor("required", {
-        header: "Required",
-        cell: ({ row }) => (row.getValue("required") ? "Yes" : "No"),
+      columnHelper.accessor("source", {
+        header: "Source",
+        cell: ({ row }) => row.original.source?.type || "N/A",
       }),
-      columnHelper.accessor("type", {
-        header: "Type",
-        cell: ({ row }) => row.getValue("type") || "Unknown",
+      columnHelper.accessor("source_data_view", {
+        header: "View",
+        cell: ({ row }) => row.original.source_data_view || "N/A",
       }),
       columnHelper.display({
         id: "actions",
@@ -69,7 +72,7 @@ export default function QuestionsTable({
           id: false,
         },
       }}
-      columns={columns as AccessorFnColumnDef<Tables<"questions">>[]}
+      columns={columns as AccessorFnColumnDef<TemplatesTableSchema>[]}
       data={data}
     />
   );

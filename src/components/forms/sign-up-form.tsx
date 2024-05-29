@@ -37,7 +37,7 @@ const formSchema = z.object({
 type SignUpFormSchemaType = z.infer<typeof formSchema>;
 
 export function SignUpForm({
-  returnPath = "/app/student/explore",
+  returnPath = "/app/sources",
 }: {
   returnPath?: string;
 }) {

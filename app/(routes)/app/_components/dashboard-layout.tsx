@@ -21,28 +21,21 @@ import { Header2 } from "@/src/components/common/header";
 import { userDisplayName } from "@/src/libs/user";
 import { ModeToggle } from "@/src/components/common/mode-toggle";
 import { Tables } from "@/types/db";
-import { Badge } from "@/src/components/ui/badge";
-import { SubscriptionPlan } from "@/src/consts/stripe";
-import { getStripeSubscriptionForBusiness } from "@/src/data/stripe";
-import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { derivePlanFromSubscription } from "@/src/libs/stripe";
 import { MoovnLogo } from "@/src/components/ui/icons/moovn";
 
 export default function Dashboard({
   user,
-  businesses,
   children,
 }: {
   user?: Tables<"users">;
-  businesses: Tables<"businesses">[];
   children: any;
 }) {
-  const { data: currentSubscription, isLoading: isLoadingSubscription } =
-    useSupaQuery(getStripeSubscriptionForBusiness, {
-      queryKey: ["getStripeSubscriptionForBusiness"],
-      arg: businesses[0]?.id,
-    });
-  const currentPlan = derivePlanFromSubscription(currentSubscription);
+  // const { data: currentSubscription, isLoading: isLoadingSubscription } =
+  //   useSupaQuery(getStripeSubscriptionForBusiness, {
+  //     queryKey: ["getStripeSubscriptionForBusiness"],
+  //     arg: businesses[0]?.id,
+  //   });
+  // const currentPlan = derivePlanFromSubscription(currentSubscription);
   const [sheetOpen, setSheetOpen] = useState(false);
   const path = usePathname();
   const router = useRouter();
@@ -99,7 +92,7 @@ export default function Dashboard({
       </div>
       <div className={"w-screen sm:w-full"}>
         <div className="z-20 flex h-14 w-fit items-center px-4">
-          {!isLoadingSubscription && businesses.length > 0 && (
+          {/** !isLoadingSubscription && (
             <div className="hidden gap-x-2 sm:flex ">
               <Badge className="rounded-sm bg-green-600 text-white">
                 Active: {currentPlan} plan
@@ -112,7 +105,7 @@ export default function Dashboard({
                 </Link>
               )}
             </div>
-          )}
+          )*/}
         </div>
 
         <header className="fixed left-0 top-0 z-10 flex h-14 w-full items-center gap-4 border-b bg-muted px-4 lg:h-[60px] lg:px-6">
