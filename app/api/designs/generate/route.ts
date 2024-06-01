@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
               raw_result: JSON.stringify(generateResp),
             });
 
-          return Response.json(generateResp);
+          return Response.json({ id: jobId, result: generateResp.result });
         default:
           throw new Error(`Unsupported source type: ${template.source?.type}`);
       }

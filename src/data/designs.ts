@@ -1,3 +1,4 @@
+import { PsJobResponse } from "@adobe/photoshop-apis";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { GenerateDesignRequest } from "@/app/api/designs/generate/dto";
@@ -16,7 +17,9 @@ export const getDesignsForTemplate = (
   );
 };
 
-export const generateDesign = async (req: GenerateDesignRequest) => {
+export const generateDesign = async (
+  req: GenerateDesignRequest,
+): Promise<{ id: string; result: PsJobResponse }> => {
   const resp = await fetch("/api/designs/generate", {
     method: "POST",
     body: JSON.stringify(req),

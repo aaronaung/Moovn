@@ -22,6 +22,9 @@ import { BUCKETS } from "@/src/consts/storage";
 import { checkIfObjectExistsAtUrl } from "@/src/libs/storage";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { generateDesign } from "@/src/data/designs";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchWithRetry } from "@/src/utils";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
@@ -44,6 +47,7 @@ export default function SaveTemplateForm({
   availableSources,
   onSubmitted,
 }: SaveTemplateFormProps) {
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -105,71 +109,94 @@ export default function SaveTemplateForm({
   ) => {
     const templateId = defaultValues?.id ?? formValues.id ?? uuid();
 
-    if (!templateFile && !templateAlreadyExists) {
+    try {
+      if (!templateFile && !templateAlreadyExists) {
+        toast({
+          variant: "destructive",
+          title: "Template file is required",
+          description: "Please upload a PSD file for the template.",
+        });
+        return;
+      }
+      if (!user || !session?.access_token) {
+        toast({
+          variant: "destructive",
+          title: "Session error",
+          description: "Please try again or contact support.",
+        });
+        return;
+      }
+
+      if (templateFile) {
+        asyncUploader.upload(
+          {
+            id: templateId,
+            targets: [
+              {
+                file: templateFile,
+                bucketName: BUCKETS.templates,
+                contentType: `image/vnd.adobe.photoshop`,
+                objectPath: `${user.id}/${templateId}.psd`,
+              },
+            ],
+          },
+          session?.access_token,
+          {
+            upsert: true,
+            onComplete: async (data) => {
+              if (data.failed.length > 0) {
+                toast({
+                  variant: "destructive",
+                  title: "Failed to upload design template file.",
+                  description: "Please try again or contact support.",
+                });
+                return;
+              }
+              await _saveTemplate({
+                ...formValues,
+                id: templateId,
+                owner_id: user.id,
+                ...(formValues.id
+                  ? { updated_at: new Date().toISOString() }
+                  : {}),
+              });
+              const { id: jobId } = await _generateDesign({
+                templateId,
+              });
+
+              // Check if the generated design is available
+              const { data: signedJpegUrlData } =
+                await supaClientComponentClient.storage
+                  .from(BUCKETS.designs)
+                  .createSignedUrl(`${user.id}/${jobId}.jpeg`, 24 * 3600);
+
+              if (signedJpegUrlData) {
+                await fetchWithRetry(signedJpegUrlData?.signedUrl);
+                queryClient.invalidateQueries({
+                  queryKey: ["getDesignsForTemplate", templateId],
+                });
+              }
+              onSubmitted();
+            },
+          },
+        );
+      } else {
+        _saveTemplate({
+          ...formValues,
+          id: templateId,
+          owner_id: user.id,
+          ...(formValues.id ? { updated_at: new Date().toISOString() } : {}),
+        });
+        onSubmitted();
+      }
+    } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
-        title: "Template file is required",
-        description: "Please upload a PSD file for the template.",
-      });
-      return;
-    }
-    if (!user || !session?.access_token) {
-      toast({
-        variant: "destructive",
-        title: "Session error",
+        title: "Failed to save design template",
         description: "Please try again or contact support.",
       });
-      return;
-    }
-
-    if (templateFile) {
-      asyncUploader.upload(
-        {
-          id: templateId,
-          targets: [
-            {
-              file: templateFile,
-              bucketName: BUCKETS.templates,
-              contentType: `image/vnd.adobe.photoshop`,
-              objectPath: `${user.id}/${templateId}.psd`,
-            },
-          ],
-        },
-        session?.access_token,
-        {
-          upsert: true,
-          onComplete: async (data) => {
-            if (data.failed.length > 0) {
-              toast({
-                variant: "destructive",
-                title: "Failed to upload template file.",
-                description: "Please try again or contact support.",
-              });
-              return;
-            }
-            await _saveTemplate({
-              ...formValues,
-              id: templateId,
-              owner_id: user.id,
-              ...(formValues.id
-                ? { updated_at: new Date().toISOString() }
-                : {}),
-            });
-            await _generateDesign({
-              templateId,
-            });
-
-            onSubmitted();
-          },
-        },
-      );
-    } else {
-      _saveTemplate({
-        ...formValues,
-        id: templateId,
-        owner_id: user.id,
-        ...(formValues.id ? { updated_at: new Date().toISOString() } : {}),
-      });
+      onSubmitted();
     }
   };
 
