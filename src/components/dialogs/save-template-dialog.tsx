@@ -20,7 +20,6 @@ export function SaveTemplateDialog({
   onClose: () => void;
   isOpen: boolean;
 }) {
-  console.log(initFormValues);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">

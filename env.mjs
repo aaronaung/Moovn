@@ -35,6 +35,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_URL: z.string().min(1),
     NEXT_PUBLIC_GOOGLE_MAP_API_KEY: z.string().min(1),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
+    NEXT_PUBLIC_FACEBOOK_APP_ID: z.string().min(1),
   },
   /*
    * Due to how Next.js bundles environment variables on Edge and Client,
@@ -52,6 +53,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID,
     NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID:
       process.env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID,
+    NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
 
     SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID:
       process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,

@@ -21,6 +21,7 @@ import { useAsyncFileUpload } from "@/src/contexts/async-file-upload";
 import { BUCKETS } from "@/src/consts/storage";
 import { checkIfObjectExistsAtUrl } from "@/src/libs/storage";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
+import { generateDesign } from "@/src/data/designs";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
@@ -76,12 +77,12 @@ export default function SaveTemplateForm({
     }
   }, [currentTemplateUrl]);
 
-  const { mutate: _saveTemplate, isPending } = useSupaMutation(saveTemplate, {
-    invalidate: [["getTemplatesForAuthUser"]],
-    onSettled: () => {
-      onSubmitted();
-    },
-  });
+  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } =
+    useSupaMutation(saveTemplate, {
+      invalidate: [["getTemplatesForAuthUser"]],
+    });
+  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } =
+    useSupaMutation(generateDesign);
 
   const onTemplateFileDrop = useCallback(
     async (accepted: File[], rejections: FileRejection[]) => {
@@ -137,7 +138,7 @@ export default function SaveTemplateForm({
         session?.access_token,
         {
           upsert: true,
-          onComplete: (data) => {
+          onComplete: async (data) => {
             if (data.failed.length > 0) {
               toast({
                 variant: "destructive",
@@ -146,7 +147,7 @@ export default function SaveTemplateForm({
               });
               return;
             }
-            _saveTemplate({
+            await _saveTemplate({
               ...formValues,
               id: templateId,
               owner_id: user.id,
@@ -154,6 +155,11 @@ export default function SaveTemplateForm({
                 ? { updated_at: new Date().toISOString() }
                 : {}),
             });
+            await _generateDesign({
+              templateId,
+            });
+
+            onSubmitted();
           },
         },
       );
@@ -230,9 +236,15 @@ export default function SaveTemplateForm({
       <Button
         className="float-right mt-6"
         type="submit"
-        disabled={isPending || asyncUploader.hasTaskInProgress}
+        disabled={
+          isSavingTemplate ||
+          isGeneratingDesign ||
+          asyncUploader.hasTaskInProgress
+        }
       >
-        {isPending || asyncUploader.hasTaskInProgress ? (
+        {isSavingTemplate ||
+        isGeneratingDesign ||
+        asyncUploader.hasTaskInProgress ? (
           <Loader2 className="animate-spin" />
         ) : (
           "Save"

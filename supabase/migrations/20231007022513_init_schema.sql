@@ -76,7 +76,7 @@ create table "public"."design_jobs" (
 );
 create unique index design_jobs_pkey on public."design_jobs" using btree (id);
 alter table "public"."design_jobs" add constraint "design_jobs_pkey" primary key using index "design_jobs_pkey";
-alter table "public"."design_jobs" add constraint "design_jobs_template_id_foreign" foreign key ("template_id") references "public"."templates" ("id");
+alter table "public"."design_jobs" add constraint "design_jobs_template_id_foreign" foreign key ("template_id") references "public"."templates" ("id") on delete cascade;
 
 alter table "public"."design_jobs" enable row level security;
 create policy "Enable owner access to design jobs"
@@ -153,47 +153,47 @@ with check (
 insert into storage.buckets
   (id, name)
 values
-  ('generated-content', 'generated-content')
+  ('designs', 'designs')
 on conflict (id) do nothing;
 
-create policy "Enable read to owner of the generated content"
+create policy "Enable read to owner of the designs"
 on storage.objects
 as permissive
 for select
 to authenticated
 using (
-    bucket_id = 'generated-content' and
+    bucket_id = 'designs' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable delete to owner of the generated content"
+create policy "Enable delete to owner of the designs"
 on storage.objects
 as permissive
 for delete
 to authenticated
 using (
-    bucket_id = 'generated-content' and
+    bucket_id = 'designs' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable update to owner of the generated content"
+create policy "Enable update to owner of the designs"
 on storage.objects
 as permissive
 for update
 to authenticated
 using (
-    bucket_id = 'generated-content' and
+    bucket_id = 'designs' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 )
 with check(
-    bucket_id = 'generated-content' and
+    bucket_id = 'designs' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable insert to owner of the generated content"
+create policy "Enable insert to owner of the designs"
 on storage.objects
 as permissive
 for insert
 to authenticated
 with check (
-    bucket_id = 'generated-content' and
+    bucket_id = 'designs' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
 

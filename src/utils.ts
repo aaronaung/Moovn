@@ -6,6 +6,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function download(url: string, filename: string) {
+  console.log("filename", filename);
+  const a = document.createElement("a");
+  a.target = "_blank";
+  a.href = url;
+  a.download = filename.split(" ").join("_");
+  a.click();
+}
+
 export function pluralOrSingular(
   count: number,
   singular: string,

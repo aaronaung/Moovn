@@ -1,21 +1,30 @@
-import { DocumentIcon, NewspaperIcon } from "@heroicons/react/24/outline";
+import {
+  DocumentIcon,
+  PhotoIcon,
+  RocketLaunchIcon,
+} from "@heroicons/react/24/outline";
 import { CircleStackIcon } from "@heroicons/react/24/outline";
 
 export const appSidebarNavigation = [
   {
-    name: "Data sources",
+    name: "Sources",
     icon: CircleStackIcon,
     href: "/app/sources",
   },
   {
-    name: "Design templates",
+    name: "Templates",
     icon: DocumentIcon,
     href: "/app/templates",
   },
   {
     name: "Designs",
-    icon: NewspaperIcon,
+    icon: PhotoIcon,
     href: "/app/designs",
+  },
+  {
+    name: "Destinations",
+    icon: RocketLaunchIcon,
+    href: "/app/destinations",
   },
 ];
 

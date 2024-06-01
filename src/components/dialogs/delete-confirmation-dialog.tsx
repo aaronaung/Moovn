@@ -12,6 +12,7 @@ interface DeleteConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onDelete: () => void;
+  isDeleting?: boolean;
 }
 
 export function DeleteConfirmationDialog({
@@ -19,6 +20,7 @@ export function DeleteConfirmationDialog({
   isOpen,
   onClose,
   onDelete,
+  isDeleting = false,
 }: DeleteConfirmationDialogProps) {
   const [inputValue, setInputValue] = useState("");
 
@@ -40,9 +42,9 @@ export function DeleteConfirmationDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOnClose}>
       <DialogContent>
-        <div>
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium">{label || "Delete"}</p>
           <InputText
-            label={label || "Are you sure you want to delete?"}
             description="Type 'delete' to confirm."
             inputProps={{
               value: inputValue,
@@ -57,7 +59,7 @@ export function DeleteConfirmationDialog({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={inputValue !== "delete"}
+            disabled={inputValue !== "delete" || isDeleting}
           >
             Delete
           </Button>

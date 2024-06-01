@@ -6,16 +6,20 @@ export const useSignedUrl = ({
   objectPath,
   initialUrl,
 }: {
-  bucket: string;
-  objectPath: string;
+  bucket?: string;
+  objectPath?: string;
   initialUrl?: string;
 }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(initialUrl ?? null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    sign();
+    if (objectPath && bucket) {
+      sign({
+        isRefresh: true,
+      });
+    }
   }, [bucket, objectPath]);
 
   useEffect(() => {
@@ -24,10 +28,13 @@ export const useSignedUrl = ({
     }
   }, [signedUrl]);
 
-  const sign = async () => {
+  const sign = async (options: { isRefresh?: boolean } = {}) => {
+    if (!bucket || !objectPath) {
+      return;
+    }
     try {
       setLoading(true);
-      if (signedUrl) {
+      if (signedUrl && !options.isRefresh) {
         const resp = await fetch(signedUrl, { method: "GET" });
         if (resp.ok) {
           setLoading(false);
@@ -43,11 +50,19 @@ export const useSignedUrl = ({
       }
       setSignedUrl(data.signedUrl);
     } catch (err: any) {
+      setSignedUrl(null);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  return { signedUrl, loading, error, refresh: sign };
+  return {
+    signedUrl,
+    loading,
+    error,
+    refresh: () => {
+      sign({ isRefresh: true });
+    },
+  };
 };

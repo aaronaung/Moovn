@@ -9,6 +9,7 @@ import { Sources } from "@/src/consts/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { env } from "@/env.mjs";
 import { generateDesign } from "@/src/libs/design-gen/photoshop";
+import { GenerateDesignRequestSchema } from "./dto";
 
 function createCanvasFromData(data: any) {
   const image = new Image();
@@ -20,7 +21,9 @@ function createCanvasFromData(data: any) {
 initializeCanvas(createCanvas as any, createCanvasFromData as any);
 
 export async function POST(request: NextRequest) {
-  const { templateId } = await request.json();
+  const { templateId } = GenerateDesignRequestSchema.parse(
+    await request.json(),
+  );
 
   const { data: template } = await supaServerClient()
     .from("templates")
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
     const generatedContentPath = `${template.owner_id}/${jobId}`;
     const { data: outputSignedUrlData, error: signOutputUrlErr } =
       await supaServerClient()
-        .storage.from(BUCKETS.generatedContent)
+        .storage.from(BUCKETS.designs)
         .createSignedUploadUrl(`${generatedContentPath}.jpeg`);
     const outputSignedUrlJpeg = outputSignedUrlData?.signedUrl;
     if (!outputSignedUrlJpeg) {
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
     const { data: outputSignedUrlPsdData, error: signPsdOutputUrlErr } =
       await supaServerClient()
-        .storage.from(BUCKETS.generatedContent)
+        .storage.from(BUCKETS.designs)
         .createSignedUploadUrl(`${generatedContentPath}.psd`);
     const outputSignedUrlPsd = outputSignedUrlPsdData?.signedUrl;
     if (!outputSignedUrlPsd) {

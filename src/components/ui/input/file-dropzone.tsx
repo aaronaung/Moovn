@@ -30,7 +30,7 @@ export default function FileDropzone({
             <img
               src={URL.createObjectURL(acceptedFiles[0])}
               alt="Preview"
-              className="m-auto h-24 w-52 rounded-md"
+              className="m-auto h-28 rounded-md bg-cover"
             />
           ) : (
             acceptedFiles[0].name

@@ -1,5 +1,5 @@
 import { DailyScheduleSchema } from "./common";
-import { endOfDay, format, startOfDay } from "date-fns";
+import { endOfDay, startOfDay } from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -52,7 +52,6 @@ export class Pike13Client {
     const staffMembersById = _.keyBy(staffMembers, "id");
 
     return {
-      day: format(date, "EEEE"),
       date: date.toISOString(),
       events: events.map((event: any) => ({
         staff_members: event.staff_members.map((s: any) => {

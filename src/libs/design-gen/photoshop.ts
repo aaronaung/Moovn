@@ -22,8 +22,6 @@ const determinePSDActions = (
   schedule: DailyScheduleSchema,
   psd: Psd,
 ): PSDActions => {
-  const eventIndexMap = Object.assign({}, schedule.events);
-
   if (!psd.children) {
     return {};
   }
@@ -32,53 +30,46 @@ const determinePSDActions = (
     [PSDActionType.EditText]: {},
     [PSDActionType.ReplaceSmartObject]: {},
   };
-  const addPsdAction = (layer: Layer, value?: any) => {
-    if (!layer.id || !layer.name || !value) {
+  const addPsdAction = (layer: Layer, parent?: any) => {
+    if (!layer.id || !layer.name) {
       return;
     }
-    if (layer.placedLayer) {
-      psdActions[PSDActionType.ReplaceSmartObject][layer.id] = value;
-    }
-    if (layer.text) {
-      psdActions[PSDActionType.EditText][layer.id] = value;
+    const [layerName, dateFormat] = layer.name.trim().split("|") || [];
+    const value = parent[layerName.trim()];
+    if (value) {
+      // If value is provided, it means we are at the leaf node.
+      if (
+        layerName === "start_at" ||
+        layerName === "end_at" ||
+        layerName === "date"
+      ) {
+        psdActions[PSDActionType.EditText][layer.id] = dateFormat
+          ? format(new Date(value), dateFormat.trim())
+          : value;
+      } else if (layer.placedLayer) {
+        psdActions[PSDActionType.ReplaceSmartObject][layer.id] = value;
+      } else if (layer.text) {
+        psdActions[PSDActionType.EditText][layer.id] = value;
+      }
+    } else {
+      // If value is not provided, it means we are at the parent node. We need to go deeper.
+      const [layerName, index] = layer.name.trim().split("#") || [];
+      if (!layerName || index === undefined || !parent) {
+        return;
+      }
+      const newParent = parent[layerName.trim()][index.trim()]; // e.g. parent[events][0] or parent[staff_members][0]
+      for (const childLayer of layer.children ?? []) {
+        if (!childLayer.name) {
+          continue;
+        }
+        addPsdAction(childLayer, newParent);
+      }
     }
   };
 
   for (const root of psd.children) {
-    if (root.name === "date" && root.id) {
-      psdActions[PSDActionType.EditText][root.id] = schedule.date; // todo - add formating
-    }
-    if (root.name === "day" && root.id) {
-      psdActions[PSDActionType.EditText][root.id] = format(
-        new Date(schedule.date),
-        "EEEE",
-      );
-    }
-
-    const [layerName, index] = (root.name || "").split("#") || [];
-    if (!layerName || index === undefined) {
-      continue;
-    }
-    if (layerName === "events") {
-      const event: { [key: string]: any } = eventIndexMap[parseInt(index)];
-
-      for (const eventLayer of root.children ?? []) {
-        if (eventLayer.name) {
-          addPsdAction(eventLayer, event[eventLayer.name]);
-        }
-        const [layerName, index] = (eventLayer.name || "").split("#") || [];
-        if (!layerName || index === undefined) {
-          continue;
-        }
-        if (layerName === "staff_members") {
-          const staffMember = event.staff_members[parseInt(index)];
-          for (const staffLayer of eventLayer.children ?? []) {
-            if (staffLayer.name) {
-              addPsdAction(staffLayer, staffMember[staffLayer.name]);
-            }
-          }
-        }
-      }
+    if (root.name && root.id) {
+      addPsdAction(root, schedule);
     }
   }
   return psdActions;
@@ -102,6 +93,7 @@ export const generateDesign = async ({
   const psd = readPsd(await templateFile.arrayBuffer());
   const psdActions = determinePSDActions(scheduleData, psd);
 
+  // return psdActions;
   return photoshop.modifyDocument({
     inputs: [
       {

@@ -1,6 +1,5 @@
 export type DailyScheduleSchema = {
   date: string;
-  day: string;
   events: ScheduleEvent[];
 };
 

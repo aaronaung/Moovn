@@ -2,6 +2,7 @@
 import EmptyState from "@/src/components/common/empty-state";
 import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
+import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
 import { SaveTemplateDialog } from "@/src/components/dialogs/save-template-dialog";
 import TemplatesTable, {
   TemplatesTableSchema,
@@ -29,15 +30,23 @@ export default function TemplatesPage() {
       queryKey: ["getSourcesForAuthUser"],
     },
   );
-  const { mutate: _deleteTemplate } = useSupaMutation(deleteTemplate, {
-    invalidate: [["getTemplatesForAuthUser"]],
-  });
+  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } =
+    useSupaMutation(deleteTemplate, {
+      invalidate: [["getTemplatesForAuthUser"]],
+    });
   const [saveTemplateDialogState, setSaveTemplateDialogState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
   }>({
     isOpen: false,
   });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
+    useState<{
+      isOpen: boolean;
+      template?: Tables<"templates">;
+    }>({
+      isOpen: false,
+    });
 
   const handleRowAction = (
     row: Row<TemplatesTableSchema>,
@@ -51,7 +60,10 @@ export default function TemplatesPage() {
         });
         break;
       case RowAction.DELETE:
-        _deleteTemplate(row.original);
+        setDeleteConfirmationDialogState({
+          isOpen: true,
+          template: row.original ?? undefined,
+        });
         break;
     }
   };
@@ -76,6 +88,26 @@ export default function TemplatesPage() {
 
   return (
     <div>
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirmationDialogState.isOpen}
+        label={
+          "Deleting the template will also delete all designs created from it. Are you sure you want to delete this template?"
+        }
+        isDeleting={isDeletingTemplate}
+        onClose={() => {
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+        onDelete={async () => {
+          if (deleteConfirmationDialogState.template) {
+            await _deleteTemplate(deleteConfirmationDialogState.template);
+          }
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+      />
       <SaveTemplateDialog
         isOpen={saveTemplateDialogState.isOpen}
         initFormValues={saveTemplateDialogState.template}

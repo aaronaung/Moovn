@@ -1,6 +1,6 @@
 export const BUCKETS = {
   templates: "templates",
-  generatedContent: "generated-content",
+  designs: "designs",
 };
 
 export const STORAGE_DIR_PATHS = {};
