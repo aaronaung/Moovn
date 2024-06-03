@@ -51,6 +51,7 @@ export default function Dashboard({
             </Button> */}
             <Logo />
           </div>
+
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium md:gap-y-1 lg:px-4">
               {appSidebarNavigation.map((n) => {
@@ -157,6 +158,15 @@ export default function Dashboard({
               </div>
             </form> */}
           </div>
+          <p className="text-sm text-muted-foreground">
+            For support, email us at{" "}
+            <a
+              className="hover:text-primary hover:underline"
+              href="mailto:someone@example.com"
+            >
+              <i>team@moovn.co</i>
+            </a>
+          </p>
           <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

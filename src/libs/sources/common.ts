@@ -1,3 +1,10 @@
+export type ScheduleData = {
+  // We have to use `schedules` as the key, so in PSD templates, users can
+  // template multiple schedules using folder names like schedules#0, schedules#1, etc.
+  // The template processor accesses the schedules data using the `schedules` key.
+  schedules: DailyScheduleSchema[];
+};
+
 export type DailyScheduleSchema = {
   date: string;
   events: ScheduleEvent[];

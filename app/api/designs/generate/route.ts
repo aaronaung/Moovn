@@ -5,11 +5,17 @@ import { BUCKETS } from "@/src/consts/storage";
 import { v4 as uuid } from "uuid";
 import { createCanvas, Image } from "canvas";
 import { PsAsyncJobError } from "@adobe/photoshop-apis/dist/PsAsyncJob";
-import { Sources } from "@/src/consts/sources";
+import {
+  SOURCE_HAS_NO_DATA_ID,
+  SourceDataView,
+  Sources,
+} from "@/src/consts/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { env } from "@/env.mjs";
 import { generateDesign } from "@/src/libs/design-gen/photoshop";
 import { GenerateDesignRequestSchema } from "./dto";
+import { Json } from "@/types/db";
+import _ from "lodash";
 
 function createCanvasFromData(data: any) {
   const image = new Image();
@@ -48,7 +54,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // TODO: This should be a hash of the schedule data, and we should check if the
+    // design already exists at this hashed id, because we don't need to regenerate
+    // the design if the schedule data hasn't changed.
     const jobId = uuid();
+
     const generatedContentPath = `${template.owner_id}/${jobId}`;
     const { data: outputSignedUrlData, error: signOutputUrlErr } =
       await supaServerClient()
@@ -74,64 +84,70 @@ export async function POST(request: NextRequest) {
       throw new Error("PSD file download has no data.");
     }
 
-    try {
-      switch (template.source?.type) {
-        case Sources.PIKE13:
-          const pike13 = new Pike13Client({
-            clientId: env.PIKE13_CLIENT_ID,
-            businessUrl: (template.source?.settings as Pike13SourceSettings)
-              ?.url,
-          });
+    switch (template.source?.type) {
+      case Sources.PIKE13:
+        const pike13 = new Pike13Client({
+          clientId: env.PIKE13_CLIENT_ID,
+          businessUrl: (template.source?.settings as Pike13SourceSettings)?.url,
+        });
 
-          const scheduleData = await pike13.getDailySchedule(new Date());
-          const generateResp = await generateDesign({
+        const scheduleData = await pike13.getScheduleDataForView(
+          template.source_data_view as SourceDataView,
+        );
+        if (scheduleData.schedules.length === 0) {
+          return Response.json({ id: SOURCE_HAS_NO_DATA_ID });
+        }
+
+        let generateResp;
+        try {
+          generateResp = await generateDesign({
             scheduleData,
             inputUrl: inputSignedUrl,
             outputUrlPsd: outputSignedUrlPsd,
             outputUrlJpeg: outputSignedUrlJpeg,
           });
+        } catch (err: any) {
+          if (err instanceof PsAsyncJobError) {
+            await supaServerClient()
+              .from("design_jobs")
+              .upsert({
+                id: jobId,
+                template_id: template.id,
+                raw_result: {
+                  error: err,
+                  status: 400,
+                } as unknown as Json,
+              });
+            return Response.json(err, { status: 400 });
+          }
+          // If it's not a PsAsyncJobError, then it's likely an unexpected code/server error on our end.
+          console.error(JSON.stringify(err, null, 2));
+          if (err.body && _.isObject(err.body)) {
+            return Response.json(err.body, { status: 500 });
+          }
+          return new Response(err.body ?? err.message, {
+            status: 500,
+          });
+        }
 
-          await supaServerClient()
-            .from("design_jobs")
-            .upsert({
-              id: jobId,
-              template_id: template.id,
-              raw_result: JSON.stringify(generateResp),
-            });
-
-          return Response.json({ id: jobId, result: generateResp.result });
-        default:
-          throw new Error(`Unsupported source type: ${template.source?.type}`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      if (err instanceof PsAsyncJobError) {
         await supaServerClient()
           .from("design_jobs")
           .upsert({
             id: jobId,
             template_id: template.id,
-            raw_result: JSON.stringify({
-              error: err,
-              status: 400,
-            }),
+            raw_result: generateResp as unknown as Json,
           });
-        return Response.json(err, { status: 400 });
-      }
-      await supaServerClient()
-        .from("design_jobs")
-        .upsert({
-          id: jobId,
-          template_id: template.id,
-          raw_result: JSON.stringify({
-            error: err.body,
-            status: err.status,
-          }),
-        });
-      return Response.json(err.body, { status: err.status });
+        return Response.json({ id: jobId, result: generateResp?.result });
+      default:
+        throw new Error(`Unsupported source type: ${template.source?.type}`);
     }
   } catch (err: any) {
-    console.error(err);
-    return new Response(err.body ?? err.message, { status: 500 });
+    console.error(JSON.stringify(err, null, 2));
+    if (err.body && _.isObject(err.body)) {
+      return Response.json(err.body, { status: 500 });
+    }
+    return new Response(JSON.stringify(err.body) ?? err.message, {
+      status: 500,
+    });
   }
 }

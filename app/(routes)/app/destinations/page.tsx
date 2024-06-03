@@ -1,7 +1,5 @@
 import { env } from "@/env.mjs";
 import { Header2 } from "@/src/components/common/header";
-import { Button } from "@/src/components/ui/button";
-import Link from "next/link";
 
 const facebookLoginUrl = `https://www.facebook.com/v20.0/dialog/oauth
 ?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
@@ -16,10 +14,7 @@ export default function Destinations() {
     <div>
       <Header2 title="Destinations" />
       <div>
-        <p>Post designs on Instagram</p>
-        <Link href={facebookLoginUrl}>
-          <Button>Integrate</Button>
-        </Link>
+        <p className="text-sm text-muted-foreground">Coming soon...</p>
       </div>
     </div>
   );

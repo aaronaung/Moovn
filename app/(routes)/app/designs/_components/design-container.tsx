@@ -5,7 +5,6 @@ import { Button } from "@/src/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
 } from "@/src/components/ui/card";
@@ -15,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
+import { SOURCE_HAS_NO_DATA_ID, SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { generateDesign, getDesignsForTemplate } from "@/src/data/designs";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
@@ -25,6 +25,14 @@ import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import { useEffect, useState } from "react";
 
 export const DesignContainer = ({
@@ -42,6 +50,8 @@ export const DesignContainer = ({
   onEditTemplate: () => void;
 }) => {
   const queryClient = useQueryClient();
+  const [hasNoScheduleData, setHasNoScheduleData] = useState(false);
+
   const { data: designs, isLoading: isLoadingDesigns } = useSupaQuery(
     getDesignsForTemplate,
     {
@@ -76,23 +86,68 @@ export const DesignContainer = ({
     if (isLoadingDesigns || isLoadingJpegSignedUrl) {
       return <Spinner />;
     }
-    if (latestDesign) {
-      return <DesignImage url={jpegSignedUrl ?? undefined} />;
+    if (latestDesign || hasNoScheduleData) {
+      return (
+        <DesignImage
+          url={jpegSignedUrl ?? undefined}
+          hasNoData={hasNoScheduleData}
+        />
+      );
     }
     return <DesignNotFound />;
+  };
+
+  const fromAndToString = () => {
+    const currDateTime = new Date();
+
+    // Default to daily view
+    let fromAndTo: { from: Date; to?: Date } = {
+      from: startOfDay(currDateTime),
+    };
+    switch (template.source_data_view) {
+      case SourceDataView.WEEKLY:
+        fromAndTo = {
+          from: startOfWeek(currDateTime),
+          to: endOfWeek(currDateTime),
+        };
+        break;
+      case SourceDataView.MONTHLY:
+        fromAndTo = {
+          from: startOfMonth(currDateTime),
+          to: endOfMonth(currDateTime),
+        };
+        break;
+      default:
+    }
+
+    if (!fromAndTo.to) {
+      return format(fromAndTo.from, "MMM d");
+    }
+    return `${format(fromAndTo.from, "MMM d")} - 
+    ${format(fromAndTo.to, "MMM d")}`;
   };
 
   return (
     <Card className="w-[400px]">
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex">
-          <div className="flex flex-1 flex-col gap-1">
-            <Header2 title={template.name || "Untitled"}></Header2>
-            {latestDesign?.created_at && (
-              <CardDescription>
+          <div className="flex h-20 flex-1 flex-col gap-1">
+            <Header2
+              className="line-clamp-1"
+              title={template.name || "Untitled"}
+            ></Header2>
+            <p className="text-sm text-muted-foreground">
+              {template.source_data_view} ({fromAndToString()})
+            </p>
+            {latestDesign?.created_at ? (
+              <p className="text-sm text-muted-foreground">
                 Last refreshed:{" "}
                 {userFriendlyDate(new Date(latestDesign.created_at))}
-              </CardDescription>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No designs generated yet
+              </p>
             )}
           </div>
           <div className="flex gap-x-0.5">
@@ -159,9 +214,10 @@ export const DesignContainer = ({
         <Button
           disabled={isGeneratingDesign}
           onClick={async () => {
-            await _generateDesign({
+            const resp = await _generateDesign({
               templateId: template.id,
             });
+            setHasNoScheduleData(resp.id === SOURCE_HAS_NO_DATA_ID);
             queryClient.invalidateQueries({
               queryKey: ["getDesignsForTemplate", template.id],
             });
@@ -180,7 +236,13 @@ export const DesignContainer = ({
   );
 };
 
-const DesignImage = ({ url }: { url?: string }) => {
+const DesignImage = ({
+  hasNoData = false,
+  url,
+}: {
+  hasNoData?: boolean;
+  url?: string;
+}) => {
   const [imageExists, setImageExists] = useState(true);
 
   useEffect(() => {
@@ -191,20 +253,20 @@ const DesignImage = ({ url }: { url?: string }) => {
     }
   }, [url]);
 
+  if (hasNoData) {
+    return <DesignNotFound label={"There's no schedule data."} />;
+  }
   if (url && imageExists) {
     return <img src={url} alt="Design" className="max-h-full max-w-full" />;
   }
-  return (
-    <DesignNotFound
-      label={"Something went wrong. Please refresh again or contact support."}
-    />
-  );
+  return <DesignNotFound />;
 };
 
 const DesignNotFound = ({ label }: { label?: string }) => {
   return (
-    <p className="px-4 text-center text-muted-foreground">
-      {label || `There's no design for this template`}
+    <p className="px-4 text-center text-sm text-muted-foreground">
+      {label ||
+        "We couldn't generate the design. Please check for schedule data for this template. If this seems wrong, refresh or contact support."}
     </p>
   );
 };

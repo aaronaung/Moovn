@@ -119,6 +119,17 @@ export default function DesignsPage() {
           <p className="text-sm text-muted-foreground">
             Manage your design templates and the designs created from them.
           </p>
+          <p className="py-2 text-xs text-muted-foreground">
+            Not seeing the designs as expected? Please email us at{" "}
+            <a
+              className="hover:text-primary hover:underline"
+              href="mailto:someone@example.com"
+            >
+              <i>team@moovn.co</i>
+            </a>{" "}
+            for support. If you are not seeing the correct font, please include
+            the font name in the email.
+          </p>
         </div>
         <Button
           onClick={() => {

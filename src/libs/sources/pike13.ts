@@ -1,5 +1,15 @@
-import { DailyScheduleSchema } from "./common";
-import { endOfDay, startOfDay } from "date-fns";
+import { SourceDataView } from "@/src/consts/sources";
+import { ScheduleData } from "./common";
+import {
+  compareAsc,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -42,29 +52,71 @@ export class Pike13Client {
     return resp.staff_members || [];
   }
 
-  async getDailySchedule(date: Date): Promise<DailyScheduleSchema> {
-    const $events = this.getRawEventOcurrences(
-      startOfDay(date),
-      endOfDay(date),
+  private groupEventsByDay(events: any[]) {
+    // Convert the start_at to the same date format using date-fns
+    events.sort((a, b) =>
+      compareAsc(parseISO(a.start_at), parseISO(b.start_at)),
     );
+    const formattedEvents = events.map((event) => ({
+      ...event,
+      date: startOfDay(new Date(event.start_at)).toISOString(),
+    }));
+
+    // Group the events by the formatted date
+    const groupedEvents = _.groupBy(formattedEvents, "date");
+    return Object.values(groupedEvents);
+  }
+
+  private async getScheduleData(from: Date, to: Date): Promise<ScheduleData> {
+    const $events = this.getRawEventOcurrences(from, to);
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
     const staffMembersById = _.keyBy(staffMembers, "id");
+    const groupedEvents = this.groupEventsByDay(events);
 
     return {
-      date: date.toISOString(),
-      events: events.map((event: any) => ({
-        staff_members: event.staff_members.map((s: any) => {
-          const staffMember = staffMembersById[s.id];
-          return {
-            name: staffMember.name,
-            profile_photo: staffMember.profile_photo?.["x400"] ?? "",
-          };
-        }),
-        name: event.name,
-        start_at: event.start_at,
-        end_at: event.end_at,
-      })),
+      schedules: groupedEvents.map((eventsByDay) => {
+        return {
+          date: eventsByDay[0].date,
+          events: eventsByDay.map((event: any) => ({
+            staff_members: event.staff_members.map((s: any) => {
+              const staffMember = staffMembersById[s.id];
+              return {
+                name: staffMember.name,
+                profile_photo: staffMember.profile_photo?.["x400"] ?? "",
+              };
+            }),
+            name: event.name,
+            start_at: event.start_at,
+            end_at: event.end_at,
+          })),
+        };
+      }),
     };
+  }
+
+  async getScheduleDataForView(
+    view?: SourceDataView | null,
+  ): Promise<ScheduleData> {
+    const currDateTime = new Date();
+    switch (view) {
+      case SourceDataView.DAILY:
+        return this.getScheduleData(
+          startOfDay(currDateTime),
+          endOfDay(currDateTime),
+        );
+      case SourceDataView.WEEKLY:
+        return this.getScheduleData(
+          startOfWeek(currDateTime),
+          endOfWeek(currDateTime),
+        );
+      case SourceDataView.MONTHLY:
+        return this.getScheduleData(
+          startOfMonth(currDateTime),
+          endOfMonth(currDateTime),
+        );
+      default:
+        return { schedules: [] };
+    }
   }
 }
