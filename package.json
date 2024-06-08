@@ -97,6 +97,7 @@
     "react-rnd": "^10.4.1",
     "react-stately": "^3.27.1",
     "react-use": "^17.5.0",
+    "react-viewer": "^3.2.2",
     "react-webcam": "^7.2.0",
     "react-window": "^1.8.9",
     "stripe": "^14.19.0",

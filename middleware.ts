@@ -6,6 +6,7 @@ const excludedPaths = [
   "/api/stripe/webhook",
   "/api/auth/callback",
   "/api/designs/generate", //TODO: remove this when done testing
+  "/api/designs/templates/:id", //TODO: remove this when done testing
 ];
 
 export async function middleware(req: NextRequest) {

@@ -1,8 +1,7 @@
-import { Layer, Psd, readPsd } from "ag-psd";
+import { Layer, Psd } from "ag-psd";
 
 import { format } from "date-fns";
 import {
-  DeleteDetails,
   DocumentOperationLayer,
   ImageFormatType,
   LayerType,
@@ -20,7 +19,14 @@ export enum PSDActionType {
   DeleteLayer = "deleteLayer",
 }
 
-export type PSDActions = { [key: string]: { [key: string]: any } };
+export type PSDActions = {
+  [key: string]: {
+    [key: string]: {
+      value?: any;
+      layer: Layer;
+    };
+  };
+};
 
 const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
   if (!psd.children) {
@@ -47,27 +53,35 @@ const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
         layerName === "end_at" ||
         layerName === "date"
       ) {
-        psdActions[PSDActionType.EditText][layer.id] = dateFormat
-          ? format(new Date(value), dateFormat.trim())
-          : value;
+        psdActions[PSDActionType.EditText][layer.id] = {
+          layer,
+          value: dateFormat
+            ? format(new Date(value), dateFormat.trim())
+            : value,
+        };
       } else if (layer.placedLayer) {
-        psdActions[PSDActionType.ReplaceSmartObject][layer.id] = value;
+        psdActions[PSDActionType.ReplaceSmartObject][layer.id] = {
+          layer,
+          value,
+        };
       } else if (layer.text) {
-        psdActions[PSDActionType.EditText][layer.id] = value;
+        psdActions[PSDActionType.EditText][layer.id] = {
+          value,
+          layer,
+        };
       }
     } else {
       // If value is not provided, it means we are at the parent node. We need to go deeper.
       const [layerName, index] = layer.name.trim().split("#") || [];
-      if (!layerName || index === undefined) {
+      const _index = Number(index?.trim()) - 1; // customer readable index starts at 1.
+      if (!layerName || index === undefined || isNaN(_index) || _index < 0) {
         return;
       }
-      const newParent = parentDataObject[layerName.trim()]?.[index.trim()]; // e.g. parent[events][0] or parent[staff_members][0]
+      const newParent = parentDataObject[layerName.trim()]?.[_index]; // e.g. parent[events][0] or parent[staff_members][0]
       if (!newParent) {
         psdActions[PSDActionType.DeleteLayer][layer.id] = {
-          id: layer.id,
-          name: layer.name,
-          includeChildren: true,
-        } as DeleteDetails;
+          layer,
+        };
         return;
       }
       for (const childLayer of layer.children ?? []) {
@@ -85,18 +99,18 @@ const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
     }
     const [layerName, index] = root.name.trim().split("#") || [];
     // root layer should be a set of folders. e.g. schedules#0 or schedules#1
-    if (!layerName || index === undefined) {
+    const _index = Number(index?.trim()) - 1; // customer readable index starts at 1.
+    if (!layerName || index === undefined || isNaN(_index) || _index < 0) {
       continue;
     }
+
     const newParent = (schedules as { [key: string]: any })[layerName.trim()]?.[
-      index.trim()
+      _index
     ];
     if (!newParent) {
       psdActions[PSDActionType.DeleteLayer][root.id] = {
-        id: root.id,
-        name: root.name,
-        includeChildren: true,
-      } as DeleteDetails;
+        layer: root,
+      };
       continue;
     }
     // e.g. schedules#0 or schedules#1
@@ -113,21 +127,20 @@ const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
 export const generateDesign = async ({
   scheduleData,
   inputUrl,
+  inputPsd,
   outputUrlPsd,
   outputUrlJpeg,
 }: {
   scheduleData: ScheduleData;
   inputUrl: string;
+  inputPsd: Psd;
   outputUrlPsd: string;
   outputUrlJpeg: string;
 }) => {
   if (scheduleData.schedules.length === 0) {
     return null;
   }
-
-  const templateFile = await (await fetch(inputUrl)).blob();
-  const psd = readPsd(await templateFile.arrayBuffer());
-  const psdActions = determinePSDActions(scheduleData, psd);
+  const psdActions = determinePSDActions(scheduleData, inputPsd);
 
   return photoshop.modifyDocument({
     inputs: [
@@ -150,38 +163,38 @@ export const generateDesign = async ({
     ],
     options: {
       layers: [
-        ...Object.keys(psdActions[PSDActionType.ReplaceSmartObject]).map(
-          (layerId) =>
-            ({
+        ...Object.values(psdActions[PSDActionType.ReplaceSmartObject]).map(
+          ({ layer, value }) => {
+            return {
               edit: {},
               type: LayerType.SMART_OBJECT,
-              id: Number(layerId),
+              id: Number(layer.id),
               input: {
-                href: psdActions[PSDActionType.ReplaceSmartObject][
-                  Number(layerId)
-                ],
+                href: value,
                 storage: StorageType.EXTERNAL,
               },
-            }) as DocumentOperationLayer,
+            } as DocumentOperationLayer;
+          },
         ),
-        ...Object.keys(psdActions[PSDActionType.EditText]).map(
-          (layerId) =>
-            ({
+        ...Object.values(psdActions[PSDActionType.EditText]).map(
+          ({ layer, value }) => {
+            return {
               edit: {},
               type: LayerType.TEXT_LAYER,
-              id: Number(layerId),
+              id: Number(layer.id),
               text: {
-                content: psdActions[PSDActionType.EditText][Number(layerId)],
+                content: value,
               },
-            }) as DocumentOperationLayer,
+            } as DocumentOperationLayer;
+          },
         ),
         ...Object.values(psdActions[PSDActionType.DeleteLayer]).map(
-          (deleteDetails) => {
+          ({ layer }) => {
             return {
               delete: {
-                includeChildren: deleteDetails.includeChildren,
+                includeChildren: true,
               },
-              id: deleteDetails.id,
+              id: layer.id,
             } as DocumentOperationLayer;
           },
         ),

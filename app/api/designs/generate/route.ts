@@ -12,10 +12,14 @@ import {
 } from "@/src/consts/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { env } from "@/env.mjs";
-import { generateDesign } from "@/src/libs/design-gen/photoshop";
+import { generateDesign } from "@/src/libs/designs/photoshop";
 import { GenerateDesignRequestSchema } from "./dto";
 import { Json } from "@/types/db";
 import _ from "lodash";
+import {
+  getTemplateData,
+  TemplateNotFoundErr,
+} from "@/src/libs/designs/templates";
 
 function createCanvasFromData(data: any) {
   const image = new Image();
@@ -31,28 +35,12 @@ export async function POST(request: NextRequest) {
     await request.json(),
   );
 
-  const { data: template } = await supaServerClient()
-    .from("templates")
-    .select("*, source:sources(*)")
-    .eq("id", templateId)
-    .single();
-
-  if (!template) {
-    return new Response("Template not found.", { status: 404 });
-  }
-
   try {
-    const templatePath = `${template.owner_id}/${template.id}.psd`;
-    const { data: inputSignedUrlData, error: signInputUrlErr } =
-      await supaServerClient()
-        .storage.from(BUCKETS.templates)
-        .createSignedUrl(templatePath, 24 * 3600);
-    const inputSignedUrl = inputSignedUrlData?.signedUrl;
-    if (!inputSignedUrl) {
-      throw new Error(
-        `[InputSignedUrl Err] ${templatePath}: ${signInputUrlErr}`,
-      );
-    }
+    const {
+      template,
+      signedUrl: inputSignedUrl,
+      psd,
+    } = await getTemplateData(templateId);
 
     // TODO: This should be a hash of the schedule data, and we should check if the
     // design already exists at this hashed id, because we don't need to regenerate
@@ -77,13 +65,6 @@ export async function POST(request: NextRequest) {
       throw new Error(`[OutputSignedUrlPsd Err]: ${signPsdOutputUrlErr}`);
     }
 
-    const { data: psdFileData } = await supaServerClient()
-      .storage.from(BUCKETS.templates)
-      .download(templatePath);
-    if (!psdFileData) {
-      throw new Error("PSD file download has no data.");
-    }
-
     switch (template.source?.type) {
       case Sources.PIKE13:
         const pike13 = new Pike13Client({
@@ -103,10 +84,13 @@ export async function POST(request: NextRequest) {
           generateResp = await generateDesign({
             scheduleData,
             inputUrl: inputSignedUrl,
+            inputPsd: psd,
             outputUrlPsd: outputSignedUrlPsd,
             outputUrlJpeg: outputSignedUrlJpeg,
           });
         } catch (err: any) {
+          console.error("error", err);
+
           if (err instanceof PsAsyncJobError) {
             await supaServerClient()
               .from("design_jobs")
@@ -121,7 +105,6 @@ export async function POST(request: NextRequest) {
             return Response.json(err, { status: 400 });
           }
           // If it's not a PsAsyncJobError, then it's likely an unexpected code/server error on our end.
-          console.error(JSON.stringify(err, null, 2));
           if (err.body && _.isObject(err.body)) {
             return Response.json(err.body, { status: 500 });
           }
@@ -142,7 +125,11 @@ export async function POST(request: NextRequest) {
         throw new Error(`Unsupported source type: ${template.source?.type}`);
     }
   } catch (err: any) {
-    console.error(JSON.stringify(err, null, 2));
+    console.error("error", err);
+    if (err instanceof TemplateNotFoundErr) {
+      return Response.json(err, { status: 404 });
+    }
+
     if (err.body && _.isObject(err.body)) {
       return Response.json(err.body, { status: 500 });
     }

@@ -33,7 +33,10 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+
+const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
 export const DesignContainer = ({
   template,
@@ -51,6 +54,7 @@ export const DesignContainer = ({
 }) => {
   const queryClient = useQueryClient();
   const [hasNoScheduleData, setHasNoScheduleData] = useState(false);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const { data: designs, isLoading: isLoadingDesigns } = useSupaQuery(
     getDesignsForTemplate,
@@ -129,6 +133,18 @@ export const DesignContainer = ({
 
   return (
     <Card className="w-[400px]">
+      {jpegSignedUrl && (
+        <ImageViewer
+          visible={isImageViewerOpen}
+          onClose={() => {
+            setIsImageViewerOpen(false);
+          }}
+          onMaskClick={() => {
+            setIsImageViewerOpen(false);
+          }}
+          images={[{ src: jpegSignedUrl }]}
+        />
+      )}
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex">
           <div className="flex h-20 flex-1 flex-col gap-1">
@@ -166,7 +182,12 @@ export const DesignContainer = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex h-[300px] items-center justify-center bg-secondary p-0">
+      <CardContent
+        onClick={() => {
+          setIsImageViewerOpen(true);
+        }}
+        className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0"
+      >
         {renderLatestDesign()}
       </CardContent>
       <CardFooter className="flex flex-row-reverse gap-2 p-4">

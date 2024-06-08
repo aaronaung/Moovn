@@ -14,7 +14,8 @@ export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
     client
       .from("templates")
       .select("*, source:sources(*)")
-      .eq("owner_id", user.id),
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false }),
   );
 };
 
