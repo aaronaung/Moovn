@@ -1,6 +1,7 @@
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Pike13Logo } from "@/src/components/ui/icons/pike13";
 import { SourceTypes } from "@/src/consts/sources";
+import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -33,19 +34,16 @@ export const SourceContainer = ({
   return (
     <div
       key={source.id}
-      className="relative flex h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md p-4 hover:bg-secondary"
+      className={cn(
+        "relative flex h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md p-4 hover:bg-secondary",
+        selected && "bg-secondary",
+      )}
+      onClick={() => {
+        setSelectedSource(source);
+      }}
     >
       <div className="flex items-center ">
-        <Checkbox
-          id={source.id}
-          className="mr-2"
-          onCheckedChange={(checked) => {
-            if (checked) {
-              setSelectedSource(source);
-            }
-          }}
-          checked={selected}
-        />
+        <Checkbox id={source.id} className="mr-2" checked={selected} />
         <label
           htmlFor={source.id}
           id="source-checkbox"
