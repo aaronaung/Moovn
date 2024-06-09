@@ -1,4 +1,4 @@
-export enum Sources {
+export enum SourceTypes {
   PIKE13 = "Pike13",
 }
 

@@ -53,6 +53,9 @@ export class Pike13Client {
   }
 
   private groupEventsByDay(events: any[]) {
+    if (events.length === 0) {
+      return [];
+    }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) =>
       compareAsc(parseISO(a.start_at), parseISO(b.start_at)),
@@ -64,6 +67,7 @@ export class Pike13Client {
 
     // Group the events by the formatted date
     const groupedEvents = _.groupBy(formattedEvents, "date");
+
     return Object.values(groupedEvents);
   }
 
@@ -78,8 +82,8 @@ export class Pike13Client {
       schedules: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          events: eventsByDay.map((event: any) => ({
-            staff_members: event.staff_members.map((s: any) => {
+          events: (eventsByDay || []).map((event: any) => ({
+            staff_members: (event.staff_members || []).map((s: any) => {
               const staffMember = staffMembersById[s.id];
               return {
                 name: staffMember.name,

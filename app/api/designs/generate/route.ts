@@ -8,7 +8,7 @@ import { PsAsyncJobError } from "@adobe/photoshop-apis/dist/PsAsyncJob";
 import {
   SOURCE_HAS_NO_DATA_ID,
   SourceDataView,
-  Sources,
+  SourceTypes,
 } from "@/src/consts/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { env } from "@/env.mjs";
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     switch (template.source?.type) {
-      case Sources.PIKE13:
+      case SourceTypes.PIKE13:
         const pike13 = new Pike13Client({
           clientId: env.PIKE13_CLIENT_ID,
           businessUrl: (template.source?.settings as Pike13SourceSettings)?.url,

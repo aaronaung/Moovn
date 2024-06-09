@@ -15,6 +15,10 @@ export const saveSource = async (
   );
 };
 
+export const deleteSource = async (id: string, { client }: SupabaseOptions) => {
+  return throwOrData(client.from("sources").delete().eq("id", id).single());
+};
+
 export const getSourcesForAuthUser = async ({ client }: SupabaseOptions) => {
   const user = await getAuthUser({ client });
 
@@ -22,6 +26,10 @@ export const getSourcesForAuthUser = async ({ client }: SupabaseOptions) => {
     return [];
   }
   return throwOrData(
-    client.from("sources").select("*").eq("owner_id", user.id),
+    client
+      .from("sources")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false }),
   );
 };

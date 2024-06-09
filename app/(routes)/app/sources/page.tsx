@@ -1,27 +1,64 @@
 "use client";
+import EmptyState from "@/src/components/common/empty-state";
+import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { Pike13Logo } from "@/src/components/ui/icons/pike13";
-import InputText from "@/src/components/ui/input/text";
+import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
+import { SaveSourceDialog } from "@/src/components/dialogs/save-source-dialog";
+import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
-import { Sources } from "@/src/consts/sources";
 import { useAuthUser } from "@/src/contexts/auth";
-import { getSourcesForAuthUser, saveSource } from "@/src/data/sources";
+import {
+  deleteSource,
+  getSourcesForAuthUser,
+  saveSource,
+} from "@/src/data/sources";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
-import { Pike13SourceSettings } from "@/src/libs/sources/pike13";
-import { useEffect, useState } from "react";
-import { useDebounce } from "usehooks-ts";
+import { Tables } from "@/types/db";
+import { useState } from "react";
+import { SourceContainer } from "./_components/source-container";
 
 export default function SourcesPage() {
-  const [pike13Url, setPike13Url] = useState<string>("");
-  const debouncedPike13Url = useDebounce<string>(pike13Url, 1000);
-
   const { user } = useAuthUser();
+  const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
+  const [sourceDialogState, setSourceDialogState] = useState<{
+    isOpen: boolean;
+    source?: Tables<"sources">;
+  }>({
+    isOpen: false,
+  });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
+    useState<{
+      isOpen: boolean;
+      source?: Tables<"sources">;
+    }>({
+      isOpen: false,
+    });
+
   const { data: sources, isLoading: isLoadingSources } = useSupaQuery(
     getSourcesForAuthUser,
     {
       queryKey: ["getSourcesForAuthUser"],
     },
   );
+  const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } =
+    useSupaMutation(deleteSource, {
+      invalidate: [["getSourcesForAuthUser"]],
+      onSuccess: () => {
+        toast({
+          title: "Source deleted",
+          variant: "success",
+        });
+      },
+      onError: (error) => {
+        console.error(error);
+        toast({
+          title: "Failed to delete source",
+          variant: "destructive",
+          description: "Please try again or contact support.",
+        });
+      },
+    });
+
   const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(
     saveSource,
     {
@@ -33,61 +70,99 @@ export default function SourcesPage() {
         });
       },
       onError: (error) => {
+        console.error(error);
         toast({
           title: "Failed to save changes",
           variant: "destructive",
           description: "Please try again or contact support.",
         });
-        setPike13Url("");
       },
     },
   );
-  const pike13Source = (sources || []).find((s) => s.type === Sources.PIKE13);
-
-  useEffect(() => {
-    if (debouncedPike13Url) {
-      _saveSource({
-        id: pike13Source?.id,
-        type: Sources.PIKE13,
-        owner_id: user?.id,
-        settings: {
-          url: debouncedPike13Url,
-        },
-      });
-    }
-  }, [debouncedPike13Url, _saveSource, pike13Source?.id, user?.id]);
 
   if (isLoadingSources) {
     return <Spinner />;
   }
 
+  if (sources && sources.length === 0) {
+    return (
+      <EmptyState
+        title="No sources found"
+        description="Add a source to get started"
+        actionButtonOverride={
+          <Button
+            onClick={() => {
+              setSourceDialogState({
+                isOpen: true,
+              });
+            }}
+          >
+            Add Source
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
     <div>
-      <div className="flex gap-2">
-        <div className="h-fit w-fit rounded-md bg-secondary p-8">
-          <Pike13Logo />
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirmationDialogState.isOpen}
+        label={
+          "All designs created from this source will be deleted. Are you sure?"
+        }
+        isDeleting={isDeletingTemplate}
+        onClose={() => {
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+        onDelete={async () => {
+          if (deleteConfirmationDialogState.source) {
+            await _deleteSource(deleteConfirmationDialogState.source.id);
+          }
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+      />
+      <SaveSourceDialog
+        isOpen={sourceDialogState.isOpen}
+        onClose={() => {
+          setSourceDialogState({
+            isOpen: false,
+          });
+        }}
+        initFormValues={sourceDialogState.source as any}
+      />
+      <div className="mb-3 flex items-end">
+        <div className="flex-1">
+          <Header2 title="Sources" />
+          <p className="text-sm text-muted-foreground">
+            Manage where your data comes from.
+          </p>
         </div>
+        <Button
+          onClick={() => {
+            setSourceDialogState({
+              isOpen: true,
+            });
+          }}
+        >
+          Create source
+        </Button>
       </div>
-      <div className="mt-4 w-full">
-        <div className="flex gap-2">
-          <InputText
-            className="mr-2 w-[400px]"
-            label="Pike13 Business URL"
-            onChange={(e) => {
-              setPike13Url(e.target.value);
-            }}
-            value={
-              pike13Url ||
-              (pike13Source?.settings as Pike13SourceSettings)?.url ||
-              ""
-            }
-            inputProps={{
-              placeholder: "https://mybiz.pike13.com",
-            }}
-            description="Must not contain any trailing slashes or paths"
+      <div className="flex gap-x-2">
+        {(sources || []).map((source) => (
+          <SourceContainer
+            key={source.id}
+            selected={selectedSource?.id === source.id}
+            source={source}
+            setSelectedSource={setSelectedSource}
+            setSourceDialogState={setSourceDialogState}
+            setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
           />
-          {isSavingSource && <Spinner />}
-        </div>
+        ))}
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "design_jobs_template_id_foreign"
+            foreignKeyName: "public_design_jobs_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
@@ -45,6 +45,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          name: string
           owner_id: string
           settings: Json
           type: string
@@ -53,6 +54,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          name: string
           owner_id: string
           settings: Json
           type: string
@@ -61,6 +63,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          name?: string
           owner_id?: string
           settings?: Json
           type?: string
