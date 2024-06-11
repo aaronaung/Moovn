@@ -25,10 +25,10 @@ export const SourceContainer = ({
   }) => void;
 }) => {
   const renderLogo = () => {
-    if (source.type === SourceTypes.PIKE13) {
+    if (source?.type === SourceTypes.PIKE13) {
       return <Pike13Logo />;
     }
-    return null;
+    return <></>;
   };
 
   return (

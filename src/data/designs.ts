@@ -2,8 +2,9 @@ import { PsJobResponse } from "@adobe/photoshop-apis";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { GenerateDesignRequest } from "@/app/api/designs/generate/dto";
+import { Tables } from "@/types/db";
 
-export const getDesignsForTemplate = (
+export const getDesignsForTemplate = async (
   template: string,
   { client }: SupabaseOptions,
 ) => {
@@ -26,4 +27,13 @@ export const generateDesign = async (
   });
 
   return resp.json();
+};
+
+export const saveDesignJob = async (
+  job: Partial<Tables<"design_jobs">>,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client.from("design_jobs").upsert(job as Tables<"design_jobs">),
+  );
 };

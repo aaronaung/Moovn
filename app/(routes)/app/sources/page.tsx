@@ -6,7 +6,6 @@ import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confir
 import { SaveSourceDialog } from "@/src/components/dialogs/save-source-dialog";
 import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
-import { useAuthUser } from "@/src/contexts/auth";
 import {
   deleteSource,
   getSourcesForAuthUser,
@@ -14,12 +13,11 @@ import {
 } from "@/src/data/sources";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SourceContainer } from "./_components/source-container";
+import DataView from "./_components/data-view";
 
 export default function SourcesPage() {
-  const { user } = useAuthUser();
-  const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
   const [sourceDialogState, setSourceDialogState] = useState<{
     isOpen: boolean;
     source?: Tables<"sources">;
@@ -40,6 +38,13 @@ export default function SourcesPage() {
       queryKey: ["getSourcesForAuthUser"],
     },
   );
+  const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
+  useEffect(() => {
+    if (sources && sources.length > 0 && !selectedSource) {
+      setSelectedSource(sources[0]);
+    }
+  }, [sources, selectedSource]);
+
   const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } =
     useSupaMutation(deleteSource, {
       invalidate: [["getSourcesForAuthUser"]],
@@ -105,7 +110,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div>
+    <div className="flex h-[calc(100vh-110px)] flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
@@ -163,6 +168,24 @@ export default function SourcesPage() {
             setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
           />
         ))}
+      </div>
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
+        {selectedSource ? (
+          <>
+            <div>
+              <Header2 title="Data view" />
+              <p className="text-sm text-muted-foreground">
+                See what your schedule data looks like for Daily, Weekly, and
+                Monthly views.
+              </p>
+            </div>
+            <DataView selectedSource={selectedSource} />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Select a source to see what your data looks like.
+          </p>
+        )}
       </div>
     </div>
   );

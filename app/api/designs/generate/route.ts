@@ -1,25 +1,21 @@
 import { NextRequest } from "next/server";
-import { initializeCanvas } from "ag-psd";
+import { initializeCanvas, readPsd } from "ag-psd";
 import { supaServerClient } from "@/src/data/clients/server";
 import { BUCKETS } from "@/src/consts/storage";
-import { v4 as uuid } from "uuid";
 import { createCanvas, Image } from "canvas";
 import { PsAsyncJobError } from "@adobe/photoshop-apis/dist/PsAsyncJob";
-import {
-  SOURCE_HAS_NO_DATA_ID,
-  SourceDataView,
-  SourceTypes,
-} from "@/src/consts/sources";
+import { SourceDataView, SourceTypes } from "@/src/consts/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { env } from "@/env.mjs";
 import { generateDesign } from "@/src/libs/designs/photoshop";
 import { GenerateDesignRequestSchema } from "./dto";
 import { Json } from "@/types/db";
 import _ from "lodash";
-import {
-  getTemplateData,
-  TemplateNotFoundErr,
-} from "@/src/libs/designs/templates";
+import { ScheduleData } from "@/src/libs/sources/common";
+import { MD5 as hash } from "object-hash";
+import { signUrl } from "@/src/libs/storage";
+import { saveDesignJob } from "@/src/data/designs";
+import { getTemplateById, saveTemplate } from "@/src/data/templates";
 
 function createCanvasFromData(data: any) {
   const image = new Image();
@@ -34,37 +30,19 @@ export async function POST(request: NextRequest) {
   const { templateId } = GenerateDesignRequestSchema.parse(
     await request.json(),
   );
+  const sbClient = supaServerClient();
 
   try {
-    const {
-      template,
-      signedUrl: inputSignedUrl,
-      psd,
-    } = await getTemplateData(templateId);
-
-    // TODO: This should be a hash of the schedule data, and we should check if the
-    // design already exists at this hashed id, because we don't need to regenerate
-    // the design if the schedule data hasn't changed.
-    const jobId = uuid();
-
-    const generatedContentPath = `${template.owner_id}/${jobId}`;
-    const { data: outputSignedUrlData, error: signOutputUrlErr } =
-      await supaServerClient()
-        .storage.from(BUCKETS.designs)
-        .createSignedUploadUrl(`${generatedContentPath}.jpeg`);
-    const outputSignedUrlJpeg = outputSignedUrlData?.signedUrl;
-    if (!outputSignedUrlJpeg) {
-      throw new Error(`[OutputSignedUrlJpeg Err]: ${signOutputUrlErr}`);
-    }
-    const { data: outputSignedUrlPsdData, error: signPsdOutputUrlErr } =
-      await supaServerClient()
-        .storage.from(BUCKETS.designs)
-        .createSignedUploadUrl(`${generatedContentPath}.psd`);
-    const outputSignedUrlPsd = outputSignedUrlPsdData?.signedUrl;
-    if (!outputSignedUrlPsd) {
-      throw new Error(`[OutputSignedUrlPsd Err]: ${signPsdOutputUrlErr}`);
+    const template = await getTemplateById(templateId, {
+      client: sbClient,
+    });
+    if (!template) {
+      return new Response(`Template ${templateId} not found`, {
+        status: 404,
+      });
     }
 
+    let scheduleData: ScheduleData;
     switch (template.source?.type) {
       case SourceTypes.PIKE13:
         const pike13 = new Pike13Client({
@@ -72,64 +50,111 @@ export async function POST(request: NextRequest) {
           businessUrl: (template.source?.settings as Pike13SourceSettings)?.url,
         });
 
-        const scheduleData = await pike13.getScheduleDataForView(
+        scheduleData = await pike13.getScheduleDataForView(
           template.source_data_view as SourceDataView,
         );
-        if (scheduleData.schedules.length === 0) {
-          return Response.json({ id: SOURCE_HAS_NO_DATA_ID });
-        }
-
-        let generateResp;
-        try {
-          generateResp = await generateDesign({
-            scheduleData,
-            inputUrl: inputSignedUrl,
-            inputPsd: psd,
-            outputUrlPsd: outputSignedUrlPsd,
-            outputUrlJpeg: outputSignedUrlJpeg,
-          });
-        } catch (err: any) {
-          console.error("error", err);
-
-          if (err instanceof PsAsyncJobError) {
-            await supaServerClient()
-              .from("design_jobs")
-              .upsert({
-                id: jobId,
-                template_id: template.id,
-                raw_result: {
-                  error: err,
-                  status: 400,
-                } as unknown as Json,
-              });
-            return Response.json(err, { status: 400 });
-          }
-          // If it's not a PsAsyncJobError, then it's likely an unexpected code/server error on our end.
-          if (err.body && _.isObject(err.body)) {
-            return Response.json(err.body, { status: 500 });
-          }
-          return new Response(err.body ?? err.message, {
-            status: 500,
-          });
-        }
-
-        await supaServerClient()
-          .from("design_jobs")
-          .upsert({
-            id: jobId,
-            template_id: template.id,
-            raw_result: generateResp as unknown as Json,
-          });
-        return Response.json({ id: jobId, result: generateResp?.result });
+        break;
       default:
         throw new Error(`Unsupported source type: ${template.source?.type}`);
     }
-  } catch (err: any) {
-    console.error("error", err);
-    if (err instanceof TemplateNotFoundErr) {
-      return Response.json(err, { status: 404 });
+
+    // Each design job is associated with a unique hash of the schedule data and template id.
+    // This way, we can check if the schedule data has changed for a given design template, and if we need to regenerate the design.
+    const computedLatestDesignHash = hash({
+      scheduleData,
+      templateId,
+    });
+    if (computedLatestDesignHash === template.latest_design_hash) {
+      return Response.json({
+        result: `Schedule data hasn't changed for template ${templateId} - no need to generate design.`,
+      });
     }
 
+    const templateUrl = await signUrl({
+      bucket: BUCKETS.templates,
+      objectPath: `${template.owner_id}/${templateId}.psd`,
+      client: sbClient,
+    });
+    const outputPsdUrl = await signUrl({
+      bucket: BUCKETS.designs,
+      objectPath: `${template.owner_id}/${computedLatestDesignHash}.psd`,
+      isUpload: true,
+      client: sbClient,
+    });
+    const outputJpegUrl = await signUrl({
+      bucket: BUCKETS.designs,
+      objectPath: `${template.owner_id}/${computedLatestDesignHash}.jpeg`,
+      isUpload: true,
+      client: sbClient,
+    });
+
+    const templateFile = await (await fetch(templateUrl)).blob();
+    const psd = readPsd(await templateFile.arrayBuffer());
+    let generateResp;
+    try {
+      generateResp = await generateDesign({
+        scheduleData,
+        inputUrl: templateUrl,
+        inputPsd: psd,
+        outputUrlPsd: outputPsdUrl,
+        outputUrlJpeg: outputJpegUrl,
+      });
+    } catch (err: any) {
+      console.error("error", err);
+
+      if (err instanceof PsAsyncJobError) {
+        // NOTE: We're not storing the schedule hash here because the design generation failed.
+        // This way, we can retry the design generation later. The issue could be code error or
+        // invalid template.
+        await saveDesignJob(
+          {
+            id: computedLatestDesignHash,
+            template_id: template.id,
+            raw_result: {
+              error: err,
+              status: 400,
+            } as unknown as Json,
+          },
+          { client: sbClient },
+        );
+        return Response.json(err, { status: 400 });
+      }
+      // If it's not a PsAsyncJobError, then it's likely an unexpected code/server error on our end.
+      if (err.body && _.isObject(err.body)) {
+        return Response.json(err.body, { status: 500 });
+      }
+      return new Response(err.body ?? err.message, {
+        status: 500,
+      });
+    }
+    await Promise.all([
+      saveDesignJob(
+        {
+          id: computedLatestDesignHash,
+          template_id: template.id,
+          raw_result: generateResp as unknown as Json,
+        },
+        { client: sbClient },
+      ),
+      saveTemplate(
+        {
+          // NOTE: if this call fails, all future generate calls will fail, because we will have already generated the design,
+          // and createUploadSignUrl will fail with "resource already exists" error. This shouldn't happen in most cases.
+          // But we're still waiting for supabase to support upsert option for uploadSignedUrl.
+          // If this happens we need to manually update the templates.latest_design_hash to the design hash value in storage.
+          ..._.omit(template, "source"),
+          latest_design_hash: computedLatestDesignHash,
+        },
+        { client: sbClient },
+      ),
+    ]);
+
+    return Response.json({
+      id: computedLatestDesignHash,
+      result: generateResp?.result,
+    });
+  } catch (err: any) {
+    console.error(`GenerateErr for template ${templateId}:`, err);
     if (err.body && _.isObject(err.body)) {
       return Response.json(err.body, { status: 500 });
     }

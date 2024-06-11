@@ -2,6 +2,7 @@
   "name": "moovn",
   "version": "0.1.0",
   "private": true,
+
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -51,6 +52,7 @@
     "@tanstack/react-query-devtools": "^5.29.2",
     "@tanstack/react-table": "^8.10.7",
     "@types/lodash": "^4.14.199",
+    "@types/object-hash": "^3.0.6",
     "@types/psd": "^3.4.3",
     "@types/react-big-calendar": "^1.8.3",
     "@types/react-helmet": "^6.1.11",
@@ -76,6 +78,7 @@
     "lucide-react": "^0.284.0",
     "next": "14.2.1",
     "next-themes": "^0.2.1",
+    "object-hash": "^3.0.0",
     "path-to-regexp": "^6.2.1",
     "psd": "^3.4.0",
     "react": "^18",
@@ -92,6 +95,7 @@
     "react-helmet": "^6.1.0",
     "react-hook-form": "^7.47.0",
     "react-input-mask": "^2.0.4",
+    "react-json-view": "^1.21.3",
     "react-places-autocomplete": "^7.3.0",
     "react-player": "^2.15.1",
     "react-rnd": "^10.4.1",

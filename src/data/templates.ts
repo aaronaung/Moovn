@@ -19,6 +19,19 @@ export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
   );
 };
 
+export const getTemplateById = async (
+  id: string,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("templates")
+      .select("*, source:sources(*)")
+      .eq("id", id)
+      .maybeSingle(),
+  );
+};
+
 export const saveTemplate = async (
   template: Partial<Tables<"templates">>,
   { client }: SupabaseOptions,

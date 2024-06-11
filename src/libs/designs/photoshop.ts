@@ -185,6 +185,13 @@ export const generateDesign = async ({
               text: {
                 content: value,
               },
+              // ...(layer.text?.shapeType === "box"
+              //   ? {
+              //       bounds: {
+              //         top: layer?.top || 0,
+              //       },
+              //     }
+              //   : {}),
             } as DocumentOperationLayer;
           },
         ),

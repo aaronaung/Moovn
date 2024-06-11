@@ -1,3 +1,5 @@
+import { MD5 as hash } from "object-hash";
+import { testData } from "./big-object";
 /**
  * Example scenarios: (L = left, R = right)
  *     L  L      L  L
@@ -16,6 +18,7 @@
  *    R   R R2   R2
  *
  */
+
 const findFreeIntervalsInLeft = (
   left: number[][],
   right: number[][],
@@ -108,74 +111,85 @@ const findFreeIntervalsInLeft = (
 };
 
 // Test Cases
+const findFreeIntervalsInLeftFlag = false;
+if (findFreeIntervalsInLeftFlag) {
+  //Case 1: Non-overlapping intervals
+  const left1: number[][] = [
+    [0, 5],
+    [10, 15],
+    [20, 25],
+  ];
+  const right1: number[][] = [
+    [6, 9],
+    [16, 18],
+    [26, 30],
+  ];
+  console.log("case 1", findFreeIntervalsInLeft(left1, right1));
+  // Expected output: [[0, 5], [10, 15], [20, 25]]
 
-//Case 1: Non-overlapping intervals
-const left1: number[][] = [
-  [0, 5],
-  [10, 15],
-  [20, 25],
-];
-const right1: number[][] = [
-  [6, 9],
-  [16, 18],
-  [26, 30],
-];
-console.log("case 1", findFreeIntervalsInLeft(left1, right1));
-// Expected output: [[0, 5], [10, 15], [20, 25]]
+  // Case 2: Overlapping intervals
+  const left2: number[][] = [
+    [0, 5],
+    [10, 15],
+    [20, 25],
+  ];
+  const right2: number[][] = [
+    [3, 12],
+    [18, 22],
+  ];
+  console.log("case 2", findFreeIntervalsInLeft(left2, right2));
+  // Expected output: [[0, 3], [12, 15], [22, 25]]
 
-// Case 2: Overlapping intervals
-const left2: number[][] = [
-  [0, 5],
-  [10, 15],
-  [20, 25],
-];
-const right2: number[][] = [
-  [3, 12],
-  [18, 22],
-];
-console.log("case 2", findFreeIntervalsInLeft(left2, right2));
-// Expected output: [[0, 3], [12, 15], [22, 25]]
+  // Case 3: Completely overlapping intervals
+  const left3: number[][] = [
+    [0, 10],
+    [15, 20],
+    [25, 30],
+  ];
+  const right3: number[][] = [[0, 30]];
+  console.log("case 3", findFreeIntervalsInLeft(left3, right3));
+  // Expected output: []
 
-// Case 3: Completely overlapping intervals
-const left3: number[][] = [
-  [0, 10],
-  [15, 20],
-  [25, 30],
-];
-const right3: number[][] = [[0, 30]];
-console.log("case 3", findFreeIntervalsInLeft(left3, right3));
-// Expected output: []
+  // Case 4: Empty intervals
+  const left4: number[][] = [];
+  const right4: number[][] = [
+    [3, 8],
+    [10, 15],
+  ];
+  console.log("case 4", findFreeIntervalsInLeft(left4, right4));
+  // Expected output: []
 
-// Case 4: Empty intervals
-const left4: number[][] = [];
-const right4: number[][] = [
-  [3, 8],
-  [10, 15],
-];
-console.log("case 4", findFreeIntervalsInLeft(left4, right4));
-// Expected output: []
+  // Case 5: Large intervals
+  const left5: number[][] = [
+    [0, 100],
+    [150, 200],
+    [300, 400],
+  ];
+  const right5: number[][] = [
+    [50, 80],
+    [120, 160],
+    [220, 250],
+  ];
+  console.log("case 5", findFreeIntervalsInLeft(left5, right5));
 
-// Case 5: Large intervals
-const left5: number[][] = [
-  [0, 100],
-  [150, 200],
-  [300, 400],
-];
-const right5: number[][] = [
-  [50, 80],
-  [120, 160],
-  [220, 250],
-];
-console.log("case 5", findFreeIntervalsInLeft(left5, right5));
+  const left6: number[][] = [
+    [324, 612],
+    [648, 684],
+  ];
+  const right6: number[][] = [
+    [324, 360],
+    [450, 486],
+    [504, 666],
+  ];
+  console.log("case 6", findFreeIntervalsInLeft(left6, right6, true));
+  // Expected output: [[0, 50], [80, 100], [160, 200], [300, 400]]
+}
 
-const left6: number[][] = [
-  [324, 612],
-  [648, 684],
-];
-const right6: number[][] = [
-  [324, 360],
-  [450, 486],
-  [504, 666],
-];
-console.log("case 6", findFreeIntervalsInLeft(left6, right6, true));
-// Expected output: [[0, 50], [80, 100], [160, 200], [300, 400]]
+const hashFlag = true;
+if (hashFlag) {
+  const start = new Date().getTime();
+  const hashObject = hash(testData);
+  const timeTaken = new Date().getTime() - start;
+  console.log("hash", hashObject);
+  console.log("time taken", timeTaken / 1000 + "s");
+}

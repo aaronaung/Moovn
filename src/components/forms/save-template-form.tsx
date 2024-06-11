@@ -156,6 +156,7 @@ export default function SaveTemplateForm({
                 ...formValues,
                 id: templateId,
                 owner_id: user.id,
+                latest_design_hash: null, // Bust the design hash, so we can regenerate the design
                 ...(formValues.id
                   ? { updated_at: new Date().toISOString() }
                   : {}),

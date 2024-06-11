@@ -1,4 +1,5 @@
 import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { SupabaseOptions } from "../data/clients/types";
 
 // NOTE: This function does something very specific. It constructs a supabase storage object url with the timestamp as the version attached to the url as query param. This is usually used to bust the cache on the image url.
 export const getTimestampedObjUrl = (
@@ -20,14 +21,32 @@ export const getTimestampedObjUrl = (
   return url.toString();
 };
 
-export const signUrl = async (
-  bucket: string,
-  objectPath: string,
-  expiresIn: number = 24 * 3600,
-) => {
-  const { data } = await supaClientComponentClient.storage
-    .from(bucket)
-    .createSignedUrl(objectPath, expiresIn);
+export const signUrl = async ({
+  bucket,
+  objectPath,
+  expiresIn = 24 * 3600,
+  isUpload = false,
+  client,
+}: {
+  bucket: string;
+  objectPath: string;
+  expiresIn?: number;
+  isUpload?: boolean;
+  client: SupabaseOptions["client"];
+}) => {
+  const bucketClient = client.storage.from(bucket);
+
+  const { data, error } = isUpload
+    ? await bucketClient.createSignedUploadUrl(objectPath)
+    : await bucketClient.createSignedUrl(objectPath, expiresIn);
+
+  if (!data?.signedUrl) {
+    throw new Error(
+      `Failed to sign ${
+        isUpload ? "upload " : ""
+      }url for path ${bucket}/${objectPath}: ${error}`,
+    );
+  }
   return data?.signedUrl;
 };
 

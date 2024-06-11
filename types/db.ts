@@ -83,6 +83,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          latest_design_hash: string | null
           name: string
           owner_id: string
           source_data_view: string
@@ -92,6 +93,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          latest_design_hash?: string | null
           name: string
           owner_id: string
           source_data_view: string
@@ -101,6 +103,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          latest_design_hash?: string | null
           name?: string
           owner_id?: string
           source_data_view?: string
