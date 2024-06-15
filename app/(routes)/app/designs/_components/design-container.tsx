@@ -14,6 +14,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/src/components/ui/tooltip";
 import { SOURCE_HAS_NO_DATA_ID, SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { generateDesign, getDesignsForTemplate } from "@/src/data/designs";
@@ -24,6 +29,7 @@ import { userFriendlyDate } from "@/src/libs/time";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+
 import { useQueryClient } from "@tanstack/react-query";
 import {
   endOfMonth,
@@ -33,6 +39,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import {
+  DownloadCloudIcon,
+  RefreshCwIcon,
+  UploadCloudIcon,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
@@ -194,7 +205,17 @@ export const DesignContainer = ({
         {latestDesign && (psdSignedUrl || jpegSignedUrl) && (
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <Button variant="outline">Download</Button>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button className="group" variant="secondary">
+                    <DownloadCloudIcon
+                      width={18}
+                      className="group-hover:text-primary"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download</TooltipContent>
+              </Tooltip>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {psdSignedUrl && (
@@ -221,37 +242,56 @@ export const DesignContainer = ({
           </DropdownMenu>
         )}
         {latestDesign && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              triggerDesignOverwrite(latestDesign.id, async () => {
-                refreshJpegSignedUrl();
-              });
-            }}
-          >
-            Overwrite
-          </Button>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                className="group"
+                variant="secondary"
+                onClick={() => {
+                  triggerDesignOverwrite(latestDesign.id, async () => {
+                    refreshJpegSignedUrl();
+                  });
+                }}
+              >
+                <UploadCloudIcon
+                  width={18}
+                  className="group-hover:text-primary"
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Overwrite</TooltipContent>
+          </Tooltip>
         )}
-        <Button
-          disabled={isGeneratingDesign}
-          onClick={async () => {
-            const resp = await _generateDesign({
-              templateId: template.id,
-            });
-            setHasNoScheduleData(resp.id === SOURCE_HAS_NO_DATA_ID);
-            queryClient.invalidateQueries({
-              queryKey: ["getDesignsForTemplate", template.id],
-            });
-          }}
-        >
-          {isGeneratingDesign ? (
-            <Spinner className="text-secondary" />
-          ) : !latestDesign ? (
-            "Generate"
-          ) : (
-            "Refresh"
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="secondary"
+              className="group"
+              disabled={isGeneratingDesign}
+              onClick={async () => {
+                const resp = await _generateDesign({
+                  templateId: template.id,
+                });
+                setHasNoScheduleData(resp.id === SOURCE_HAS_NO_DATA_ID);
+                queryClient.invalidateQueries({
+                  queryKey: ["getDesignsForTemplate", template.id],
+                });
+              }}
+            >
+              {isGeneratingDesign ? (
+                <Spinner className="text-secondary" />
+              ) : !latestDesign ? (
+                "Generate"
+              ) : (
+                <RefreshCwIcon
+                  width={18}
+                  className="group-hover:text-primary"
+                />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Refresh</TooltipContent>
+        </Tooltip>
       </CardFooter>
     </Card>
   );

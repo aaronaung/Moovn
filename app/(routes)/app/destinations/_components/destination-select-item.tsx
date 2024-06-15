@@ -26,6 +26,7 @@ export default function DestinationSelectItem({
   destination: Tables<"destinations">;
 }) {
   const { session } = useAuthUser();
+
   const handleFacebookLogin = async () => {
     if (session) {
       // This ensures that the session is saved in localStorage so that it can be restored on redirect completion.
