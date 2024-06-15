@@ -9,13 +9,7 @@ export const Pike13Logo = () => (
     <title>Logo_H_RGB</title>
     <desc>Created with Sketch.</desc>
     <defs />
-    <g
-      id="Page-1"
-      stroke="none"
-      stroke-width="1"
-      fill="none"
-      fill-rule="evenodd"
-    >
+    <g id="Page-1" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
       <g id="Logo_H_RGB">
         <g id="text" transform="translate(49.000000, 7.000000)" fill="#545759">
           <path

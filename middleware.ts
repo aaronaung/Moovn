@@ -4,6 +4,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 const excludedPaths = [
   "/api/stripe/webhook",
+  "/api/facebook/auth/callback",
   "/api/auth/callback",
   "/api/designs/generate", //TODO: remove this when done testing
   "/api/designs/templates/:id", //TODO: remove this when done testing
@@ -36,7 +37,6 @@ export async function updateSession(request: NextRequest) {
       headers: request.headers,
     },
   });
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -87,6 +87,10 @@ export async function updateSession(request: NextRequest) {
   if (error) {
     const requestUrl = new URL(request.url);
     const returnPath = requestUrl.searchParams.get("return_path");
+    const resp = await supabase.auth.refreshSession();
+    if (resp.data.session) {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(
       requestUrl.origin.concat(
         `/sign-in?return_path=${returnPath || requestUrl.pathname}`,

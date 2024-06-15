@@ -4,33 +4,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import SaveTemplateForm, {
-  SaveTemplateFormSchemaType,
-} from "../forms/save-template-form";
-import { Tables } from "@/types/db";
+import SaveDestinationForm, {
+  SaveDestinationFormSchemaType,
+} from "../forms/save-destination-form";
 
-export function SaveTemplateDialog({
+export function SaveDestinationDialog({
   initFormValues,
-  availableSources,
   onClose,
   isOpen,
 }: {
-  initFormValues?: SaveTemplateFormSchemaType;
-  availableSources: Tables<"sources">[];
+  initFormValues?: SaveDestinationFormSchemaType;
   onClose: () => void;
   isOpen: boolean;
 }) {
+  console.log(initFormValues);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {initFormValues ? "Edit" : "Add"} design template
+            {initFormValues ? "Edit" : "Add"} destination
           </DialogTitle>
         </DialogHeader>
-        <SaveTemplateForm
+        <SaveDestinationForm
           defaultValues={initFormValues}
-          availableSources={availableSources}
           onSubmitted={onClose}
         />
       </DialogContent>

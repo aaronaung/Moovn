@@ -5,6 +5,8 @@ import { supaClientComponentClient } from "../data/clients/browser";
 import { toDbUser } from "../data/users";
 import { Tables } from "@/types/db";
 
+export const TEMP_SESSION_KEY = "sb-temp-session";
+
 export const AuthContext = createContext<{
   user: Tables<"users"> | null;
   session: Session | null;
@@ -37,13 +39,26 @@ export const AuthContextProvider = (props: {
     }
   };
 
+  const restoreSessionInLocalStorage = async () => {
+    const savedSession = localStorage.getItem(TEMP_SESSION_KEY);
+    if (savedSession) {
+      const parsed = JSON.parse(savedSession);
+      await supaClientComponentClient.auth.setSession(parsed);
+      localStorage.removeItem(TEMP_SESSION_KEY);
+      return parsed;
+    }
+    return null;
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setTimeout(async () => {
         // We have to use setTimeout here to avoid deadlock. See the "important"
         // section here: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
+        let localStorageSession = await restoreSessionInLocalStorage();
+
         if (props.redirectOnUnauthed) {
-          redirectToLoginIfUnauthed(session);
+          redirectToLoginIfUnauthed(localStorageSession ?? session);
         }
 
         const dbUser = await toDbUser(session?.user, { client: supabase });
@@ -57,8 +72,10 @@ export const AuthContextProvider = (props: {
         setTimeout(async () => {
           // We have to use setTimeout here to avoid deadlock. See the "important"
           // section here: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
+          let localStorageSession = await restoreSessionInLocalStorage();
+
           if (props.redirectOnUnauthed) {
-            redirectToLoginIfUnauthed(session, event);
+            redirectToLoginIfUnauthed(localStorageSession ?? session, event);
           }
 
           const dbUser = await toDbUser(session?.user, { client: supabase });

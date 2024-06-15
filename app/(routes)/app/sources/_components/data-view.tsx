@@ -5,8 +5,10 @@ import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { transformSchedule } from "@/src/libs/sources/utils";
 import { Tables } from "@/types/db";
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import ReactJson from "react-json-view";
+
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function DataView({
   selectedSource,

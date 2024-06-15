@@ -13,7 +13,6 @@ import {
   startOfToday,
 } from "date-fns";
 import { useState } from "react";
-import { Tables } from "@/types/db.extension";
 import CalendarV2Day from "./calendar-v2-day";
 
 const colStartClasses = [
@@ -27,14 +26,12 @@ const colStartClasses = [
 ];
 
 type CalendarV2Props = {
-  onServiceDrop?: (item: Tables<"services">, day: Date) => void;
   onDateSelect?: (date: Date) => void;
   defaultSelectedDay?: Date;
   className?: string;
 };
 export default function CalendarV2({
   onDateSelect,
-  onServiceDrop,
   defaultSelectedDay,
   className,
 }: CalendarV2Props) {
@@ -113,7 +110,6 @@ export default function CalendarV2({
               isSelected={isEqual(day, selectedDay)}
               firstDayCurrentMonth={firstDayCurrentMonth}
               onDaySelect={handleDateSelect}
-              onServiceDrop={onServiceDrop}
             />
           </div>
         ))}

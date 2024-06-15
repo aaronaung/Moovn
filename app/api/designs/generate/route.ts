@@ -16,6 +16,7 @@ import { MD5 as hash } from "object-hash";
 import { signUrl } from "@/src/libs/storage";
 import { saveDesignJob } from "@/src/data/designs";
 import { getTemplateById, saveTemplate } from "@/src/data/templates";
+import { v4 as uuid } from "uuid";
 
 function createCanvasFromData(data: any) {
   const image = new Image();
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
         result: `Schedule data hasn't changed for template ${templateId} - no need to generate design.`,
       });
     }
+    const jobId = uuid();
 
     const templateUrl = await signUrl({
       bucket: BUCKETS.templates,
@@ -77,13 +79,13 @@ export async function POST(request: NextRequest) {
     });
     const outputPsdUrl = await signUrl({
       bucket: BUCKETS.designs,
-      objectPath: `${template.owner_id}/${computedLatestDesignHash}.psd`,
+      objectPath: `${template.owner_id}/${jobId}.psd`,
       isUpload: true,
       client: sbClient,
     });
     const outputJpegUrl = await signUrl({
       bucket: BUCKETS.designs,
-      objectPath: `${template.owner_id}/${computedLatestDesignHash}.jpeg`,
+      objectPath: `${template.owner_id}/${jobId}.jpeg`,
       isUpload: true,
       client: sbClient,
     });
@@ -108,7 +110,7 @@ export async function POST(request: NextRequest) {
         // invalid template.
         await saveDesignJob(
           {
-            id: computedLatestDesignHash,
+            id: jobId,
             template_id: template.id,
             raw_result: {
               error: err,
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
     await Promise.all([
       saveDesignJob(
         {
-          id: computedLatestDesignHash,
+          id: jobId,
           template_id: template.id,
           raw_result: generateResp as unknown as Json,
         },
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     return Response.json({
-      id: computedLatestDesignHash,
+      id: jobId,
       result: generateResp?.result,
     });
   } catch (err: any) {

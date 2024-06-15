@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -6,17 +5,16 @@ export async function GET(request: NextRequest) {
   const accessToken = requestUrl.searchParams.get("access_token");
   const longLivedToken = requestUrl.searchParams.get("long_lived_token");
   const expiresIn = requestUrl.searchParams.get("expires_in");
-  const returnPath = requestUrl.searchParams.get("data_access_expiration_time");
+  const dataAccessExpTime = requestUrl.searchParams.get(
+    "data_access_expiration_time",
+  );
 
+  const requestUrlString = request.nextUrl.toString();
   console.log({
     accessToken,
     longLivedToken,
     expiresIn,
-    returnPath,
+    dataAccessExpTime,
+    requestUrlString,
   });
-
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(
-    requestUrl.origin.concat(returnPath || "/app/sources"),
-  );
 }

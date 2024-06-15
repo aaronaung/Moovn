@@ -19,7 +19,7 @@ export function SaveSourceDialog({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{initFormValues ? "Edit" : "Add"} source</DialogTitle>
         </DialogHeader>

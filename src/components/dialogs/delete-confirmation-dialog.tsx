@@ -2,7 +2,10 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import InputText from "../ui/input/text";
@@ -42,16 +45,20 @@ export function DeleteConfirmationDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOnClose}>
       <DialogContent>
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-medium">{label || "Delete"}</p>
+        <DialogHeader>
+          <DialogTitle>Delete confirmation</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {label || "Are you sure you want to perform this action?"}
+          </DialogDescription>
           <InputText
+            className="mt-4"
             description="Type 'delete' to confirm."
             inputProps={{
               value: inputValue,
               onChange: handleInputChange,
             }}
           />
-        </div>
+        </DialogHeader>
         <DialogFooter>
           <Button variant="secondary" onClick={onClose}>
             Cancel

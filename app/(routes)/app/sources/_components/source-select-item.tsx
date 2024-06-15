@@ -5,14 +5,14 @@ import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-export const SourceContainer = ({
-  selected,
+export const SourceSelectItem = ({
+  isSelected,
   source,
   setSelectedSource,
   setSourceDialogState,
   setDeleteConfirmationDialogState,
 }: {
-  selected: boolean;
+  isSelected: boolean;
   source: Tables<"sources">;
   setSelectedSource: (source: Tables<"sources">) => void;
   setSourceDialogState: (state: {
@@ -35,15 +35,15 @@ export const SourceContainer = ({
     <div
       key={source.id}
       className={cn(
-        "relative flex h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md p-4 hover:bg-secondary",
-        selected && "bg-secondary",
+        "relative flex h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md px-4 pb-4 pt-2 hover:bg-secondary",
+        isSelected && "bg-secondary",
       )}
       onClick={() => {
         setSelectedSource(source);
       }}
     >
       <div className="flex items-center ">
-        <Checkbox id={source.id} className="mr-2" checked={selected} />
+        <Checkbox id={source.id} className="mr-2" checked={isSelected} />
         <label
           htmlFor={source.id}
           id="source-checkbox"

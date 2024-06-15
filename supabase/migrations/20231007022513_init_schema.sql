@@ -68,7 +68,7 @@ with check (auth.uid() = owner_id);
 
 --------------------------------------------
 create table "public"."design_jobs" (
-  "id" text not null,  -- This is a hash value used to identify a design: md5Hash(template_id, schedule_data)
+  "id" uuid not null default gen_random_uuid(),
   "template_id" uuid not null,
   "raw_result" jsonb,
   "created_at" timestamp with time zone default now(),

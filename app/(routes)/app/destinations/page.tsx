@@ -1,20 +1,177 @@
-import { env } from "@/env.mjs";
+"use client";
+import EmptyState from "@/src/components/common/empty-state";
 import { Header2 } from "@/src/components/common/header";
+import { Spinner } from "@/src/components/common/loading-spinner";
+import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
+import { Button } from "@/src/components/ui/button";
+import { toast } from "@/src/components/ui/use-toast";
+import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { Tables } from "@/types/db";
+import { useEffect, useState } from "react";
+import DestinationSelectItem from "./_components/destination-select-item";
+import {
+  deleteDestination,
+  getDestinationsForAuthUser,
+} from "@/src/data/destinations";
+import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination-dialog";
 
-const facebookLoginUrl = `https://www.facebook.com/v20.0/dialog/oauth
-?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
-&display=page
-&extras={setup: { channel: "IG_API_ONBOARDING" } }
-&redirect_uri=https://up-gazelle-huge.ngrok-free.app/api/facebook/auth/callback
-&response_type=token
-&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
+export default function DestinationsPage() {
+  const [destinationDialogState, setDestinationDialogState] = useState<{
+    isOpen: boolean;
+    destination?: Tables<"destinations">;
+  }>({
+    isOpen: false,
+  });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
+    useState<{
+      isOpen: boolean;
+      destination?: Tables<"destinations">;
+    }>({
+      isOpen: false,
+    });
 
-export default function Destinations() {
+  const { data: destinations, isLoading: isLoadingDestinations } = useSupaQuery(
+    getDestinationsForAuthUser,
+    {
+      queryKey: ["getDestinationsForAuthUser"],
+    },
+  );
+  const [selectedDestination, setSelectedDestination] =
+    useState<Tables<"destinations">>();
+  useEffect(() => {
+    if (destinations && destinations.length > 0 && !selectedDestination) {
+      setSelectedDestination(destinations[0]);
+    }
+  }, [destinations, selectedDestination]);
+
+  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } =
+    useSupaMutation(deleteDestination, {
+      invalidate: [["getDestinationsForAuthUser"]],
+      onSuccess: () => {
+        toast({
+          title: "Destination deleted",
+          variant: "success",
+        });
+      },
+      onError: (error) => {
+        console.error(error);
+        toast({
+          title: "Failed to delete destination",
+          variant: "destructive",
+          description: "Please try again or contact support.",
+        });
+      },
+    });
+
+  if (isLoadingDestinations) {
+    return <Spinner />;
+  }
+
+  if (destinations && destinations.length === 0) {
+    return (
+      <>
+        <SaveDestinationDialog
+          isOpen={destinationDialogState.isOpen}
+          onClose={() => {
+            setDestinationDialogState({
+              isOpen: false,
+            });
+          }}
+        />
+        <EmptyState
+          title="No destinations found"
+          description="Add a destination to get started"
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setDestinationDialogState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Add destination
+            </Button>
+          }
+        />
+      </>
+    );
+  }
+
   return (
-    <div>
-      <Header2 title="Destinations" />
-      <div>
-        <p className="text-sm text-muted-foreground">Coming soon...</p>
+    <div className="flex h-[calc(100vh-110px)] flex-col">
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirmationDialogState.isOpen}
+        label={
+          "You'll no longer be able to post content to the destination. Are you sure?"
+        }
+        isDeleting={isDeletingTemplate}
+        onClose={() => {
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+        onDelete={async () => {
+          if (deleteConfirmationDialogState.destination) {
+            await _deleteDestination(
+              deleteConfirmationDialogState.destination.id,
+            );
+          }
+          setDeleteConfirmationDialogState({
+            isOpen: false,
+          });
+        }}
+      />
+      <SaveDestinationDialog
+        isOpen={destinationDialogState.isOpen}
+        onClose={() => {
+          setDestinationDialogState({
+            isOpen: false,
+          });
+        }}
+        initFormValues={destinationDialogState.destination as any}
+      />
+      <div className="mb-3 flex items-end">
+        <div className="flex-1">
+          <Header2 title="Destinations" />
+          <p className="text-sm text-muted-foreground">
+            Manage where you want your designs published.
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setDestinationDialogState({
+              isOpen: true,
+            });
+          }}
+        >
+          Create destination
+        </Button>
+      </div>
+      <div className="flex gap-x-2">
+        {(destinations || []).map((destination) => (
+          <DestinationSelectItem
+            key={destination.id}
+            isSelected={selectedDestination?.id === destination.id}
+            destination={destination}
+            setSelectedDestination={setSelectedDestination}
+            setDestinationDialogState={setDestinationDialogState}
+            setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
+          />
+        ))}
+      </div>
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
+        {selectedDestination ? (
+          <>
+            <div>
+              <Header2 title="Recently published" />
+            </div>
+            <div>Recent posts to this destination</div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Select a destination to see recently published designs
+          </p>
+        )}
       </div>
     </div>
   );

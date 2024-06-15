@@ -20,10 +20,10 @@ export function OverwriteDesignDialog({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Overwrite design</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground">
             This will overwrite the current design with a new one.
           </DialogDescription>
         </DialogHeader>

@@ -6,15 +6,11 @@ import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confir
 import { SaveSourceDialog } from "@/src/components/dialogs/save-source-dialog";
 import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
-import {
-  deleteSource,
-  getSourcesForAuthUser,
-  saveSource,
-} from "@/src/data/sources";
+import { deleteSource, getSourcesForAuthUser } from "@/src/data/sources";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
-import { SourceContainer } from "./_components/source-container";
+import { SourceSelectItem } from "./_components/source-select-item";
 import DataView from "./_components/data-view";
 
 export default function SourcesPage() {
@@ -64,48 +60,37 @@ export default function SourcesPage() {
       },
     });
 
-  const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(
-    saveSource,
-    {
-      invalidate: [["getSourcesForAuthUser"]],
-      onSuccess: () => {
-        toast({
-          title: "Changes saved",
-          variant: "success",
-        });
-      },
-      onError: (error) => {
-        console.error(error);
-        toast({
-          title: "Failed to save changes",
-          variant: "destructive",
-          description: "Please try again or contact support.",
-        });
-      },
-    },
-  );
-
   if (isLoadingSources) {
     return <Spinner />;
   }
 
   if (sources && sources.length === 0) {
     return (
-      <EmptyState
-        title="No sources found"
-        description="Add a source to get started"
-        actionButtonOverride={
-          <Button
-            onClick={() => {
-              setSourceDialogState({
-                isOpen: true,
-              });
-            }}
-          >
-            Add Source
-          </Button>
-        }
-      />
+      <>
+        <SaveSourceDialog
+          isOpen={sourceDialogState.isOpen}
+          onClose={() => {
+            setSourceDialogState({
+              isOpen: false,
+            });
+          }}
+        />
+        <EmptyState
+          title="No sources found"
+          description="Add a source to get started"
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setSourceDialogState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Add Source
+            </Button>
+          }
+        />
+      </>
     );
   }
 
@@ -159,9 +144,9 @@ export default function SourcesPage() {
       </div>
       <div className="flex gap-x-2">
         {(sources || []).map((source) => (
-          <SourceContainer
+          <SourceSelectItem
             key={source.id}
-            selected={selectedSource?.id === source.id}
+            isSelected={selectedSource?.id === source.id}
             source={source}
             setSelectedSource={setSelectedSource}
             setSourceDialogState={setSourceDialogState}
