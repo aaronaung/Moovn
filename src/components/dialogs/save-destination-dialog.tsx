@@ -17,7 +17,6 @@ export function SaveDestinationDialog({
   onClose: () => void;
   isOpen: boolean;
 }) {
-  console.log(initFormValues);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>

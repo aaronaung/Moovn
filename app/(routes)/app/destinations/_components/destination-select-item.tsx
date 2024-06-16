@@ -1,10 +1,26 @@
+import { env } from "@/env.mjs";
+import { Button } from "@/src/components/ui/button";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { DestinationTypes } from "@/src/consts/destinations";
-import { TEMP_SESSION_KEY, useAuthUser } from "@/src/contexts/auth";
+import { useAuthUser } from "@/src/contexts/auth";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
-import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+
+const generateFacebookLoginUrl = (
+  destinationId: string,
+) => `https://www.facebook.com/v20.0/dialog/oauth
+?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
+&display=page
+&extras={setup: { channel: "IG_API_ONBOARDING" } }
+&redirect_uri=http://localhost:3000/api/destinations/${destinationId}/facebook/auth/callback
+&response_type=code
+&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
 
 export default function DestinationSelectItem({
   isSelected,
@@ -28,9 +44,18 @@ export default function DestinationSelectItem({
   const { session } = useAuthUser();
 
   const handleFacebookLogin = async () => {
-    if (session) {
-      // This ensures that the session is saved in localStorage so that it can be restored on redirect completion.
-      window.localStorage.setItem(TEMP_SESSION_KEY, JSON.stringify(session));
+    // if (session) {
+    //   // This ensures that the session is saved in localStorage so that it can be restored on redirect completion.
+    //   window.localStorage.setItem(TEMP_SESSION_KEY, JSON.stringify(session));
+    window.location.href = generateFacebookLoginUrl(destination.id);
+    // }
+  };
+
+  const handleConnectDestination = async () => {
+    switch (destination.type) {
+      case DestinationTypes.INSTAGRAM:
+        handleFacebookLogin();
+        break;
     }
   };
 
@@ -45,7 +70,7 @@ export default function DestinationSelectItem({
     <div
       key={destination.id}
       className={cn(
-        "relative flex h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md px-4 pb-4 pt-2 hover:bg-secondary",
+        "relative flex min-h-[200px] min-w-[300px] cursor-pointer flex-col gap-2 rounded-md px-4 pb-4 pt-2 hover:bg-secondary",
         isSelected && "bg-secondary",
       )}
       onClick={() => {
@@ -85,6 +110,20 @@ export default function DestinationSelectItem({
       <div className="flex h-full w-full items-center justify-center rounded-md bg-secondary-foreground p-8">
         {renderLogo()}
       </div>
+      {!destination.long_lived_token ? (
+        // For now, this is for Instagram only
+        <Button
+          className="h-[80px]"
+          variant={"outline"}
+          onClick={handleConnectDestination}
+        >
+          Connect destination
+        </Button>
+      ) : (
+        <div className="flex h-[80px] items-center justify-center gap-x-2 rounded-md bg-green-200 text-sm text-secondary-foreground">
+          <CheckCircleIcon width={18} /> Connected
+        </div>
+      )}
     </div>
   );
 }

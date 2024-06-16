@@ -97,6 +97,33 @@ export default function DestinationsPage() {
     );
   }
 
+  const renderDestinationView = () => {
+    if (!selectedDestination) {
+      return (
+        <p className="text-sm text-muted-foreground">Select a destination</p>
+      );
+    } else if (!selectedDestination.long_lived_token) {
+      // For now, this is for Instagram only
+      return (
+        <div>
+          <p className="mb-2 text-sm text-muted-foreground">
+            This destination is not connected. Please connect it to start
+            publishing.
+          </p>
+        </div>
+      );
+    } else {
+      return (
+        <>
+          <div>
+            <Header2 title="Recently published" />
+          </div>
+          <div>Recent posts to this destination</div>
+        </>
+      );
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-110px)] flex-col">
       <DeleteConfirmationDialog
@@ -160,18 +187,7 @@ export default function DestinationsPage() {
         ))}
       </div>
       <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-        {selectedDestination ? (
-          <>
-            <div>
-              <Header2 title="Recently published" />
-            </div>
-            <div>Recent posts to this destination</div>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Select a destination to see recently published designs
-          </p>
-        )}
+        {renderDestinationView()}
       </div>
     </div>
   );

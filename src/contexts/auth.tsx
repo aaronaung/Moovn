@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { AuthChangeEvent, AuthSession, Session } from "@supabase/supabase-js";
 import { supaClientComponentClient } from "../data/clients/browser";
 import { toDbUser } from "../data/users";
 import { Tables } from "@/types/db";
@@ -50,41 +50,39 @@ export const AuthContextProvider = (props: {
     return null;
   };
 
+  const handleUserAuthChange = async (
+    session: AuthSession | null,
+    event?: AuthChangeEvent,
+  ) => {
+    const localStorageSession = await restoreSessionInLocalStorage();
+
+    // Having localStorageSession means that there is a temporary session saved in localStorage that can be restored, so we don't need to redirect to login.
+    if (props.redirectOnUnauthed && !localStorageSession) {
+      redirectToLoginIfUnauthed(session, event);
+    }
+
+    const dbUser = await toDbUser(session?.user, { client: supabase });
+    setUserSession(session);
+    setUser(dbUser);
+  };
+
   useEffect(() => {
+    // Initialize user on mount.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setTimeout(async () => {
+      setTimeout(() => {
         // We have to use setTimeout here to avoid deadlock. See the "important"
         // section here: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
-        let localStorageSession = await restoreSessionInLocalStorage();
-
-        if (props.redirectOnUnauthed) {
-          redirectToLoginIfUnauthed(localStorageSession ?? session);
-        }
-
-        const dbUser = await toDbUser(session?.user, { client: supabase });
-        setUserSession(session);
-        setUser(dbUser);
+        handleUserAuthChange(session, undefined);
       }, 0);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setTimeout(async () => {
-          // We have to use setTimeout here to avoid deadlock. See the "important"
-          // section here: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
-          let localStorageSession = await restoreSessionInLocalStorage();
-
-          if (props.redirectOnUnauthed) {
-            redirectToLoginIfUnauthed(localStorageSession ?? session, event);
-          }
-
-          const dbUser = await toDbUser(session?.user, { client: supabase });
-          setUserSession(session);
-          setUser(dbUser);
+        setTimeout(() => {
+          handleUserAuthChange(session, event);
         }, 0);
       },
     );
-
     return () => {
       authListener.subscription.unsubscribe();
     };
