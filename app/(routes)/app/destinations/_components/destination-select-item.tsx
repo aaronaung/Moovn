@@ -2,8 +2,12 @@ import { env } from "@/env.mjs";
 import { Button } from "@/src/components/ui/button";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/src/components/ui/tooltip";
 import { DestinationTypes } from "@/src/consts/destinations";
-import { useAuthUser } from "@/src/contexts/auth";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import {
@@ -12,6 +16,21 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
+import { RefreshCcw } from "lucide-react";
+
+const scopes = [
+  "instagram_manage_comments",
+  "instagram_manage_insights",
+  "pages_show_list",
+
+  // Needed for content publishing
+  "instagram_basic",
+  "pages_read_engagement",
+  "instagram_content_publish",
+  "business_management",
+  "ads_management",
+  "pages_read_engagement",
+];
 const generateFacebookLoginUrl = (
   destinationId: string,
 ) => `https://www.facebook.com/v20.0/dialog/oauth
@@ -20,7 +39,7 @@ const generateFacebookLoginUrl = (
 &extras={setup: { channel: "IG_API_ONBOARDING" } }
 &redirect_uri=http://localhost:3000/api/destinations/${destinationId}/facebook/auth/callback
 &response_type=code
-&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement`;
+&scope=${scopes.join(",")}`;
 
 export default function DestinationSelectItem({
   isSelected,
@@ -41,8 +60,6 @@ export default function DestinationSelectItem({
   }) => void;
   destination: Tables<"destinations">;
 }) {
-  const { session } = useAuthUser();
-
   const handleFacebookLogin = async () => {
     // if (session) {
     //   // This ensures that the session is saved in localStorage so that it can be restored on redirect completion.
@@ -120,8 +137,22 @@ export default function DestinationSelectItem({
           Connect destination
         </Button>
       ) : (
-        <div className="flex h-[80px] items-center justify-center gap-x-2 rounded-md bg-green-200 text-sm text-secondary-foreground">
-          <CheckCircleIcon width={18} /> Connected
+        <div className="flex h-[80px] items-center gap-2">
+          <div className="flex h-full flex-1 items-center justify-center gap-x-2 rounded-md bg-green-200 text-sm text-secondary-foreground dark:bg-green-800">
+            <CheckCircleIcon width={18} /> Connected
+          </div>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                className="rounded-md"
+                variant={"outline"}
+                onClick={handleConnectDestination}
+              >
+                <RefreshCcw width={18} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh connection</TooltipContent>
+          </Tooltip>
         </div>
       )}
     </div>

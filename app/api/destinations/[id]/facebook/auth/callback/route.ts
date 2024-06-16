@@ -1,5 +1,5 @@
-import { env } from "@/env.mjs";
 import { supaServerClient } from "@/src/data/clients/server";
+import { FacebookGraphAPIClient } from "@/src/libs/destinations/fb";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(
@@ -25,26 +25,28 @@ export async function GET(
 
   const code = requestUrl.searchParams.get("code");
   if (code) {
-    const url = new URL("https://graph.facebook.com/v12.0/oauth/access_token");
-    url.searchParams.set("client_id", env.NEXT_PUBLIC_FACEBOOK_APP_ID);
-    url.searchParams.set("client_secret", env.FACEBOOK_APP_SECRET);
-    url.searchParams.set("code", code);
-    url.searchParams.set(
-      "redirect_uri",
+    const result = await FacebookGraphAPIClient.exchangeCodeForAccessToken(
+      code,
       `http://localhost:3000/api/destinations/${params.id}/facebook/auth/callback`,
     );
 
-    const result = await (await fetch(url.toString())).json();
-    try {
-      await supaServerClient()
-        .from("destinations")
-        .update({
-          long_lived_token: result.access_token,
-        })
-        .eq("id", params.id);
-    } catch (err) {
-      console.error(err);
-    }
+    await supaServerClient()
+      .from("destinations")
+      .update({
+        long_lived_token: result.access_token,
+      })
+      .eq("id", params.id);
+
+    const getFbDataUrl = new URL(
+      "https://graph.facebook.com/v20.0/me/accounts",
+    );
+    getFbDataUrl.searchParams.set("access_token", result.access_token);
+    getFbDataUrl.searchParams.set(
+      "fields",
+      "id,name,instagram_business_account",
+    );
+    const fbData = await (await fetch(getFbDataUrl.toString())).json();
+    console.log(fbData);
   }
 
   return NextResponse.redirect(requestUrl.origin.concat("/app/destinations"));
