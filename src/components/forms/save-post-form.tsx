@@ -176,7 +176,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         }}
       />
       <Button className="float-right mt-6" type="submit" disabled={isSavingPost || !hasTemplates}>
-        {isSavingPost ? <Loader2 className="animate-spin" /> : "Savesss"}
+        {isSavingPost ? <Loader2 className="animate-spin" /> : "Save"}
       </Button>
     </form>
   );

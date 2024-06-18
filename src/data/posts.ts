@@ -26,12 +26,6 @@ export const savePost = async (
   );
 
   if (templateIds) {
-    console.log({
-      post_id: saved.id,
-      added_template_ids: templateIds?.added || [],
-      removed_template_ids: templateIds?.removed || [],
-    });
-
     try {
       await client.rpc("manage_post_template_links", {
         arg_post_id: saved.id,
@@ -60,7 +54,7 @@ export const getPostsForAuthUser = async ({ client }: SupabaseOptions) => {
 };
 
 export const getPostsByDestinationId = async (destinationId: string, { client }: SupabaseOptions) => {
-  return throwOrData(client.from("posts").select("*").eq("destination_id", destinationId));
+  return throwOrData(client.from("posts").select("*, destination:destinations(*)").eq("destination_id", destinationId));
 };
 
 export const getPostById = async (id: string, { client }: SupabaseOptions) => {

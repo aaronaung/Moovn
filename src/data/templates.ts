@@ -55,3 +55,11 @@ export const deleteTemplate = async (template: Tables<"templates">, { client }: 
 
   return resp;
 };
+
+export const getTemplatesForPost = async (postId: string, { client }: SupabaseOptions) => {
+  const templates = await throwOrData(
+    client.from("posts_templates").select("template:templates(*)").eq("post_id", postId),
+  );
+
+  return templates.map((t) => t.template).filter((t) => t !== null) as Tables<"templates">[];
+};

@@ -4,10 +4,12 @@ import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confir
 import { SavePostDialog } from "@/src/components/dialogs/save-post-dialog";
 import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
+import { DestinationTypes } from "@/src/consts/destinations";
 import { deletePost, getPostsByDestinationId } from "@/src/data/posts";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
+import InstagramPost from "./instagram-post";
 
 export default function ManagePosts({ destination }: { destination: Tables<"destinations"> }) {
   const [postDialogState, setPostDialogState] = useState<{
@@ -80,6 +82,15 @@ export default function ManagePosts({ destination }: { destination: Tables<"dest
     );
   }
 
+  const renderPost = (post: Tables<"posts"> & { destination: Tables<"destinations"> | null }) => {
+    switch (post.destination?.type) {
+      case DestinationTypes.INSTAGRAM:
+        return <InstagramPost post={post} />;
+      default:
+        return <></>;
+    }
+  };
+
   return (
     <div>
       <SavePostDialog
@@ -110,7 +121,11 @@ export default function ManagePosts({ destination }: { destination: Tables<"dest
           });
         }}
       />
-      {(posts || [])?.map((post) => <div key={post.id}>{post.caption}</div>)}
+      {(posts || [])?.map((post) => (
+        <div className="w-[400px] rounded-md bg-secondary" key={post.id}>
+          {renderPost(post)}
+        </div>
+      ))}
       <Button
         onClick={() => {
           setPostDialogState({
