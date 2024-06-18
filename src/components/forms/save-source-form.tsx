@@ -31,10 +31,7 @@ type SaveSourceFormProps = {
   onSubmitted: () => void;
 };
 
-export default function SaveSourceForm({
-  defaultValues,
-  onSubmitted,
-}: SaveSourceFormProps) {
+export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourceFormProps) {
   const queryClient = useQueryClient();
 
   const {
@@ -45,10 +42,7 @@ export default function SaveSourceForm({
     formState: { errors },
   } = useForm<SaveSourceFormSchemaType>({
     defaultValues: {
-      type:
-        defaultValues?.type === undefined
-          ? SourceTypes.PIKE13
-          : defaultValues.type,
+      type: defaultValues?.type === undefined ? SourceTypes.PIKE13 : defaultValues.type,
       ...defaultValues,
     },
     resolver: zodResolver(formSchema),
@@ -56,30 +50,27 @@ export default function SaveSourceForm({
   const selectedSourceType = watch("type");
 
   const { user } = useAuthUser();
-  const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(
-    saveSource,
-    {
-      invalidate: [["getSourcesForAuthUser"]],
-      onSuccess: () => {
-        onSubmitted();
-      },
-      onError: (error) => {
-        console.error(error);
-        toast({
-          title: "Failed to save changes",
-          variant: "destructive",
-          description: "Please try again or contact support.",
-        });
-      },
+  const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(saveSource, {
+    invalidate: [["getSourcesForAuthUser"]],
+    onSuccess: () => {
+      onSubmitted();
     },
-  );
+    onError: (error) => {
+      console.error(error);
+      toast({
+        title: "Failed to save changes",
+        variant: "destructive",
+        description: "Please try again or contact support.",
+      });
+    },
+  });
 
   const renderSourceSettings = () => {
     switch (selectedSourceType) {
       case SourceTypes.PIKE13:
         return (
           <InputText
-            label="URL"
+            label="Pike13 URL"
             rhfKey="settings.url"
             register={register}
             registerOptions={{
@@ -111,16 +102,13 @@ export default function SaveSourceForm({
   };
 
   return (
-    <form
-      className="flex flex-col gap-y-3"
-      onSubmit={handleSubmit(handleOnFormSuccess)}
-    >
+    <form className="flex flex-col gap-y-3" onSubmit={handleSubmit(handleOnFormSuccess)}>
       <InputText
         label="Name"
         rhfKey="name"
         register={register}
         inputProps={{
-          placeholder: "Give your template a name (e.g. 'Weekly Schedule')",
+          placeholder: "Source name (e.g. Studio XYZ)",
         }}
         error={errors.name?.message}
       />
@@ -136,11 +124,7 @@ export default function SaveSourceForm({
         label="Data source"
       />
       {renderSourceSettings()}
-      <Button
-        className="float-right mt-6"
-        type="submit"
-        disabled={isSavingSource}
-      >
+      <Button className="float-right mt-6" type="submit" disabled={isSavingSource}>
         {isSavingSource ? <Loader2 className="animate-spin" /> : "Save"}
       </Button>
     </form>

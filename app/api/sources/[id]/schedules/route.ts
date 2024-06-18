@@ -11,7 +11,7 @@ export async function GET(
 ) {
   const view =
     (req.nextUrl.searchParams.get("view") as SourceDataView) ??
-    SourceDataView.DAILY;
+    SourceDataView.TODAY;
 
   const source = await getSourceById(params.id, {
     client: supaServerClient(),

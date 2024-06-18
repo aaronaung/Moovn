@@ -28,9 +28,7 @@ function createCanvasFromData(data: any) {
 initializeCanvas(createCanvas as any, createCanvasFromData as any);
 
 export async function POST(request: NextRequest) {
-  const { templateId } = GenerateDesignRequestSchema.parse(
-    await request.json(),
-  );
+  const { templateId } = GenerateDesignRequestSchema.parse(await request.json());
   const sbClient = supaServerClient();
 
   try {
@@ -51,9 +49,7 @@ export async function POST(request: NextRequest) {
           businessUrl: (template.source?.settings as Pike13SourceSettings)?.url,
         });
 
-        scheduleData = await pike13.getScheduleDataForView(
-          template.source_data_view as SourceDataView,
-        );
+        scheduleData = await pike13.getScheduleDataForView(template.source_data_view as SourceDataView);
         break;
       default:
         throw new Error(`Unsupported source type: ${template.source?.type}`);
@@ -72,6 +68,8 @@ export async function POST(request: NextRequest) {
     }
     const jobId = uuid();
 
+    const outputPsdPath = `${template.owner_id}/${templateId}/${jobId}.psd`;
+    const outputJpegPath = `${template.owner_id}/${templateId}/${jobId}.jpeg`;
     const templateUrl = await signUrl({
       bucket: BUCKETS.templates,
       objectPath: `${template.owner_id}/${templateId}.psd`,
@@ -79,13 +77,13 @@ export async function POST(request: NextRequest) {
     });
     const outputPsdUrl = await signUrl({
       bucket: BUCKETS.designs,
-      objectPath: `${template.owner_id}/${jobId}.psd`,
+      objectPath: outputPsdPath,
       isUpload: true,
       client: sbClient,
     });
     const outputJpegUrl = await signUrl({
       bucket: BUCKETS.designs,
-      objectPath: `${template.owner_id}/${jobId}.jpeg`,
+      objectPath: outputJpegPath,
       isUpload: true,
       client: sbClient,
     });
@@ -101,6 +99,13 @@ export async function POST(request: NextRequest) {
         outputUrlPsd: outputPsdUrl,
         outputUrlJpeg: outputJpegUrl,
       });
+
+      const latestPsdPath = `${template.owner_id}/${templateId}/latest.psd`;
+      const latestJpegPath = `${template.owner_id}/${templateId}/latest.jpeg`;
+
+      await sbClient.storage.from(BUCKETS.designs).remove([latestPsdPath, latestJpegPath]);
+      await sbClient.storage.from(BUCKETS.designs).copy(outputJpegPath, latestJpegPath);
+      await sbClient.storage.from(BUCKETS.designs).copy(outputPsdPath, latestPsdPath);
     } catch (err: any) {
       console.error("error", err);
 

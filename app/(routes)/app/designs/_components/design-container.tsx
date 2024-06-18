@@ -2,23 +2,14 @@
 import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/src/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/src/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { SOURCE_HAS_NO_DATA_ID, SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { generateDesign, getDesignsForTemplate } from "@/src/data/designs";
@@ -31,19 +22,8 @@ import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
-import {
-  DownloadCloudIcon,
-  RefreshCwIcon,
-  UploadCloudIcon,
-} from "lucide-react";
+import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { DownloadCloudIcon, RefreshCwIcon, UploadCloudIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
@@ -56,10 +36,7 @@ export const DesignContainer = ({
   onEditTemplate,
 }: {
   template: Tables<"templates">;
-  triggerDesignOverwrite: (
-    designId: string,
-    onOverwriteComplete: () => Promise<void>,
-  ) => void;
+  triggerDesignOverwrite: (designId: string, onOverwriteComplete: () => Promise<void>) => void;
   onDeleteTemplate: () => void;
   onEditTemplate: () => void;
 }) => {
@@ -67,17 +44,13 @@ export const DesignContainer = ({
   const [hasNoScheduleData, setHasNoScheduleData] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
-  const { data: designs, isLoading: isLoadingDesigns } = useSupaQuery(
-    getDesignsForTemplate,
-    {
-      arg: template.id,
-      queryKey: ["getDesignsForTemplate", template.id],
-    },
-  );
-  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } =
-    useSupaMutation(generateDesign, {
-      invalidate: [["getDesignsForTemplate", template.id]],
-    });
+  const { data: designs, isLoading: isLoadingDesigns } = useSupaQuery(getDesignsForTemplate, {
+    arg: template.id,
+    queryKey: ["getDesignsForTemplate", template.id],
+  });
+  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } = useSupaMutation(generateDesign, {
+    invalidate: [["getDesignsForTemplate", template.id]],
+  });
   const latestDesign = designs?.[0];
 
   const {
@@ -86,15 +59,11 @@ export const DesignContainer = ({
     refresh: refreshJpegSignedUrl,
   } = useSignedUrl({
     bucket: BUCKETS.designs,
-    objectPath: latestDesign
-      ? `${template.owner_id}/${latestDesign.id}.jpeg`
-      : undefined,
+    objectPath: `${template.owner_id}/${template.id}/latest.jpeg`,
   });
   const { signedUrl: psdSignedUrl } = useSignedUrl({
     bucket: BUCKETS.designs,
-    objectPath: latestDesign
-      ? `${template.owner_id}/${latestDesign.id}.psd`
-      : undefined,
+    objectPath: `${template.owner_id}/${template.id}/latest.psd`,
   });
 
   const renderLatestDesign = () => {
@@ -102,12 +71,7 @@ export const DesignContainer = ({
       return <Spinner />;
     }
     if (latestDesign || hasNoScheduleData) {
-      return (
-        <DesignImage
-          url={jpegSignedUrl ?? undefined}
-          hasNoData={hasNoScheduleData}
-        />
-      );
+      return <DesignImage url={jpegSignedUrl ?? undefined} hasNoData={hasNoScheduleData} />;
     }
     return <DesignNotFound />;
   };
@@ -120,13 +84,13 @@ export const DesignContainer = ({
       from: startOfDay(currDateTime),
     };
     switch (template.source_data_view) {
-      case SourceDataView.WEEKLY:
+      case SourceDataView.THIS_WEEK:
         fromAndTo = {
           from: startOfWeek(currDateTime),
           to: endOfWeek(currDateTime),
         };
         break;
-      case SourceDataView.MONTHLY:
+      case SourceDataView.THIS_MONTH:
         fromAndTo = {
           from: startOfMonth(currDateTime),
           to: endOfMonth(currDateTime),
@@ -159,22 +123,16 @@ export const DesignContainer = ({
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex">
           <div className="flex h-20 flex-1 flex-col gap-1">
-            <Header2
-              className="line-clamp-1"
-              title={template.name || "Untitled"}
-            ></Header2>
+            <Header2 className="line-clamp-1" title={template.name || "Untitled"}></Header2>
             <p className="text-sm text-muted-foreground">
               {template.source_data_view} ({fromAndToString()})
             </p>
             {latestDesign?.created_at ? (
               <p className="text-sm text-muted-foreground">
-                Last refreshed:{" "}
-                {userFriendlyDate(new Date(latestDesign.created_at))}
+                Last refreshed: {userFriendlyDate(new Date(latestDesign.created_at))}
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No designs generated yet
-              </p>
+              <p className="text-sm text-muted-foreground">No designs generated yet</p>
             )}
           </div>
           <div className="flex gap-x-0.5">
@@ -208,10 +166,7 @@ export const DesignContainer = ({
               <Tooltip>
                 <TooltipTrigger>
                   <Button className="group" variant="secondary">
-                    <DownloadCloudIcon
-                      width={18}
-                      className="group-hover:text-primary"
-                    />
+                    <DownloadCloudIcon width={18} className="group-hover:text-primary" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Download</TooltipContent>
@@ -253,10 +208,7 @@ export const DesignContainer = ({
                   });
                 }}
               >
-                <UploadCloudIcon
-                  width={18}
-                  className="group-hover:text-primary"
-                />
+                <UploadCloudIcon width={18} className="group-hover:text-primary" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Overwrite</TooltipContent>
@@ -279,14 +231,11 @@ export const DesignContainer = ({
               }}
             >
               {isGeneratingDesign ? (
-                <Spinner className="text-secondary" />
+                <Spinner />
               ) : !latestDesign ? (
                 "Generate"
               ) : (
-                <RefreshCwIcon
-                  width={18}
-                  className="group-hover:text-primary"
-                />
+                <RefreshCwIcon width={18} className="group-hover:text-primary" />
               )}
             </Button>
           </TooltipTrigger>
@@ -297,13 +246,7 @@ export const DesignContainer = ({
   );
 };
 
-const DesignImage = ({
-  hasNoData = false,
-  url,
-}: {
-  hasNoData?: boolean;
-  url?: string;
-}) => {
+const DesignImage = ({ hasNoData = false, url }: { hasNoData?: boolean; url?: string }) => {
   const [imageExists, setImageExists] = useState(true);
 
   useEffect(() => {

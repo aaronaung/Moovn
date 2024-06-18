@@ -45,8 +45,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(
-          "rounded-full",
           buttonVariants({ variant, size, className }),
+          "rounded-full",
+          className,
         )}
         ref={ref}
         {...props}

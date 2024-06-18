@@ -18,9 +18,7 @@ export async function throwOrCount<Result>(fn: PostgrestBuilder<Result>) {
 }
 
 // Note: this is a hacky way to get around the fact that the type of the result of a pg function is not known.
-export async function throwOrJsonData<Result>(
-  fn: PostgrestBuilder<Result | Json>,
-) {
+export async function throwOrJsonData<Result>(fn: PostgrestBuilder<Result | Json>) {
   const { data, error } = await fn;
   if (error) {
     throw error;

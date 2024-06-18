@@ -1,12 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/src/components/ui/dialog";
-import SaveDestinationForm, {
-  SaveDestinationFormSchemaType,
-} from "../forms/save-destination-form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
+import SaveDestinationForm, { SaveDestinationFormSchemaType } from "../forms/save-destination-form";
 
 export function SaveDestinationDialog({
   initFormValues,
@@ -21,14 +14,9 @@ export function SaveDestinationDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {initFormValues ? "Edit" : "Add"} destination
-          </DialogTitle>
+          <DialogTitle>{initFormValues ? "Update" : "Create"} destination</DialogTitle>
         </DialogHeader>
-        <SaveDestinationForm
-          defaultValues={initFormValues}
-          onSubmitted={onClose}
-        />
+        <SaveDestinationForm defaultValues={initFormValues} onSubmitted={onClose} />
       </DialogContent>
     </Dialog>
   );

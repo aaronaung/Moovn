@@ -129,7 +129,11 @@ export default function SourcesPage() {
         <div className="flex-1">
           <Header2 title="Sources" />
           <p className="text-sm text-muted-foreground">
-            Manage where your data comes from.
+            Source represents the data that can be used to generate{" "}
+            <a className="text-primary underline" href="/app/designs">
+              {" "}
+              designs.
+            </a>
           </p>
         </div>
         <Button
@@ -156,16 +160,7 @@ export default function SourcesPage() {
       </div>
       <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
         {selectedSource ? (
-          <>
-            <div>
-              <Header2 title="Data view" />
-              <p className="text-sm text-muted-foreground">
-                See what your schedule data looks like for Daily, Weekly, and
-                Monthly views.
-              </p>
-            </div>
-            <DataView selectedSource={selectedSource} />
-          </>
+          <DataView selectedSource={selectedSource} />
         ) : (
           <p className="text-sm text-muted-foreground">
             Select a source to see what your data looks like.

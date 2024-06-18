@@ -19,7 +19,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id: string
+          id?: string
           raw_result?: Json | null
           template_id: string
           updated_at?: string | null
@@ -33,7 +33,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "public_design_jobs_template_id_fkey"
+            foreignKeyName: "design_jobs_template_id_foreign"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
@@ -45,7 +45,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          long_lived_token: string
+          long_lived_token: string | null
           name: string
           owner_id: string
           type: string
@@ -54,7 +54,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          long_lived_token: string
+          long_lived_token?: string | null
           name: string
           owner_id: string
           type: string
@@ -63,7 +63,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          long_lived_token?: string
+          long_lived_token?: string | null
           name?: string
           owner_id?: string
           type?: string
@@ -75,6 +75,87 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          destination_id: string
+          id: string
+          last_published_at: string | null
+          owner_id: string
+          source_data_view: string
+          updated_at: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          destination_id: string
+          id?: string
+          last_published_at?: string | null
+          owner_id: string
+          source_data_view: string
+          updated_at?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          destination_id?: string
+          id?: string
+          last_published_at?: string | null
+          owner_id?: string
+          source_data_view?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_destination_id_foreign"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_foreign"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts_templates: {
+        Row: {
+          created_at: string | null
+          post_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          post_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string | null
+          post_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_templates_post_id_foreign"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_templates_template_id_foreign"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
             referencedColumns: ["id"]
           },
         ]
@@ -203,7 +284,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      manage_post_template_links: {
+        Args: {
+          arg_post_id: string
+          added_template_ids: string[]
+          removed_template_ids: string[]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

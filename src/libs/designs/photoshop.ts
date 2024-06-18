@@ -48,16 +48,10 @@ const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
     const value = parentDataObject?.[layerName.trim()];
     if (value) {
       // If value is provided, it means we are at the leaf node.
-      if (
-        layerName === "start_at" ||
-        layerName === "end_at" ||
-        layerName === "date"
-      ) {
+      if (layerName === "start_at" || layerName === "end_at" || layerName === "date") {
         psdActions[PSDActionType.EditText][layer.id] = {
           layer,
-          value: dateFormat
-            ? format(new Date(value), dateFormat.trim())
-            : value,
+          value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
         };
       } else if (layer.placedLayer) {
         psdActions[PSDActionType.ReplaceSmartObject][layer.id] = {
@@ -104,9 +98,7 @@ const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
       continue;
     }
 
-    const newParent = (schedules as { [key: string]: any })[layerName.trim()]?.[
-      _index
-    ];
+    const newParent = (schedules as { [key: string]: any })[layerName.trim()]?.[_index];
     if (!newParent) {
       psdActions[PSDActionType.DeleteLayer][root.id] = {
         layer: root,
@@ -163,48 +155,42 @@ export const generateDesign = async ({
     ],
     options: {
       layers: [
-        ...Object.values(psdActions[PSDActionType.ReplaceSmartObject]).map(
-          ({ layer, value }) => {
-            return {
-              edit: {},
-              type: LayerType.SMART_OBJECT,
-              id: Number(layer.id),
-              input: {
-                href: value,
-                storage: StorageType.EXTERNAL,
-              },
-            } as DocumentOperationLayer;
-          },
-        ),
-        ...Object.values(psdActions[PSDActionType.EditText]).map(
-          ({ layer, value }) => {
-            return {
-              edit: {},
-              type: LayerType.TEXT_LAYER,
-              id: Number(layer.id),
-              text: {
-                content: value,
-              },
-              // ...(layer.text?.shapeType === "box"
-              //   ? {
-              //       bounds: {
-              //         top: layer?.top || 0,
-              //       },
-              //     }
-              //   : {}),
-            } as DocumentOperationLayer;
-          },
-        ),
-        ...Object.values(psdActions[PSDActionType.DeleteLayer]).map(
-          ({ layer }) => {
-            return {
-              delete: {
-                includeChildren: true,
-              },
-              id: layer.id,
-            } as DocumentOperationLayer;
-          },
-        ),
+        ...Object.values(psdActions[PSDActionType.ReplaceSmartObject]).map(({ layer, value }) => {
+          return {
+            edit: {},
+            type: LayerType.SMART_OBJECT,
+            id: Number(layer.id),
+            input: {
+              href: value,
+              storage: StorageType.EXTERNAL,
+            },
+          } as DocumentOperationLayer;
+        }),
+        ...Object.values(psdActions[PSDActionType.EditText]).map(({ layer, value }) => {
+          return {
+            edit: {},
+            type: LayerType.TEXT_LAYER,
+            id: Number(layer.id),
+            text: {
+              content: value,
+            },
+            // ...(layer.text?.shapeType === "box"
+            //   ? {
+            //       bounds: {
+            //         top: layer?.top || 0,
+            //       },
+            //     }
+            //   : {}),
+          } as DocumentOperationLayer;
+        }),
+        ...Object.values(psdActions[PSDActionType.DeleteLayer]).map(({ layer }) => {
+          return {
+            delete: {
+              includeChildren: true,
+            },
+            id: layer.id,
+          } as DocumentOperationLayer;
+        }),
       ],
     },
   });

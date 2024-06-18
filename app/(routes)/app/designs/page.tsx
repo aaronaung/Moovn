@@ -28,30 +28,22 @@ export default function DesignsPage() {
   }>({
     isOpen: false,
   });
-  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
-    useState<{
-      isOpen: boolean;
-      template?: Tables<"templates">;
-    }>({
-      isOpen: false,
-    });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
+    isOpen: boolean;
+    template?: Tables<"templates">;
+  }>({
+    isOpen: false,
+  });
 
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(
-    getTemplatesForAuthUser,
-    {
-      queryKey: ["getTemplatesForAuthUser"],
-    },
-  );
-  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(
-    getSourcesForAuthUser,
-    {
-      queryKey: ["getSourcesForAuthUser"],
-    },
-  );
-  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } =
-    useSupaMutation(deleteTemplate, {
-      invalidate: [["getTemplatesForAuthUser"]],
-    });
+  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
+    queryKey: ["getTemplatesForAuthUser"],
+  });
+  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getSourcesForAuthUser, {
+    queryKey: ["getSourcesForAuthUser"],
+  });
+  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(deleteTemplate, {
+    invalidate: [["getTemplatesForAuthUser"]],
+  });
 
   if (isLoadingTemplates || isLoadingSources) {
     return <Spinner />;
@@ -71,13 +63,42 @@ export default function DesignsPage() {
     );
   }
 
+  if (!templates || templates.length === 0) {
+    return (
+      <>
+        <SaveTemplateDialog
+          isOpen={saveTemplateDialogState.isOpen}
+          onClose={() => {
+            setSaveTemplateDialogState({
+              isOpen: false,
+            });
+          }}
+          availableSources={sources}
+        />
+        <EmptyState
+          title="No designs found"
+          description="Start by creating a design template."
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setSaveTemplateDialogState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Create design template
+            </Button>
+          }
+        />
+      </>
+    );
+  }
+
   return (
     <div>
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={
-          "This will delete the design template and all designs created from it. Are you sure?"
-        }
+        label={"This will delete the design template and all designs created from it. Are you sure?"}
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({
@@ -117,16 +138,17 @@ export default function DesignsPage() {
         <div className="flex-1">
           <Header2 title="Designs" />
           <p className="text-sm text-muted-foreground">
-            Manage your designs. Not seeing the designs as expected? Please
-            email us at{" "}
-            <a
-              className="hover:text-primary hover:underline"
-              href="mailto:someone@example.com"
-            >
+            Designs are auto-generated from the{" "}
+            <a className="text-primary underline" href="/app/sources">
+              Source
+            </a>{" "}
+            data given a design template. Not seeing the designs as expected? Please email us at{" "}
+            <a className="hover:text-primary hover:underline" href="mailto:someone@example.com">
               <i>team@moovn.co</i>
             </a>{" "}
             for support.
           </p>
+          <p className="py-2 text-xs text-muted-foreground"></p>
         </div>
         <Button
           onClick={() => {

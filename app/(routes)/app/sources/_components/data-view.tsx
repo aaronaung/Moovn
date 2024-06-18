@@ -16,7 +16,7 @@ export default function DataView({
   selectedSource: Tables<"sources">;
 }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(
-    SourceDataView.DAILY,
+    SourceDataView.TODAY,
   );
   const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
     getScheduleDataForSource,
@@ -56,6 +56,11 @@ export default function DataView({
           }
           displayDataTypes={false}
           name={false}
+          theme={"chalk"}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+          }}
         />
       </div>
     );
@@ -64,7 +69,7 @@ export default function DataView({
   return (
     <>
       {selectedSource && (
-        <div className="my-2 flex gap-x-2">
+        <div className="mb-2 flex gap-x-2">
           {Object.values(SourceDataView).map((tab) => {
             return (
               <Tab

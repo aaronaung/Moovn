@@ -42,11 +42,7 @@ type SaveTemplateFormProps = {
   onSubmitted: () => void;
 };
 
-export default function SaveTemplateForm({
-  defaultValues,
-  availableSources,
-  onSubmitted,
-}: SaveTemplateFormProps) {
+export default function SaveTemplateForm({ defaultValues, availableSources, onSubmitted }: SaveTemplateFormProps) {
   const queryClient = useQueryClient();
   const {
     register,
@@ -56,9 +52,7 @@ export default function SaveTemplateForm({
   } = useForm<SaveTemplateFormSchemaType>({
     defaultValues: {
       source_data_view:
-        defaultValues?.source_data_view === undefined
-          ? SourceDataView.DAILY
-          : defaultValues.source_data_view,
+        defaultValues?.source_data_view === undefined ? SourceDataView.TODAY : defaultValues.source_data_view,
 
       ...defaultValues,
     },
@@ -81,32 +75,25 @@ export default function SaveTemplateForm({
     }
   }, [currentTemplateUrl]);
 
-  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } =
-    useSupaMutation(saveTemplate, {
-      invalidate: [["getTemplatesForAuthUser"]],
-    });
-  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } =
-    useSupaMutation(generateDesign);
+  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(saveTemplate, {
+    invalidate: [["getTemplatesForAuthUser"]],
+  });
+  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } = useSupaMutation(generateDesign);
 
-  const onTemplateFileDrop = useCallback(
-    async (accepted: File[], rejections: FileRejection[]) => {
-      if (rejections.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "File doesn't meet requirements",
-          description: "Please make sure the file is a PSD file.",
-        });
-        return;
-      }
+  const onTemplateFileDrop = useCallback(async (accepted: File[], rejections: FileRejection[]) => {
+    if (rejections.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "File doesn't meet requirements",
+        description: "Please make sure the file is a PSD file.",
+      });
+      return;
+    }
 
-      setTemplateFile(accepted[0]);
-    },
-    [],
-  );
+    setTemplateFile(accepted[0]);
+  }, []);
 
-  const handleOnFormSuccess = async (
-    formValues: SaveTemplateFormSchemaType,
-  ) => {
+  const handleOnFormSuccess = async (formValues: SaveTemplateFormSchemaType) => {
     const templateId = defaultValues?.id ?? formValues.id ?? uuid();
 
     try {
@@ -157,19 +144,16 @@ export default function SaveTemplateForm({
                 id: templateId,
                 owner_id: user.id,
                 latest_design_hash: null, // Bust the design hash, so we can regenerate the design
-                ...(formValues.id
-                  ? { updated_at: new Date().toISOString() }
-                  : {}),
+                ...(formValues.id ? { updated_at: new Date().toISOString() } : {}),
               });
               const { id: jobId } = await _generateDesign({
                 templateId,
               });
 
               // Check if the generated design is available
-              const { data: signedJpegUrlData } =
-                await supaClientComponentClient.storage
-                  .from(BUCKETS.designs)
-                  .createSignedUrl(`${user.id}/${jobId}.jpeg`, 24 * 3600);
+              const { data: signedJpegUrlData } = await supaClientComponentClient.storage
+                .from(BUCKETS.designs)
+                .createSignedUrl(`${user.id}/${jobId}.jpeg`, 24 * 3600);
 
               if (signedJpegUrlData) {
                 await fetchWithRetry(signedJpegUrlData?.signedUrl);
@@ -202,16 +186,13 @@ export default function SaveTemplateForm({
   };
 
   return (
-    <form
-      className="flex flex-col gap-y-3"
-      onSubmit={handleSubmit(handleOnFormSuccess)}
-    >
+    <form className="flex flex-col gap-y-3" onSubmit={handleSubmit(handleOnFormSuccess)}>
       <InputText
         label="Name"
         rhfKey="name"
         register={register}
         inputProps={{
-          placeholder: "Give your template a name (e.g. 'Weekly Schedule')",
+          placeholder: "Template name (e.g. 'Weekly Schedule')",
         }}
         error={errors.name?.message}
       />
@@ -219,7 +200,7 @@ export default function SaveTemplateForm({
         <InputSelect
           rhfKey="source_id"
           options={(availableSources || []).map((s) => ({
-            label: s.type,
+            label: `${s.name} (${s.type})`,
             value: s.id,
           }))}
           control={control}
@@ -240,11 +221,10 @@ export default function SaveTemplateForm({
         }))}
         control={control}
         error={errors.source_data_view?.message}
-        label="Data view"
+        label="Schedule"
         inputProps={{
-          placeholder: "Select a data view for this template",
+          placeholder: "Select a schedule",
         }}
-        description={`Data view represents a "view" of the source data the template will use to generate content.`}
       />
       <div>
         <p className="mt-1 text-sm font-medium">Template file</p>
@@ -264,15 +244,9 @@ export default function SaveTemplateForm({
       <Button
         className="float-right mt-6"
         type="submit"
-        disabled={
-          isSavingTemplate ||
-          isGeneratingDesign ||
-          asyncUploader.hasTaskInProgress
-        }
+        disabled={isSavingTemplate || isGeneratingDesign || asyncUploader.hasTaskInProgress}
       >
-        {isSavingTemplate ||
-        isGeneratingDesign ||
-        asyncUploader.hasTaskInProgress ? (
+        {isSavingTemplate || isGeneratingDesign || asyncUploader.hasTaskInProgress ? (
           <Loader2 className="animate-spin" />
         ) : (
           "Save"

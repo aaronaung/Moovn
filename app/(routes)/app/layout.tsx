@@ -13,16 +13,12 @@ export const metadata = {
   description: "Moovn is the best place to teach and learn dance.",
 };
 // Everything under /app is auth protected in middleware.ts.
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser({
     client: supaServerComponentClient(),
   });
   if (!user) {
-    redirect("/sign-in?return_path=/app/student/classes");
+    redirect("/sign-in?return_path=/app/sources");
   }
 
   return (

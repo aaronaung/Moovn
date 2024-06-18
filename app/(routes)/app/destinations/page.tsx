@@ -9,11 +9,9 @@ import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import DestinationSelectItem from "./_components/destination-select-item";
-import {
-  deleteDestination,
-  getDestinationsForAuthUser,
-} from "@/src/data/destinations";
+import { deleteDestination, getDestinationsForAuthUser } from "@/src/data/destinations";
 import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination-dialog";
+import ManagePosts from "./_components/manage-posts";
 
 export default function DestinationsPage() {
   const [destinationDialogState, setDestinationDialogState] = useState<{
@@ -22,46 +20,40 @@ export default function DestinationsPage() {
   }>({
     isOpen: false,
   });
-  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
-    useState<{
-      isOpen: boolean;
-      destination?: Tables<"destinations">;
-    }>({
-      isOpen: false,
-    });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
+    isOpen: boolean;
+    destination?: Tables<"destinations">;
+  }>({
+    isOpen: false,
+  });
 
-  const { data: destinations, isLoading: isLoadingDestinations } = useSupaQuery(
-    getDestinationsForAuthUser,
-    {
-      queryKey: ["getDestinationsForAuthUser"],
-    },
-  );
-  const [selectedDestination, setSelectedDestination] =
-    useState<Tables<"destinations">>();
+  const { data: destinations, isLoading: isLoadingDestinations } = useSupaQuery(getDestinationsForAuthUser, {
+    queryKey: ["getDestinationsForAuthUser"],
+  });
+  const [selectedDestination, setSelectedDestination] = useState<Tables<"destinations">>();
   useEffect(() => {
     if (destinations && destinations.length > 0 && !selectedDestination) {
       setSelectedDestination(destinations[0]);
     }
   }, [destinations, selectedDestination]);
 
-  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } =
-    useSupaMutation(deleteDestination, {
-      invalidate: [["getDestinationsForAuthUser"]],
-      onSuccess: () => {
-        toast({
-          title: "Destination deleted",
-          variant: "success",
-        });
-      },
-      onError: (error) => {
-        console.error(error);
-        toast({
-          title: "Failed to delete destination",
-          variant: "destructive",
-          description: "Please try again or contact support.",
-        });
-      },
-    });
+  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(deleteDestination, {
+    invalidate: [["getDestinationsForAuthUser"]],
+    onSuccess: () => {
+      toast({
+        title: "Destination deleted",
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast({
+        title: "Failed to delete destination",
+        variant: "destructive",
+        description: "Please try again or contact support.",
+      });
+    },
+  });
 
   if (isLoadingDestinations) {
     return <Spinner />;
@@ -99,28 +91,16 @@ export default function DestinationsPage() {
 
   const renderDestinationView = () => {
     if (!selectedDestination) {
-      return (
-        <p className="text-sm text-muted-foreground">Select a destination</p>
-      );
+      return <p className="text-sm text-muted-foreground">Select a destination</p>;
     } else if (!selectedDestination.long_lived_token) {
       // For now, this is for Instagram only
       return (
-        <div>
-          <p className="mb-2 text-sm text-muted-foreground">
-            This destination is not connected. Please connect it to start
-            publishing.
-          </p>
-        </div>
+        <p className="mb-2 text-sm text-muted-foreground">
+          This destination is not connected. Please connect it to start publishing.
+        </p>
       );
     } else {
-      return (
-        <>
-          <div>
-            <Header2 title="Recently published" />
-          </div>
-          <div>Recent posts to this destination</div>
-        </>
-      );
+      return <ManagePosts destination={selectedDestination} />;
     }
   };
 
@@ -128,9 +108,7 @@ export default function DestinationsPage() {
     <div className="flex h-[calc(100vh-110px)] flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={
-          "You'll no longer be able to post content to the destination. Are you sure?"
-        }
+        label={"You'll no longer be able to post content to the destination. Are you sure?"}
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({
@@ -139,9 +117,7 @@ export default function DestinationsPage() {
         }}
         onDelete={async () => {
           if (deleteConfirmationDialogState.destination) {
-            await _deleteDestination(
-              deleteConfirmationDialogState.destination.id,
-            );
+            await _deleteDestination(deleteConfirmationDialogState.destination.id);
           }
           setDeleteConfirmationDialogState({
             isOpen: false,
@@ -161,7 +137,7 @@ export default function DestinationsPage() {
         <div className="flex-1">
           <Header2 title="Destinations" />
           <p className="text-sm text-muted-foreground">
-            Manage where you want your designs published.
+            Destination represents the platform on which Posts will be published.
           </p>
         </div>
         <Button
@@ -186,9 +162,7 @@ export default function DestinationsPage() {
           />
         ))}
       </div>
-      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-        {renderDestinationView()}
-      </div>
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">{renderDestinationView()}</div>
     </div>
   );
 }
