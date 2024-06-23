@@ -27,7 +27,11 @@ export default function DestinationsPage() {
     isOpen: false,
   });
 
-  const { data: destinations, isLoading: isLoadingDestinations } = useSupaQuery(getDestinationsForAuthUser, {
+  const {
+    data: destinations,
+    isLoading: isLoadingDestinations,
+    isRefetching: isRefetchingDestinations,
+  } = useSupaQuery(getDestinationsForAuthUser, {
     queryKey: ["getDestinationsForAuthUser"],
   });
   const [selectedDestination, setSelectedDestination] = useState<Tables<"destinations">>();
@@ -105,7 +109,7 @@ export default function DestinationsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-110px)] flex-col">
+    <div className="flex flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={"You'll no longer be able to post content to the destination. Are you sure?"}
@@ -137,7 +141,7 @@ export default function DestinationsPage() {
         <div className="flex-1">
           <Header2 title="Destinations" />
           <p className="text-sm text-muted-foreground">
-            Destination represents the platform on which Posts will be published.
+            Destination represents the platform where posts are published.
           </p>
         </div>
         <Button
@@ -154,6 +158,7 @@ export default function DestinationsPage() {
         {(destinations || []).map((destination) => (
           <DestinationSelectItem
             key={destination.id}
+            isRefreshingDestinations={isRefetchingDestinations}
             isSelected={selectedDestination?.id === destination.id}
             destination={destination}
             setSelectedDestination={setSelectedDestination}

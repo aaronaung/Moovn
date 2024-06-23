@@ -3,7 +3,9 @@ create table "public"."destinations" (
   "name" text not null,
   "owner_id" uuid not null,
   "type" text not null,
+  "linked_ig_user_id" text, -- only applicable if type === instagram
   "long_lived_token" text,
+  "token_last_refreshed_at" timestamp with time zone,
   "created_at" timestamp with time zone default now(),
   "updated_at" timestamp with time zone default now()
 );

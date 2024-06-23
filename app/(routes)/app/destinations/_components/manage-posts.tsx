@@ -10,6 +10,7 @@ import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
 import InstagramPost from "./instagram-post";
+import { Header2 } from "@/src/components/common/header";
 
 export default function ManagePosts({ destination }: { destination: Tables<"destinations"> }) {
   const [postDialogState, setPostDialogState] = useState<{
@@ -83,12 +84,33 @@ export default function ManagePosts({ destination }: { destination: Tables<"dest
   }
 
   const renderPost = (post: Tables<"posts"> & { destination: Tables<"destinations"> | null }) => {
+    let postComp = <></>;
     switch (post.destination?.type) {
       case DestinationTypes.INSTAGRAM:
-        return <InstagramPost post={post} />;
+        postComp = (
+          <InstagramPost
+            key={post.id}
+            post={post}
+            onEditPost={() => {
+              setPostDialogState({
+                isOpen: true,
+                post,
+              });
+            }}
+            onDeletePost={() => {
+              setDeleteConfirmationDialogState({
+                isOpen: true,
+                post,
+              });
+            }}
+          />
+        );
+        break;
       default:
         return <></>;
     }
+
+    return postComp;
   };
 
   return (
@@ -121,20 +143,24 @@ export default function ManagePosts({ destination }: { destination: Tables<"dest
           });
         }}
       />
-      {(posts || [])?.map((post) => (
-        <div className="w-[400px] rounded-md bg-secondary" key={post.id}>
-          {renderPost(post)}
+      <div className="mb-3 flex items-end">
+        <div className="flex-1">
+          <Header2 title="Posts" />
+          <p className="text-sm text-muted-foreground">
+            A post represents the content that will be published to the destination.
+          </p>
         </div>
-      ))}
-      <Button
-        onClick={() => {
-          setPostDialogState({
-            isOpen: true,
-          });
-        }}
-      >
-        Create post
-      </Button>
+        <Button
+          onClick={() => {
+            setPostDialogState({
+              isOpen: true,
+            });
+          }}
+        >
+          Create post
+        </Button>
+      </div>
+      <div className="flex gap-x-2  overflow-scroll">{posts?.map((post) => renderPost(post))}</div>
     </div>
   );
 }

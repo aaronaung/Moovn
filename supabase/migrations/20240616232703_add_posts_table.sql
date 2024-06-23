@@ -5,6 +5,7 @@ create table "public"."posts" (
   "caption" text,
   "source_data_view" text not null,
   "last_published_at" timestamp with time zone,
+  "published_ig_media_id" text,
   "created_at" timestamp with time zone default now(),
   "updated_at" timestamp with time zone default now()
 );

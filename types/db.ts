@@ -45,27 +45,33 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          linked_ig_user_id: string | null
           long_lived_token: string | null
           name: string
           owner_id: string
+          token_last_refreshed_at: string
           type: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          linked_ig_user_id?: string | null
           long_lived_token?: string | null
           name: string
           owner_id: string
+          token_last_refreshed_at?: string
           type: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          linked_ig_user_id?: string | null
           long_lived_token?: string | null
           name?: string
           owner_id?: string
+          token_last_refreshed_at?: string
           type?: string
           updated_at?: string | null
         }
@@ -87,6 +93,7 @@ export type Database = {
           id: string
           last_published_at: string | null
           owner_id: string
+          published_ig_media_id: string | null
           source_data_view: string
           updated_at: string | null
         }
@@ -97,6 +104,7 @@ export type Database = {
           id?: string
           last_published_at?: string | null
           owner_id: string
+          published_ig_media_id?: string | null
           source_data_view: string
           updated_at?: string | null
         }
@@ -107,6 +115,7 @@ export type Database = {
           id?: string
           last_published_at?: string | null
           owner_id?: string
+          published_ig_media_id?: string | null
           source_data_view?: string
           updated_at?: string | null
         }

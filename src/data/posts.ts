@@ -58,5 +58,13 @@ export const getPostsByDestinationId = async (destinationId: string, { client }:
 };
 
 export const getPostById = async (id: string, { client }: SupabaseOptions) => {
-  return throwOrData(client.from("posts").select("*").eq("id", id).maybeSingle());
+  return throwOrData(client.from("posts").select("*, destination:destinations(*)").eq("id", id).maybeSingle());
+};
+
+export const publishPost = async (id: string) => {
+  return (
+    await fetch(`/api/posts/${id}/publish`, {
+      method: "POST",
+    })
+  ).json();
 };

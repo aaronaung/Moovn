@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
+import { toast } from "@/src/components/ui/use-toast";
 import { SOURCE_HAS_NO_DATA_ID, SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { generateDesign, getDesignsForTemplate } from "@/src/data/designs";
@@ -227,6 +228,10 @@ export const DesignContainer = ({
                 setHasNoScheduleData(resp.id === SOURCE_HAS_NO_DATA_ID);
                 queryClient.invalidateQueries({
                   queryKey: ["getDesignsForTemplate", template.id],
+                });
+                toast({
+                  title: "Design refreshed",
+                  variant: "success",
                 });
               }}
             >

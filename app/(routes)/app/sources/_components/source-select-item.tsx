@@ -15,14 +15,8 @@ export const SourceSelectItem = ({
   isSelected: boolean;
   source: Tables<"sources">;
   setSelectedSource: (source: Tables<"sources">) => void;
-  setSourceDialogState: (state: {
-    isOpen: boolean;
-    source?: Tables<"sources">;
-  }) => void;
-  setDeleteConfirmationDialogState: (state: {
-    isOpen: boolean;
-    source?: Tables<"sources">;
-  }) => void;
+  setSourceDialogState: (state: { isOpen: boolean; source?: Tables<"sources"> }) => void;
+  setDeleteConfirmationDialogState: (state: { isOpen: boolean; source?: Tables<"sources"> }) => void;
 }) => {
   const renderLogo = () => {
     if (source?.type === SourceTypes.PIKE13) {
@@ -44,11 +38,7 @@ export const SourceSelectItem = ({
     >
       <div className="flex items-center ">
         <Checkbox id={source.id} className="mr-2" checked={isSelected} />
-        <label
-          htmlFor={source.id}
-          id="source-checkbox"
-          className="flex-1 text-sm"
-        >
+        <label htmlFor={source.id} id="source-checkbox" className="flex-1 text-sm">
           {source.name}
         </label>
         <div className="mb-1 flex gap-x-0.5">
@@ -68,7 +58,7 @@ export const SourceSelectItem = ({
                 source,
               });
             }}
-            className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground"
+            className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground hover:text-secondary"
           />
         </div>
       </div>

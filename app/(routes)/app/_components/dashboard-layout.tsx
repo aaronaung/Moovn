@@ -23,13 +23,7 @@ import { ModeToggle } from "@/src/components/common/mode-toggle";
 import { Tables } from "@/types/db";
 import { MoovnLogo } from "@/src/components/ui/icons/moovn";
 
-export default function Dashboard({
-  user,
-  children,
-}: {
-  user?: Tables<"users">;
-  children: any;
-}) {
+export default function Dashboard({ user, children }: { user?: Tables<"users">; children: any }) {
   // const { data: currentSubscription, isLoading: isLoadingSubscription } =
   //   useSupaQuery(getStripeSubscriptionForBusiness, {
   //     queryKey: ["getStripeSubscriptionForBusiness"],
@@ -104,7 +98,7 @@ export default function Dashboard({
                     Upgrade
                   </Button>
                 </Link>
-              )}
+              )} 
             </div>
           )*/}
         </div>
@@ -112,11 +106,7 @@ export default function Dashboard({
         <header className="fixed left-0 top-0 z-10 flex h-14 w-full items-center gap-4 border-b bg-muted px-4 lg:h-[60px] lg:px-6">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
+              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
@@ -160,10 +150,7 @@ export default function Dashboard({
           </div>
           <p className="text-sm text-muted-foreground">
             For support, email us at{" "}
-            <a
-              className="hover:text-primary hover:underline"
-              href="mailto:someone@example.com"
-            >
+            <a className="hover:text-primary hover:underline" href="mailto:someone@example.com">
               <i>team@moovn.co</i>
             </a>
           </p>
@@ -177,13 +164,9 @@ export default function Dashboard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {user && (
-                <div
-                  className={"blocktext-sm cursor-pointer p-2 text-gray-700"}
-                >
+                <div className={"blocktext-sm cursor-pointer p-2 text-gray-700"}>
                   <Header2 title={"Welcome"} />
-                  <p className="text-sm text-muted-foreground">
-                    {userDisplayName(user)}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{userDisplayName(user)}</p>
                 </div>
               )}
               <DropdownMenuSeparator />
@@ -199,7 +182,7 @@ export default function Dashboard({
           </DropdownMenu>
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 p-4 py-6 md:px-6 lg:gap-6">
+        <main className="flex w-screen flex-1 flex-col gap-4 p-4 py-6 md:w-[calc(100vw_-_280px)] md:px-6 lg:gap-6">
           {children}
         </main>
       </div>

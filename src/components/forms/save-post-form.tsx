@@ -12,7 +12,7 @@ import { toast } from "../ui/use-toast";
 import { savePost } from "@/src/data/posts";
 import { cn, strListDiff } from "@/src/utils";
 import { SourceDataView } from "@/src/consts/sources";
-import { getTemplatesBySchedule } from "@/src/data/templates";
+import { getTemplatesBySchedule, getTemplatesForPost } from "@/src/data/templates";
 import InputTextArea from "../ui/input/textarea";
 import { Tables } from "@/types/db";
 import { Spinner } from "../common/loading-spinner";
@@ -67,15 +67,32 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     queryKey: ["getTemplatesBySchedule", schedule],
     arg: schedule as SourceDataView,
   });
+  const { data: initialTemplates } = useSupaQuery(getTemplatesForPost, {
+    queryKey: ["getTemplatesForPost", defaultValues?.id],
+    arg: defaultValues?.id,
+    enabled: !!defaultValues?.id,
+  });
 
   useEffect(() => {
     if (schedule !== defaultValues?.source_data_view) {
+      // Reset template_ids when schedule selection changes.
       setValue("template_ids", []);
     }
-  }, [schedule, setValue]);
+  }, [schedule, setValue, defaultValues?.source_data_view]);
+  useEffect(() => {
+    if (initialTemplates) {
+      setValue(
+        "template_ids",
+        initialTemplates.map((t) => t.id),
+      );
+    }
+  }, [initialTemplates, setValue]);
 
   const { mutate: _savePost, isPending: isSavingPost } = useSupaMutation(savePost, {
-    invalidate: [["getPostsByDestinationId", destination.id]],
+    invalidate: [
+      ["getPostsByDestinationId", destination.id],
+      defaultValues?.id ? ["getTemplatesForPost", defaultValues.id] : [],
+    ],
     onSuccess: () => {
       onSubmitted();
     },
@@ -172,6 +189,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         error={errors.caption?.message}
         label="Caption"
         textareaProps={{
+          rows: 7,
           placeholder: "Write a caption for this post",
         }}
       />
@@ -206,7 +224,7 @@ const DesignSelectItem = ({
     <div
       key={template.id}
       className={cn(
-        " flex h-fit w-[200px] shrink-0 cursor-pointer flex-col gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
+        "flex h-fit w-[200px] shrink-0 cursor-pointer flex-col gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
         isSelected && "bg-secondary",
       )}
       onClick={() => {
