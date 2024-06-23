@@ -1,4 +1,4 @@
-import { InstagramBusinessAccount } from "../libs/facebook/types";
+import { InstagramBusinessAccount, InstagramMedia } from "../libs/facebook/types";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 
@@ -13,4 +13,14 @@ export const linkInstagramAccount = async (
   return throwOrData(
     client.from("destinations").update({ linked_ig_user_id: accountId }).eq("id", destinationId).single(),
   );
+};
+
+export const getInstagramMedia = async ({
+  destinationId,
+  mediaId,
+}: {
+  destinationId: string;
+  mediaId: string;
+}): Promise<InstagramMedia> => {
+  return (await fetch(`/api/destinations/${destinationId}/facebook/instagram-media/${mediaId}`)).json();
 };
