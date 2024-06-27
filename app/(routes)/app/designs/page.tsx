@@ -11,8 +11,8 @@ import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import Link from "next/link";
-import { useState } from "react";
-import { DesignContainer } from "./_components/design-container";
+import { useEffect, useState } from "react";
+import { DesignContainerV2 } from "./_components/design-container-v2";
 
 export default function DesignsPage() {
   const [overwriteDesignDialogState, setOverwriteDesignDialogState] = useState<{
@@ -44,6 +44,18 @@ export default function DesignsPage() {
   const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(deleteTemplate, {
     invalidate: [["getTemplatesForAuthUser"]],
   });
+
+  // Effect for handling Photopea events.
+  useEffect(() => {
+    window.addEventListener("message", function (e) {
+      if (e.data instanceof ArrayBuffer) {
+        console.log("received array buffer", e);
+        // This is a save event after photopea has processed the commands.
+        var blob = new Blob([e.data], { type: "image/jpeg" });
+        var objectUrl = URL.createObjectURL(blob);
+      }
+    });
+  }, []);
 
   if (isLoadingTemplates || isLoadingSources) {
     return <Spinner />;
@@ -134,7 +146,7 @@ export default function DesignsPage() {
         onOverwriteComplete={overwriteDesignDialogState.onOverwriteComplete}
         isOpen={overwriteDesignDialogState.isOpen}
       />
-      <div className="mb-3 flex items-end">
+      <div className="mb-5 flex items-end">
         <div className="flex-1">
           <Header2 title="Designs" />
           <p className="text-sm text-muted-foreground">
@@ -148,7 +160,6 @@ export default function DesignsPage() {
             </a>{" "}
             for support.
           </p>
-          <p className="py-2 text-xs text-muted-foreground"></p>
         </div>
         <Button
           onClick={() => {
@@ -162,7 +173,7 @@ export default function DesignsPage() {
       </div>
       <div className="flex flex-wrap gap-4">
         {(templates || []).map((template) => (
-          <DesignContainer
+          <DesignContainerV2
             key={template.id}
             template={template}
             onDeleteTemplate={() => {
@@ -177,13 +188,13 @@ export default function DesignsPage() {
                 template,
               });
             }}
-            triggerDesignOverwrite={(designId: string, onOverwriteComplete) => {
-              setOverwriteDesignDialogState({
-                isOpen: true,
-                designId,
-                onOverwriteComplete,
-              });
-            }}
+            // triggerDesignOverwrite={(designId: string, onOverwriteComplete) => {
+            //   setOverwriteDesignDialogState({
+            //     isOpen: true,
+            //     designId,
+            //     onOverwriteComplete,
+            //   });
+            // }}
           />
         ))}
       </div>

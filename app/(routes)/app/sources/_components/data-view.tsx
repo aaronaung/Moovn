@@ -3,32 +3,22 @@ import Tab from "@/src/components/ui/tab";
 import { SourceDataView } from "@/src/consts/sources";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { transformSchedule } from "@/src/libs/sources/utils";
 import { Tables } from "@/types/db";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
-export default function DataView({
-  selectedSource,
-}: {
-  selectedSource: Tables<"sources">;
-}) {
-  const [selectedView, setSelectedView] = useState<SourceDataView>(
-    SourceDataView.TODAY,
-  );
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
-    getScheduleDataForSource,
-    {
-      queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
-      arg: {
-        id: selectedSource?.id,
-        view: selectedView,
-      },
-      enabled: !!selectedSource,
+export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
+  const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.TODAY);
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+    queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
+    arg: {
+      id: selectedSource?.id,
+      view: selectedView,
     },
-  );
+    enabled: !!selectedSource,
+  });
 
   const handleTabSelect = (tab: SourceDataView) => {
     setSelectedView(tab);
@@ -36,24 +26,17 @@ export default function DataView({
 
   const renderDataView = () => {
     if (!selectedSource) {
-      return (
-        <p className="text-sm text-muted-foreground">
-          Please select a source first.
-        </p>
-      );
+      return <p className="text-sm text-muted-foreground">Please select a source first.</p>;
     }
     if (isLoadingScheduleData) {
       return <Spinner className="mt-4" />;
     }
 
-    const transformedSchedule = transformSchedule(scheduleData);
     return (
       <div className="flex-1 overflow-scroll">
         <ReactJson
-          src={transformedSchedule}
-          shouldCollapse={(field) =>
-            field.name ? field.name.startsWith("schedules") : false
-          }
+          src={scheduleData || {}}
+          shouldCollapse={(field) => (field.name ? field.name.startsWith("schedules") : false)}
           displayDataTypes={false}
           name={false}
           theme={"chalk"}

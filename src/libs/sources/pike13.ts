@@ -1,15 +1,6 @@
 import { SourceDataView } from "@/src/consts/sources";
 import { ScheduleData } from "./common";
-import {
-  compareAsc,
-  endOfDay,
-  endOfMonth,
-  endOfWeek,
-  parseISO,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { compareAsc, endOfDay, endOfMonth, endOfWeek, parseISO, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -20,13 +11,7 @@ export class Pike13Client {
   private clientId: string;
   private businessUrl: string;
 
-  constructor({
-    clientId,
-    businessUrl,
-  }: {
-    clientId: string;
-    businessUrl: string;
-  }) {
+  constructor({ clientId, businessUrl }: { clientId: string; businessUrl: string }) {
     this.clientId = clientId;
     this.businessUrl = businessUrl;
   }
@@ -41,10 +26,7 @@ export class Pike13Client {
   }
 
   async getRawEventOcurrences(from: Date, to: Date) {
-    const resp = await this.get(
-      `/api/v2/front/event_occurrences`,
-      `from=${from.toISOString()}&to=${to.toISOString()}`,
-    );
+    const resp = await this.get(`/api/v2/front/event_occurrences`, `from=${from.toISOString()}&to=${to.toISOString()}`);
     return resp.event_occurrences || [];
   }
   async getRawStaffMembers() {
@@ -57,9 +39,7 @@ export class Pike13Client {
       return [];
     }
     // Convert the start_at to the same date format using date-fns
-    events.sort((a, b) =>
-      compareAsc(parseISO(a.start_at), parseISO(b.start_at)),
-    );
+    events.sort((a, b) => compareAsc(parseISO(a.start_at), parseISO(b.start_at)));
     const formattedEvents = events.map((event) => ({
       ...event,
       date: startOfDay(new Date(event.start_at)).toISOString(),
@@ -87,7 +67,9 @@ export class Pike13Client {
               const staffMember = staffMembersById[s.id];
               return {
                 name: staffMember.name,
-                profile_photo: staffMember.profile_photo?.["x400"] ?? "",
+                profile_photo:
+                  staffMember.profile_photo?.["x400"] ??
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
               };
             }),
             name: event.name,
@@ -99,26 +81,15 @@ export class Pike13Client {
     };
   }
 
-  async getScheduleDataForView(
-    view?: SourceDataView | null,
-  ): Promise<ScheduleData> {
+  async getScheduleDataForView(view?: SourceDataView | null): Promise<ScheduleData> {
     const currDateTime = new Date();
     switch (view) {
       case SourceDataView.TODAY:
-        return this.getScheduleData(
-          startOfDay(currDateTime),
-          endOfDay(currDateTime),
-        );
+        return this.getScheduleData(startOfDay(currDateTime), endOfDay(currDateTime));
       case SourceDataView.THIS_WEEK:
-        return this.getScheduleData(
-          startOfWeek(currDateTime),
-          endOfWeek(currDateTime),
-        );
+        return this.getScheduleData(startOfWeek(currDateTime), endOfWeek(currDateTime));
       case SourceDataView.THIS_MONTH:
-        return this.getScheduleData(
-          startOfMonth(currDateTime),
-          endOfMonth(currDateTime),
-        );
+        return this.getScheduleData(startOfMonth(currDateTime), endOfMonth(currDateTime));
       default:
         return { schedules: [] };
     }
