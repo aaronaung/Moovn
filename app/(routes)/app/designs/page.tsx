@@ -11,7 +11,7 @@ import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DesignContainerV2 } from "./_components/design-container-v2";
 
 export default function DesignsPage() {
@@ -44,18 +44,6 @@ export default function DesignsPage() {
   const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(deleteTemplate, {
     invalidate: [["getTemplatesForAuthUser"]],
   });
-
-  // Effect for handling Photopea events.
-  useEffect(() => {
-    window.addEventListener("message", function (e) {
-      if (e.data instanceof ArrayBuffer) {
-        console.log("received array buffer", e);
-        // This is a save event after photopea has processed the commands.
-        var blob = new Blob([e.data], { type: "image/jpeg" });
-        var objectUrl = URL.createObjectURL(blob);
-      }
-    });
-  }, []);
 
   if (isLoadingTemplates || isLoadingSources) {
     return <Spinner />;

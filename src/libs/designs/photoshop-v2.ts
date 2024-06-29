@@ -1,20 +1,19 @@
-import { Layer, Psd } from "ag-psd";
+import { Psd } from "ag-psd";
 
 import { format } from "date-fns";
 
 export enum PSDActionType {
   EditText = "editText",
-  ReplaceSmartObject = "replaceSmartObject",
+  LoadSmartObjectFromUrl = "loadSmartObjectFromUrl",
   DeleteLayer = "deleteLayer",
 }
 
 export type PSDActions = {
   [key: string]: {
-    [key: string]: {
-      value?: any;
-      layer: Layer;
-    };
-  };
+    value: any;
+    name: string;
+    newLayerName?: string; // Only used for LoadSmartObjectFromUrl
+  }[];
 };
 
 export const determinePSDActions = (schedules: any, psd: Psd): PSDActions => {
@@ -23,9 +22,9 @@ export const determinePSDActions = (schedules: any, psd: Psd): PSDActions => {
   }
 
   const psdActions: PSDActions = {
-    [PSDActionType.EditText]: {},
-    [PSDActionType.ReplaceSmartObject]: {},
-    [PSDActionType.DeleteLayer]: {},
+    [PSDActionType.EditText]: [],
+    [PSDActionType.LoadSmartObjectFromUrl]: [],
+    [PSDActionType.DeleteLayer]: [],
   };
 
   for (const layer of psd.children) {
@@ -43,27 +42,47 @@ export const determinePSDActions = (schedules: any, psd: Psd): PSDActions => {
       continue;
     }
     if (!value) {
-      psdActions[PSDActionType.DeleteLayer][ogLayerName] = {
-        layer,
-        value,
-      };
+      psdActions[PSDActionType.DeleteLayer] = [
+        ...psdActions[PSDActionType.DeleteLayer],
+        {
+          name: ogLayerName,
+          value: ogLayerName, // value is the layer name
+        },
+      ];
       continue;
     }
     if (layerName.endsWith("start_at") || layerName.endsWith("end_at") || layerName.endsWith("date")) {
-      psdActions[PSDActionType.EditText][ogLayerName] = {
-        layer,
-        value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
-      };
+      psdActions[PSDActionType.EditText] = [
+        ...psdActions[PSDActionType.EditText],
+        {
+          name: ogLayerName,
+          value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
+        },
+      ];
     } else if (layer.placedLayer) {
-      psdActions[PSDActionType.ReplaceSmartObject][ogLayerName] = {
-        layer,
-        value,
-      };
+      const valueSplit = value.split("/");
+      // Photoshop always uses the last part of the URL as the layer name.
+      const newLayerName = valueSplit[valueSplit.length - 1];
+      const index = psdActions[PSDActionType.LoadSmartObjectFromUrl].length;
+
+      psdActions[PSDActionType.LoadSmartObjectFromUrl] = [
+        ...psdActions[PSDActionType.LoadSmartObjectFromUrl],
+        {
+          name: ogLayerName,
+
+          // value is the URL of the image with the index as an anchor. e.g. "https://example.com/image.jpg#0". We do this to uniquely identify the layer.
+          value: `${value}#${index}`,
+          newLayerName: `${newLayerName}#${index}`,
+        },
+      ];
     } else if (layer.text) {
-      psdActions[PSDActionType.EditText][ogLayerName] = {
-        value,
-        layer,
-      };
+      psdActions[PSDActionType.EditText] = [
+        ...psdActions[PSDActionType.EditText],
+        {
+          name: ogLayerName,
+          value, // value is the text content
+        },
+      ];
     }
   }
   return psdActions;

@@ -1,26 +1,19 @@
 "use client";
-import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { Button } from "@/src/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/src/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/src/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { SourceDataView } from "@/src/consts/sources";
-import { useDesignFromTemplate } from "@/src/hooks/use-design-from-template";
-import { download } from "@/src/utils";
+import { BUCKETS } from "@/src/consts/storage";
+import { usePhotopea } from "@/src/contexts/photopea";
+import { getScheduleDataForSource } from "@/src/data/sources";
+import { useSignedUrl } from "@/src/hooks/use-signed-url";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
+import { moveLayerCmd, updateLayersCmd } from "@/src/libs/designs/photopea";
+import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/designs/photoshop-v2";
 import { Tables } from "@/types/db";
-import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { readPsd } from "ag-psd";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
-import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -33,26 +26,63 @@ export const DesignContainerV2 = ({
   onDeleteTemplate: () => void;
   onEditTemplate: () => void;
 }) => {
-  const queryClient = useQueryClient();
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const photopeaRef = useRef<HTMLIFrameElement>(null);
 
-  const {
-    designJpgUrl,
-    photopeaIframeSrc,
-    isLoading,
-    refresh: refreshDesign,
-  } = useDesignFromTemplate({
-    template,
-    photopeaRef,
+  const [photopeaIframeSrc, setPhotopeaIframeSrc] = useState<string | null>(null);
+
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+    arg: {
+      id: template.source?.id || "",
+      view: template.source_data_view as SourceDataView,
+    },
+    queryKey: ["getScheduleDataForSource", template.source?.id, template.source_data_view],
+    enabled: !!template.source,
+  });
+  const { signedUrl, loading: isLoadingSignedUrl } = useSignedUrl({
+    bucket: BUCKETS.templates,
+    objectPath: `${template.owner_id}/${template.id}.psd`,
   });
 
-  const renderLatestDesign = () => {
-    if (isLoading || !designJpgUrl) {
-      return <Spinner />;
+  const [isBuildingPhotopeaActions, setIsBuildingPhotopeaActions] = useState(false);
+  const [layerMovements, setLayerMovements] = useState<{ from: string; to: string }[]>([]);
+  const [layerEdits, setLayerEdits] = useState<PSDActions>({});
+
+  useEffect(() => {
+    if (scheduleData && signedUrl) {
+      const buildPhotopeaActions = async () => {
+        try {
+          setIsBuildingPhotopeaActions(true);
+          const templateFile = await (await fetch(signedUrl)).blob();
+          const psd = readPsd(await templateFile.arrayBuffer());
+          const psdActions = determinePSDActions(scheduleData, psd);
+
+          setLayerEdits(psdActions);
+          // We only want to move the layers after the smart objects have been loaded via the updateLayersCmd.
+          // LayerMovements are usually processed upon layer count change.
+          setLayerMovements(
+            psdActions[PSDActionType.LoadSmartObjectFromUrl as string].map(({ name, newLayerName }) => ({
+              from: newLayerName || name,
+              to: name,
+            })),
+          );
+        } catch (err) {
+          console.error("failed to determine PSD actions", err);
+        } finally {
+          setIsBuildingPhotopeaActions(false);
+        }
+        // Use the schedule data to determine the actions to take on the template PSD.
+      };
+      buildPhotopeaActions();
+      setPhotopeaIframeSrc(`https://www.photopea.com#${JSON.stringify({ files: [signedUrl], environment: {} })}`);
     }
-    return <DesignImage url={designJpgUrl} />;
-  };
+  }, [scheduleData, signedUrl]);
+
+  // const renderLatestDesign = () => {
+  //   if (isLoading || !designJpgUrl) {
+  //     return <Spinner />;
+  //   }
+  //   return <DesignImage url={designJpgUrl} />;
+  // };
 
   const fromAndToString = () => {
     const currDateTime = new Date();
@@ -84,10 +114,21 @@ export const DesignContainerV2 = ({
     ${format(fromAndTo.to, "MMM d")}`;
   };
 
+  if (isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions) {
+    return <Spinner />;
+  }
+
   return (
     <>
-      <iframe ref={photopeaRef} className=" h-screen w-full" src={photopeaIframeSrc} />
-      <Card className="w-[400px]">
+      {photopeaIframeSrc && (
+        <PhotopeaContainer
+          namespace={template.id}
+          photopeaIframeSrc={photopeaIframeSrc}
+          layerMovements={layerMovements}
+          layerEdits={layerEdits}
+        />
+      )}
+      {/* <Card className="w-[400px]">
         {designJpgUrl && (
           <ImageViewer
             visible={isImageViewerOpen}
@@ -146,7 +187,7 @@ export const DesignContainerV2 = ({
                 </Tooltip>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                {/* {psdSignedUrl && (
+                {psdSignedUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
@@ -155,7 +196,7 @@ export const DesignContainerV2 = ({
                 >
                   PSD
                 </DropdownMenuItem>
-              )} */}
+              )}
                 {designJpgUrl && (
                   <DropdownMenuItem
                     className="cursor-pointer"
@@ -169,7 +210,7 @@ export const DesignContainerV2 = ({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {/* {latestDesign && (
+          {latestDesign && (
           <Tooltip>
             <TooltipTrigger>
               <Button
@@ -186,7 +227,7 @@ export const DesignContainerV2 = ({
             </TooltipTrigger>
             <TooltipContent>Overwrite</TooltipContent>
           </Tooltip>
-        )} */}
+        )}
           <Tooltip>
             <TooltipTrigger>
               <Button
@@ -203,14 +244,84 @@ export const DesignContainerV2 = ({
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
         </CardFooter>
-      </Card>
+      </Card> */}
     </>
+  );
+};
+
+const PhotopeaContainer = ({
+  namespace,
+  photopeaIframeSrc,
+  layerMovements,
+  layerEdits,
+}: {
+  namespace: string;
+  photopeaIframeSrc: string;
+  layerMovements: { from: string; to: string }[];
+  layerEdits: PSDActions;
+}) => {
+  const photopeaRef = useRef<HTMLIFrameElement>(null);
+  const [layerCount, setLayerCount] = useState(0);
+  const {
+    initialize: initPhotopea,
+    clear: clearPhotopea,
+    sendRawPhotopeaCmd,
+    sendExportFileCmd,
+    exportQueue,
+    exportMetadataQueue,
+  } = usePhotopea();
+  const [designUrl, setDesignUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let lastExportIndex = 0;
+    let lastExportMetadata;
+    for (let i = 0; i < exportMetadataQueue.length; i++) {
+      if (exportMetadataQueue[i].namespace === namespace) {
+        lastExportIndex = i;
+        lastExportMetadata = exportMetadataQueue[i];
+      }
+    }
+    if (lastExportMetadata && lastExportMetadata.format === "jpg" && exportQueue[lastExportIndex]) {
+      setDesignUrl(URL.createObjectURL(new Blob([exportQueue[lastExportIndex]])));
+    }
+  }, [exportMetadataQueue, exportQueue]);
+
+  useEffect(() => {
+    initPhotopea(namespace, {
+      ref: photopeaRef,
+      onLayerCountChange: (count) => {
+        if (count !== layerCount) {
+          setLayerCount(count);
+          for (const { from, to } of layerMovements) {
+            sendRawPhotopeaCmd(namespace, moveLayerCmd({ from, to }));
+          }
+          sendExportFileCmd(namespace, "jpg");
+        }
+      },
+      onReady: async () => {
+        console.log("PHOTOPEA READY! ~~~", namespace);
+        sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
+      },
+    });
+
+    return () => {
+      clearPhotopea(namespace);
+    };
+  }, [photopeaRef.current]);
+
+  return (
+    <div>
+      {namespace}
+
+      {designUrl ? <DesignImage url={designUrl} /> : <DesignNotFound label="Building design..." />}
+      <iframe ref={photopeaRef} className="hidden h-[500px] w-[500px]" src={photopeaIframeSrc} />
+    </div>
   );
 };
 
 const DesignImage = ({ url }: { url?: string }) => {
   if (url) {
-    return <img src={url} alt="Design" className="max-h-full max-w-full" />;
+    return <img src={url} alt="Design" className="h-[500px] w-[500px]" />;
   }
   return <DesignNotFound />;
 };

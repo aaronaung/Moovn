@@ -1,46 +1,32 @@
-export const updateTextLayerCmd = (id: string, layerName: string, newContent: string) => `
-// Get the active document
-var doc = app.activeDocument;
+import { PSDActions, PSDActionType } from "./photoshop-v2";
 
-// Get the text layer by name
-var textLayer = doc.artLayers.getByName("${layerName}");
-
-// Check if the layer is a text layer
-if (textLayer.kind == LayerKind.TEXT) {
-    // Set the new text content
-    textLayer.textItem.contents = "${newContent}";
-} else {
-    alert("The specified layer is not a text layer.");
+export const getLayerCountCmd = (namespace: string, notYetLoaded: boolean) => `
+try {
+    var doc = app.activeDocument;
+    if (doc) {
+        var layers = doc.artLayers;
+        if (layers && layers.length > 0) {
+            app.echoToOE("layer_count:${namespace}:" + layers.length);
+            if (${notYetLoaded}) {
+                app.echoToOE("loaded:${namespace}")
+            }
+        }
+    }
+} catch(e) {
+    
 }
-app.echoToOE("${id}");
+
 `;
 
-export const saveToOECmd = (id: string, format: "jpg" | "psd") => `
-app.activeDocument.saveToOE("${format}");
-app.echoToOE("${id}");
-`;
-
-export type PPUpdateLayersRequest = {
-  id: string;
-  layers: {
-    [key: string]: {
-      // key must be one of the following: "editText", "replaceSmartObject", "deleteLayer"
-      name: string;
-      value: any;
-    }[];
-  };
-};
-
-export const updateLayersCmd = (req: PPUpdateLayersRequest) => `
+export const updateLayersCmd = (updateActions: PSDActions) => `
 // Get the active document
 var doc = app.activeDocument;
 
-var layers = ${JSON.stringify(req.layers)}
-console.log('layers', layers)
+var layers = ${JSON.stringify(updateActions)}
 
 // Edit text layers
-for (var i = 0; i < layers.editText.length; i++) {
-    var layer = layers.editText[i];
+for (var i = 0; i < layers.${PSDActionType.EditText}.length; i++) {
+    var layer = layers.${PSDActionType.EditText}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
 
     if (targetLayer.kind == LayerKind.TEXT) {
@@ -51,15 +37,15 @@ for (var i = 0; i < layers.editText.length; i++) {
 }
 
 // Delete layers
-for (var i = 0; i < layers.deleteLayer.length; i++) {
-    var layer = layers.deleteLayer[i];
+for (var i = 0; i < layers.${PSDActionType.DeleteLayer}.length; i++) {
+    var layer = layers.${PSDActionType.DeleteLayer}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
     targetLayer.remove();
 }
 
 // Replace smart objects
-for (var i = 0; i < layers.replaceSmartObject.length; i++) {
-    var layer = layers.replaceSmartObject[i];
+for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) {
+    var layer = layers.${PSDActionType.LoadSmartObjectFromUrl}[i];
     if (layer.value == ""){
         continue;
     }
@@ -71,8 +57,6 @@ export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
 var doc = app.activeDocument;
 var fromName = '${from}';
 var toName = '${to}';
-
-console.log(fromName, toName)
 
 var from = doc.artLayers.getByName(fromName);
 var to = doc.artLayers.getByName(toName);
