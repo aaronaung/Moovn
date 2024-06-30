@@ -41,6 +41,39 @@ export const transformSchedule = (input?: ScheduleData) => {
     return {};
   }
 
+  const internalTransform = (value: any, key: string): any => {
+    if (isArray(value)) {
+      const result: { [key: string]: any } = {};
+      for (let i = 0; i < value.length; i++) {
+        const newKey = `${key}#${i + 1}`;
+        result[newKey] = internalTransform(value[i], key);
+      }
+      return result;
+    } else if (isPlainObject(value)) {
+      const result: { [key: string]: any } = {};
+      for (const [k, v] of Object.entries(value)) {
+        if (isArray(v)) {
+          const result = { ...value, ...internalTransform(v, k) };
+          delete result[k];
+          return result;
+        } else {
+          result[k] = internalTransform(value[k], k);
+        }
+      }
+      return result;
+    } else {
+      return value;
+    }
+  };
+
+  return internalTransform(input, "schedules");
+};
+
+export const transformScheduleV2 = (input?: ScheduleData) => {
+  if (!input) {
+    return {};
+  }
+
   const internalTransform = (value: any, key: string, result: any): any => {
     if (isArray(value)) {
       for (let i = 0; i < value.length; i++) {

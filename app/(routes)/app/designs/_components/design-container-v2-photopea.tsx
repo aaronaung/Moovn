@@ -1,5 +1,6 @@
 "use client";
 import { Spinner } from "@/src/components/common/loading-spinner";
+import { Button } from "@/src/components/ui/button";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopea } from "@/src/contexts/photopea";
@@ -8,6 +9,7 @@ import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { moveLayerCmd, updateLayersCmd } from "@/src/libs/designs/photopea";
 import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/designs/photoshop-v2";
+import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { Tables } from "@/types/db";
 import { readPsd } from "ag-psd";
 
@@ -30,14 +32,21 @@ export const DesignContainerV2 = ({
 
   const [photopeaIframeSrc, setPhotopeaIframeSrc] = useState<string | null>(null);
 
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+  const {
+    data: scheduleData,
+    isLoading: isLoadingScheduleData,
+    refetch,
+    isRefetching: isRefreshingScheduleData,
+  } = useSupaQuery(getScheduleDataForSource, {
     arg: {
       id: template.source?.id || "",
       view: template.source_data_view as SourceDataView,
     },
-    queryKey: ["getScheduleDataForSource", template.source?.id, template.source_data_view],
+    queryKey: ["getScheduleDataForSource", template.id],
     enabled: !!template.source,
+    refetchOnWindowFocus: false,
   });
+
   const { signedUrl, loading: isLoadingSignedUrl } = useSignedUrl({
     bucket: BUCKETS.templates,
     objectPath: `${template.owner_id}/${template.id}.psd`,
@@ -49,12 +58,14 @@ export const DesignContainerV2 = ({
 
   useEffect(() => {
     if (scheduleData && signedUrl) {
+      console.log({ scheduleData });
       const buildPhotopeaActions = async () => {
         try {
           setIsBuildingPhotopeaActions(true);
           const templateFile = await (await fetch(signedUrl)).blob();
           const psd = readPsd(await templateFile.arrayBuffer());
-          const psdActions = determinePSDActions(scheduleData, psd);
+          const psdActions = determinePSDActions(transformScheduleV2(scheduleData), psd);
+          console.log(psdActions);
 
           setLayerEdits(psdActions);
           // We only want to move the layers after the smart objects have been loaded via the updateLayersCmd.
@@ -65,6 +76,7 @@ export const DesignContainerV2 = ({
               to: name,
             })),
           );
+          setPhotopeaIframeSrc(`https://www.photopea.com#${JSON.stringify({ files: [signedUrl], environment: {} })}`);
         } catch (err) {
           console.error("failed to determine PSD actions", err);
         } finally {
@@ -73,7 +85,6 @@ export const DesignContainerV2 = ({
         // Use the schedule data to determine the actions to take on the template PSD.
       };
       buildPhotopeaActions();
-      setPhotopeaIframeSrc(`https://www.photopea.com#${JSON.stringify({ files: [signedUrl], environment: {} })}`);
     }
   }, [scheduleData, signedUrl]);
 
@@ -114,7 +125,7 @@ export const DesignContainerV2 = ({
     ${format(fromAndTo.to, "MMM d")}`;
   };
 
-  if (isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions) {
+  if (isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions || isRefreshingScheduleData) {
     return <Spinner />;
   }
 
@@ -126,6 +137,7 @@ export const DesignContainerV2 = ({
           photopeaIframeSrc={photopeaIframeSrc}
           layerMovements={layerMovements}
           layerEdits={layerEdits}
+          onRefresh={refetch}
         />
       )}
       {/* <Card className="w-[400px]">
@@ -254,67 +266,66 @@ const PhotopeaContainer = ({
   photopeaIframeSrc,
   layerMovements,
   layerEdits,
+  onRefresh,
 }: {
   namespace: string;
   photopeaIframeSrc: string;
   layerMovements: { from: string; to: string }[];
   layerEdits: PSDActions;
+  onRefresh: () => void;
 }) => {
   const photopeaRef = useRef<HTMLIFrameElement>(null);
-  const [layerCount, setLayerCount] = useState(0);
+  const [isDone, setIsDone] = useState(false);
   const {
     initialize: initPhotopea,
     clear: clearPhotopea,
     sendRawPhotopeaCmd,
     sendExportFileCmd,
-    exportQueue,
     exportMetadataQueue,
   } = usePhotopea();
   const [designUrl, setDesignUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    let lastExportIndex = 0;
-    let lastExportMetadata;
-    for (let i = 0; i < exportMetadataQueue.length; i++) {
-      if (exportMetadataQueue[i].namespace === namespace) {
-        lastExportIndex = i;
-        lastExportMetadata = exportMetadataQueue[i];
-      }
+    if (isDone) {
+      return;
     }
-    if (lastExportMetadata && lastExportMetadata.format === "jpg" && exportQueue[lastExportIndex]) {
-      setDesignUrl(URL.createObjectURL(new Blob([exportQueue[lastExportIndex]])));
-    }
-  }, [exportMetadataQueue, exportQueue]);
+    // This ensures that we always starts with a clean slate.
+    clearPhotopea(namespace);
 
-  useEffect(() => {
     initPhotopea(namespace, {
       ref: photopeaRef,
-      onLayerCountChange: (count) => {
-        if (count !== layerCount) {
-          setLayerCount(count);
-          for (const { from, to } of layerMovements) {
-            sendRawPhotopeaCmd(namespace, moveLayerCmd({ from, to }));
-          }
-          sendExportFileCmd(namespace, "jpg");
+      onLayerCountChange: () => {
+        for (const { from, to } of layerMovements) {
+          sendRawPhotopeaCmd(namespace, moveLayerCmd({ from, to }));
+        }
+        sendExportFileCmd(namespace, "jpg");
+      },
+      onFileExport: (fileExport) => {
+        if (fileExport) {
+          setDesignUrl(URL.createObjectURL(new Blob([fileExport.data])));
         }
       },
       onReady: async () => {
-        console.log("PHOTOPEA READY! ~~~", namespace);
+        console.log("SENDING UPDATE LAYERS CMD", namespace);
         sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
+      },
+      onDone: () => {
+        setIsDone(true);
+        console.log("PROCESSED", namespace);
       },
     });
 
     return () => {
       clearPhotopea(namespace);
     };
-  }, [photopeaRef.current]);
+  }, [photopeaRef.current, isDone, namespace]);
 
   return (
     <div>
       {namespace}
-
+      <Button onClick={onRefresh}>Refresh</Button>
       {designUrl ? <DesignImage url={designUrl} /> : <DesignNotFound label="Building design..." />}
-      <iframe ref={photopeaRef} className="hidden h-[500px] w-[500px]" src={photopeaIframeSrc} />
+      {!isDone && <iframe ref={photopeaRef} className="hidden h-[500px] w-[500px]" src={photopeaIframeSrc} />}
     </div>
   );
 };

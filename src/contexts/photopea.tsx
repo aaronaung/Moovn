@@ -3,6 +3,11 @@ import _ from "lodash";
 import { createContext, RefObject, useCallback, useContext, useEffect, useState } from "react";
 import { getLayerCountCmd } from "../libs/designs/photopea";
 
+type FileExport = {
+  data: ArrayBuffer;
+  format: "jpg" | "psd";
+};
+
 type PhotopeaContextValue = {
   sendExportFileCmd: (namespace: string, format: "jpg" | "psd") => void;
   sendRawPhotopeaCmd: (namespace: string, cmd: string) => void;
@@ -12,8 +17,10 @@ type PhotopeaContextValue = {
   initialize: (
     namespace: string,
     options: {
-      onReady: () => void;
-      onLayerCountChange: (count: number) => void;
+      onReady?: () => void;
+      onLayerCountChange?: (count: number) => void;
+      onFileExport?: (args: FileExport | null) => void;
+      onDone?: () => void;
       ref: RefObject<HTMLIFrameElement>;
     },
   ) => void;
@@ -30,7 +37,7 @@ function usePhotopea() {
   return context;
 }
 
-const PHOTOPEA_POLL_INTERVAL = 200;
+const LAYER_COUNT_POLL_INTERVAL = 10; // Gives more resolution.
 
 function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
@@ -39,14 +46,19 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   const [pollIntervalMap, setPollIntervalMap] = useState<{ [key: string]: NodeJS.Timeout }>({});
   const [exportQueue, setExportQueue] = useState<ArrayBuffer[]>([]);
   const [exportMetadataQueue, setExportMetadataQueue] = useState<{ namespace: string; format: string }[]>([]);
-
+  const [lastLayerCountChange, setLastLayerCountChange] = useState<{ [key: string]: number }>({});
   const [isInitialized, setIsInitialized] = useState<{ [key: string]: boolean }>({});
   const [isLoadedMap, setIsLoadedMap] = useState<{ [key: string]: boolean }>({});
-
-  // Exposed to caller
+  const [isProcessedMap, setIsProcessedMap] = useState<{ [key: string]: boolean }>({});
   const [onReadyMap, setOnReadyMap] = useState<{ [key: string]: () => void }>({});
   const [layerCountMap, setLayerCountMap] = useState<{ [key: string]: number }>({});
+
+  // Exposed to caller
+  const [onDoneMap, setOnDoneMap] = useState<{ [key: string]: () => void }>({});
   const [onLayerCountChangeMap, setOnLayerCountChangeMap] = useState<{ [key: string]: (count: number) => void }>({});
+  const [onFileExportMap, setOnFileExportMap] = useState<{
+    [key: string]: (args: FileExport | null) => void;
+  }>({});
   const [photopeaRefMap, setPhotopeaRefMap] = useState<{ [key: string]: RefObject<HTMLIFrameElement> }>({});
 
   const processEventFromPhotopea = useCallback(
@@ -59,27 +71,40 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
             return;
           }
           setIsLoadedMap((prev) => ({ ...prev, [namespace]: true }));
-          if (onReadyMap[namespace]) {
-            onReadyMap[namespace]();
-          }
+          onReadyMap[namespace]?.();
         }
         if (e.data.startsWith("layer_count")) {
           // layer_count:namespace-123:3
           const [_layerCount, namespace, layerCount] = e.data.split(":");
           const layerCountInt = parseInt(layerCount);
 
+          // If the layer count has changed, update the
+          const now = new Date().getTime();
+          if (
+            lastLayerCountChange[namespace] &&
+            now - lastLayerCountChange[namespace] >= 5000 &&
+            !isProcessedMap[namespace]
+          ) {
+            console.log("layer count has not changed in 5 seconds, clearing", namespace);
+            clear(namespace);
+            setIsProcessedMap((prev) => ({ ...prev, [namespace]: true }));
+            onDoneMap[namespace]?.();
+          }
+
           if (layerCountMap[namespace] !== layerCountInt) {
-            console.log("layer count changed", layerCountMap, layerCountInt);
             setLayerCountMap((prev) => ({ ...prev, [namespace]: layerCountInt }));
-            if (onLayerCountChangeMap[namespace]) {
-              onLayerCountChangeMap[namespace](layerCountInt);
-            }
+            setLastLayerCountChange((prev) => ({ ...prev, [namespace]: new Date().getTime() }));
+            onLayerCountChangeMap[namespace]?.(layerCountInt);
           }
         }
         if (e.data.startsWith("export_file")) {
           // export_file:namespace-123:jpg
           const [_exportFile, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
+          if (onFileExportMap[namespace]) {
+            const mostRecentExport = getMostRecentExport(namespace);
+            onFileExportMap[namespace](mostRecentExport);
+          }
         }
       }
       if (e.data instanceof ArrayBuffer) {
@@ -98,24 +123,24 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
 
   // Set up polling.
   useEffect(() => {
-    for (const [namespace, _] of Object.entries(photopeaRefMap)) {
-      if (pollIntervalMap[namespace]) {
-        clearInterval(pollIntervalMap[namespace]);
+    setPollIntervalMap({});
+    setTimeout(() => {
+      for (const [namespace, _] of Object.entries(photopeaRefMap)) {
+        const intervalId = setInterval(() => {
+          sendRawPhotopeaCmd(namespace, getLayerCountCmd(namespace));
+        }, LAYER_COUNT_POLL_INTERVAL);
+
+        setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
       }
+    }, 1500);
 
-      const intervalId = setInterval(() => {
-        sendRawPhotopeaCmd(namespace, getLayerCountCmd(namespace, !Boolean(isLoadedMap[namespace])));
-      }, PHOTOPEA_POLL_INTERVAL);
-
-      setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photopeaRefMap, isLoadedMap]);
+  }, [photopeaRefMap]);
 
   const sendRawPhotopeaCmd = (namespace: string, cmd: string) => {
     const ppRef = photopeaRefMap[namespace];
     if (!ppRef?.current) {
-      console.log("photopea command rejected because ref is not ready", namespace, cmd);
+      // console.log("photopea command rejected because ref is not ready", namespace, cmd);
       return;
     }
     const ppWindow = ppRef.current.contentWindow;
@@ -124,30 +149,51 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (cmd.indexOf("layer_count") === -1) {
-      console.log("sending photopea cmd", cmd);
+      // console.log("sending photopea cmd", cmd);
     }
     ppWindow.postMessage(cmd, "*");
   };
 
-  const attachLayerCountChangeListener = (namespace: string, callback: (count: number) => void) => {
-    setOnLayerCountChangeMap((prev) => ({
-      ...prev,
-      [namespace]: callback,
-    }));
+  const attachLayerCountChangeListener = (namespace: string, callback?: (count: number) => void) => {
+    if (callback) {
+      setOnLayerCountChangeMap((prev) => ({
+        ...prev,
+        [namespace]: _.debounce(callback, 100),
+      }));
+    }
   };
-
+  const attachFileExportListener = (
+    namespace: string,
+    callback?: (args: { data: ArrayBuffer; format: "jpg" | "psd" } | null) => void,
+  ) => {
+    if (callback) {
+      setOnFileExportMap((prev) => ({
+        ...prev,
+        [namespace]: _.debounce(callback, 100),
+      }));
+    }
+  };
   const attachPhotopeaRef = (namespace: string, ref: RefObject<HTMLIFrameElement>) => {
     setPhotopeaRefMap((prev) => ({
       ...prev,
       [namespace]: ref,
     }));
   };
-
-  const attachOnReadyListener = (namespace: string, callback: () => void) => {
-    setOnReadyMap((prev) => ({
-      ...prev,
-      [namespace]: callback,
-    }));
+  const attachOnReadyListener = (namespace: string, callback?: () => void) => {
+    if (callback) {
+      setOnReadyMap((prev) => ({
+        ...prev,
+        [namespace]: _.debounce(callback, 100),
+      }));
+    }
+  };
+  const attachOnDoneListener = (namespace: string, callback?: () => void) => {
+    if (callback) {
+      setOnDoneMap((prev) => ({
+        ...prev,
+        [namespace]: _.debounce(callback, 100),
+      }));
+    }
   };
 
   const sendExportFileCmd = (namespace: string, format: "jpg" | "psd") => {
@@ -159,37 +205,50 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getCurrentLayerCount = (namespace: string) => layerCountMap[namespace];
-
-  const clear = (namespace: string) => {
-    if (pollIntervalMap[namespace]) {
-      clearInterval(pollIntervalMap[namespace]);
+  const getMostRecentExport = (namespace: string): FileExport | null => {
+    let lastExportIndex = 0;
+    let lastExportMetadata;
+    for (let i = 0; i < exportMetadataQueue.length; i++) {
+      if (exportMetadataQueue[i].namespace === namespace) {
+        lastExportIndex = i;
+        lastExportMetadata = exportMetadataQueue[i];
+      }
     }
-    setPollIntervalMap((prev) => {
-      const copy = { ...prev };
-      delete copy[namespace];
-      return copy;
-    });
-    setLayerCountMap((prev) => {
-      const copy = { ...prev };
-      delete copy[namespace];
-      return copy;
-    });
+    if (lastExportMetadata && lastExportMetadata.format === "jpg" && exportQueue[lastExportIndex]) {
+      return { data: exportQueue[lastExportIndex], format: lastExportMetadata.format };
+    }
+    return null;
+  };
 
-    setOnLayerCountChangeMap((prev) => {
+  const deleteNamespace = (namespace: string) => {
+    return (prev: any) => {
+      const copy = { ...prev };
+      delete copy[namespace];
+      return copy;
+    };
+  };
+  const clear = (namespace: string) => {
+    setPollIntervalMap((prev) => {
+      if (pollIntervalMap[namespace]) {
+        console.log("clearingInterval", namespace);
+        clearInterval(pollIntervalMap[namespace]);
+      }
       const copy = { ...prev };
       delete copy[namespace];
       return copy;
     });
-    setPhotopeaRefMap((prev) => {
-      const copy = { ...prev };
-      delete copy[namespace];
-      return copy;
-    });
-    setIsInitialized((prev) => {
-      const copy = { ...prev };
-      delete copy[namespace];
-      return copy;
-    });
+    setLayerCountMap(deleteNamespace(namespace));
+    setOnFileExportMap(deleteNamespace(namespace));
+    setOnReadyMap(deleteNamespace(namespace));
+    setOnLayerCountChangeMap(deleteNamespace(namespace));
+    setPhotopeaRefMap(deleteNamespace(namespace));
+    setIsInitialized(deleteNamespace(namespace));
+    setOnDoneMap(deleteNamespace(namespace));
+    setIsLoadedMap(deleteNamespace(namespace));
+    setIsProcessedMap(deleteNamespace(namespace));
+    setLastLayerCountChange(deleteNamespace(namespace));
+    setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));
+    setExportQueue(exportQueue.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace));
   };
 
   const initialize = (
@@ -197,16 +256,31 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
     {
       onReady,
       onLayerCountChange,
+      onFileExport,
+      onDone,
       ref,
     }: {
-      onReady: () => void;
-      onLayerCountChange: (count: number) => void;
+      onReady?: () => void;
+      onFileExport?: (args: FileExport | null) => void;
+      onLayerCountChange?: (count: number) => void;
+      onDone?: () => void;
       ref: RefObject<HTMLIFrameElement>;
     },
   ) => {
+    console.log({
+      namespace,
+      onReadyMap,
+      onLayerCountChangeMap,
+      onFileExportMap,
+      onDoneMap,
+      pollIntervalMap,
+      photopeaRefMap,
+    });
     attachLayerCountChangeListener(namespace, onLayerCountChange);
     attachOnReadyListener(namespace, onReady);
     attachPhotopeaRef(namespace, ref);
+    attachFileExportListener(namespace, onFileExport);
+    attachOnDoneListener(namespace, onDone);
     setIsInitialized((prev) => ({ ...prev, [namespace]: true }));
   };
 

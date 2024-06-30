@@ -14,8 +14,10 @@ import { toast } from "@/src/components/ui/use-toast";
 import { SOURCE_HAS_NO_DATA_ID, SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { generateDesign, getDesignsForTemplate } from "@/src/data/designs";
+import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { determinePSDActions } from "@/src/libs/designs/util";
 import { checkIfObjectExistsAtUrl } from "@/src/libs/storage";
 import { userFriendlyDate } from "@/src/libs/time";
 import { download } from "@/src/utils";
@@ -23,6 +25,7 @@ import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { readPsd } from "ag-psd";
 import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { DownloadCloudIcon, RefreshCwIcon, UploadCloudIcon } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -54,6 +57,15 @@ export const DesignContainer = ({
   });
   const latestDesign = designs?.[0];
 
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+    arg: {
+      id: template.source?.id || "",
+      view: template.source_data_view as SourceDataView,
+    },
+    queryKey: ["getScheduleDataForSource", template.source?.id, template.source_data_view],
+    enabled: !!template.source,
+  });
+
   const {
     signedUrl: jpegSignedUrl,
     loading: isLoadingJpegSignedUrl,
@@ -66,6 +78,25 @@ export const DesignContainer = ({
     bucket: BUCKETS.designs,
     objectPath: `${template.owner_id}/${template.id}/latest.psd`,
   });
+
+  useEffect(() => {
+    if (scheduleData && psdSignedUrl) {
+      console.log({ scheduleData });
+      const buildPhotopeaActions = async () => {
+        try {
+          const templateFile = await (await fetch(psdSignedUrl)).blob();
+          const psd = readPsd(await templateFile.arrayBuffer());
+          const psdActions = determinePSDActions(scheduleData, psd);
+          console.log(template.id, psdActions);
+        } catch (err) {
+          console.error("failed to determine PSD actions", err);
+        } finally {
+        }
+        // Use the schedule data to determine the actions to take on the template PSD.
+      };
+      buildPhotopeaActions();
+    }
+  }, [scheduleData, psdSignedUrl]);
 
   const renderLatestDesign = () => {
     if (isLoadingDesigns || isLoadingJpegSignedUrl) {

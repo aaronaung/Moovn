@@ -1,15 +1,13 @@
 import { PSDActions, PSDActionType } from "./photoshop-v2";
 
-export const getLayerCountCmd = (namespace: string, notYetLoaded: boolean) => `
+export const getLayerCountCmd = (namespace: string) => `
 try {
     var doc = app.activeDocument;
     if (doc) {
         var layers = doc.artLayers;
         if (layers && layers.length > 0) {
             app.echoToOE("layer_count:${namespace}:" + layers.length);
-            if (${notYetLoaded}) {
-                app.echoToOE("loaded:${namespace}")
-            }
+            app.echoToOE("loaded:${namespace}")
         }
     }
 } catch(e) {
@@ -70,6 +68,7 @@ if (from && to) {
 
   from.move(to, ElementPlacement.PLACEBEFORE)
   from.translate(toLeft - fromLeft, toTop - fromTop)
+  to.remove();
 }
 
 // active.move(target, ElementPlacement.PLACEBEFORE)
