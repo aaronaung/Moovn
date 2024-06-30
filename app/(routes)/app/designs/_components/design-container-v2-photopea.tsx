@@ -68,7 +68,6 @@ export const DesignContainerV2 = ({
           const templateFile = await (await fetch(signedUrl)).blob();
           const psd = readPsd(await templateFile.arrayBuffer());
           const psdActions = determinePSDActions(transformScheduleV2(scheduleData), psd);
-          console.log(psdActions);
 
           setLayerEdits(psdActions);
           // We only want to move the layers after the smart objects have been loaded via the updateLayersCmd.
@@ -122,7 +121,11 @@ export const DesignContainerV2 = ({
   };
 
   const isLoading =
-    isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions || isRefreshingScheduleData;
+    isLoadingScheduleData ||
+    isLoadingSignedUrl ||
+    isBuildingPhotopeaActions ||
+    isRefreshingScheduleData ||
+    !photopeaIframeSrc;
 
   return (
     <>
@@ -155,14 +158,12 @@ export const DesignContainerV2 = ({
           {isLoading ? (
             <Spinner />
           ) : (
-            photopeaIframeSrc && (
-              <PhotopeaContainer
-                namespace={template.id}
-                photopeaIframeSrc={photopeaIframeSrc}
-                layerMovements={layerMovements}
-                layerEdits={layerEdits}
-              />
-            )
+            <PhotopeaContainer
+              namespace={template.id}
+              photopeaIframeSrc={photopeaIframeSrc}
+              layerMovements={layerMovements}
+              layerEdits={layerEdits}
+            />
           )}
         </CardContent>
         <CardFooter className="flex flex-row-reverse gap-2 p-4">
@@ -239,10 +240,6 @@ const PhotopeaContainer = ({
   const [designUrl, setDesignUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isDone) {
-      return;
-    }
-
     initPhotopea(namespace, {
       ref: photopeaRef,
       onLayerCountChange: () => {
@@ -267,7 +264,7 @@ const PhotopeaContainer = ({
     return () => {
       clearPhotopea(namespace);
     };
-  }, [photopeaRef.current, isDone, namespace]);
+  }, [photopeaRef.current, namespace]);
 
   return (
     <>
