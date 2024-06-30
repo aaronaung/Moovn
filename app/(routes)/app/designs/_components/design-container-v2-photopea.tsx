@@ -1,6 +1,10 @@
 "use client";
+import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/src/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopea } from "@/src/contexts/photopea";
@@ -11,9 +15,11 @@ import { moveLayerCmd, updateLayersCmd } from "@/src/libs/designs/photopea";
 import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/designs/photoshop-v2";
 import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { Tables } from "@/types/db";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { readPsd } from "ag-psd";
 
 import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
@@ -28,8 +34,6 @@ export const DesignContainerV2 = ({
   onDeleteTemplate: () => void;
   onEditTemplate: () => void;
 }) => {
-  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-
   const [photopeaIframeSrc, setPhotopeaIframeSrc] = useState<string | null>(null);
 
   const {
@@ -58,7 +62,6 @@ export const DesignContainerV2 = ({
 
   useEffect(() => {
     if (scheduleData && signedUrl) {
-      console.log({ scheduleData });
       const buildPhotopeaActions = async () => {
         try {
           setIsBuildingPhotopeaActions(true);
@@ -87,13 +90,6 @@ export const DesignContainerV2 = ({
       buildPhotopeaActions();
     }
   }, [scheduleData, signedUrl]);
-
-  // const renderLatestDesign = () => {
-  //   if (isLoading || !designJpgUrl) {
-  //     return <Spinner />;
-  //   }
-  //   return <DesignImage url={designJpgUrl} />;
-  // };
 
   const fromAndToString = () => {
     const currDateTime = new Date();
@@ -125,34 +121,12 @@ export const DesignContainerV2 = ({
     ${format(fromAndTo.to, "MMM d")}`;
   };
 
-  if (isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions || isRefreshingScheduleData) {
-    return <Spinner />;
-  }
+  const isLoading =
+    isLoadingScheduleData || isLoadingSignedUrl || isBuildingPhotopeaActions || isRefreshingScheduleData;
 
   return (
     <>
-      {photopeaIframeSrc && (
-        <PhotopeaContainer
-          namespace={template.id}
-          photopeaIframeSrc={photopeaIframeSrc}
-          layerMovements={layerMovements}
-          layerEdits={layerEdits}
-          onRefresh={refetch}
-        />
-      )}
-      {/* <Card className="w-[400px]">
-        {designJpgUrl && (
-          <ImageViewer
-            visible={isImageViewerOpen}
-            onClose={() => {
-              setIsImageViewerOpen(false);
-            }}
-            onMaskClick={() => {
-              setIsImageViewerOpen(false);
-            }}
-            images={[{ src: designJpgUrl }]}
-          />
-        )}
+      <Card className="w-[400px]">
         <CardHeader className="py-4 pl-4 pr-2">
           <div className="flex">
             <div className="flex h-20 flex-1 flex-col gap-1">
@@ -177,29 +151,34 @@ export const DesignContainerV2 = ({
             </div>
           </div>
         </CardHeader>
-        <CardContent
-          onClick={() => {
-            setIsImageViewerOpen(true);
-          }}
-          className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0"
-        >
-          {renderLatestDesign()}
+        <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            photopeaIframeSrc && (
+              <PhotopeaContainer
+                namespace={template.id}
+                photopeaIframeSrc={photopeaIframeSrc}
+                layerMovements={layerMovements}
+                layerEdits={layerEdits}
+              />
+            )
+          )}
         </CardContent>
         <CardFooter className="flex flex-row-reverse gap-2 p-4">
-          {designJpgUrl && (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Button className="group" variant="secondary">
-                      <DownloadCloudIcon width={18} className="group-hover:text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Download</TooltipContent>
-                </Tooltip>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {psdSignedUrl && (
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button className="group" variant="secondary">
+                    <DownloadCloudIcon width={18} className="group-hover:text-primary" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download</TooltipContent>
+              </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {/* {psdSignedUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
@@ -208,38 +187,19 @@ export const DesignContainerV2 = ({
                 >
                   PSD
                 </DropdownMenuItem>
-              )}
-                {designJpgUrl && (
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => {
-                      download(designJpgUrl, `${template.name}.jpeg`);
-                    }}
-                  >
-                    JPEG
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {latestDesign && (
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                className="group"
-                variant="secondary"
+              )} */}
+              {/* <DropdownMenuItem
+                className="cursor-pointer"
                 onClick={() => {
-                  triggerDesignOverwrite(latestDesign.id, async () => {
-                    refreshJpegSignedUrl();
-                  });
+                  if (designUrl) {
+                    download(designUrl, `${template.name}.jpeg`);
+                  }
                 }}
               >
-                <UploadCloudIcon width={18} className="group-hover:text-primary" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Overwrite</TooltipContent>
-          </Tooltip>
-        )}
+                JPEG
+              </DropdownMenuItem> */}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Tooltip>
             <TooltipTrigger>
               <Button
@@ -247,16 +207,16 @@ export const DesignContainerV2 = ({
                 className="group"
                 disabled={isLoading}
                 onClick={async () => {
-                  refreshDesign();
+                  refetch();
                 }}
               >
-                {isLoading ? <Spinner /> : <RefreshCwIcon width={18} className="group-hover:text-primary" />}
+                <RefreshCwIcon width={18} className="group-hover:text-primary" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
         </CardFooter>
-      </Card> */}
+      </Card>
     </>
   );
 };
@@ -266,31 +226,22 @@ const PhotopeaContainer = ({
   photopeaIframeSrc,
   layerMovements,
   layerEdits,
-  onRefresh,
 }: {
   namespace: string;
   photopeaIframeSrc: string;
   layerMovements: { from: string; to: string }[];
   layerEdits: PSDActions;
-  onRefresh: () => void;
 }) => {
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const photopeaRef = useRef<HTMLIFrameElement>(null);
   const [isDone, setIsDone] = useState(false);
-  const {
-    initialize: initPhotopea,
-    clear: clearPhotopea,
-    sendRawPhotopeaCmd,
-    sendExportFileCmd,
-    exportMetadataQueue,
-  } = usePhotopea();
+  const { initialize: initPhotopea, clear: clearPhotopea, sendRawPhotopeaCmd, sendExportFileCmd } = usePhotopea();
   const [designUrl, setDesignUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isDone) {
       return;
     }
-    // This ensures that we always starts with a clean slate.
-    clearPhotopea(namespace);
 
     initPhotopea(namespace, {
       ref: photopeaRef,
@@ -306,12 +257,10 @@ const PhotopeaContainer = ({
         }
       },
       onReady: async () => {
-        console.log("SENDING UPDATE LAYERS CMD", namespace);
         sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
       },
       onDone: () => {
         setIsDone(true);
-        console.log("PROCESSED", namespace);
       },
     });
 
@@ -321,18 +270,37 @@ const PhotopeaContainer = ({
   }, [photopeaRef.current, isDone, namespace]);
 
   return (
-    <div>
-      {namespace}
-      <Button onClick={onRefresh}>Refresh</Button>
-      {designUrl ? <DesignImage url={designUrl} /> : <DesignNotFound label="Building design..." />}
-      {!isDone && <iframe ref={photopeaRef} className="hidden h-[500px] w-[500px]" src={photopeaIframeSrc} />}
-    </div>
+    <>
+      {!isDone && <iframe ref={photopeaRef} className="hidden h-[300px] w-[300px]" src={photopeaIframeSrc} />}
+      {designUrl ? (
+        <>
+          <DesignImage
+            url={designUrl}
+            onClick={() => {
+              setIsImageViewerOpen(true);
+            }}
+          />
+          <ImageViewer
+            visible={isImageViewerOpen}
+            onClose={() => {
+              setIsImageViewerOpen(false);
+            }}
+            onMaskClick={() => {
+              setIsImageViewerOpen(false);
+            }}
+            images={[{ src: designUrl }]}
+          />
+        </>
+      ) : (
+        <Spinner />
+      )}
+    </>
   );
 };
 
-const DesignImage = ({ url }: { url?: string }) => {
+const DesignImage = ({ url, onClick }: { url?: string; onClick: () => void }) => {
   if (url) {
-    return <img src={url} alt="Design" className="h-[500px] w-[500px]" />;
+    return <img src={url} onClick={onClick} alt="Design" className="h-[300px] w-[300px]" />;
   }
   return <DesignNotFound />;
 };

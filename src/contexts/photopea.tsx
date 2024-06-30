@@ -228,15 +228,10 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
     };
   };
   const clear = (namespace: string) => {
-    setPollIntervalMap((prev) => {
-      if (pollIntervalMap[namespace]) {
-        console.log("clearingInterval", namespace);
-        clearInterval(pollIntervalMap[namespace]);
-      }
-      const copy = { ...prev };
-      delete copy[namespace];
-      return copy;
-    });
+    if (pollIntervalMap[namespace]) {
+      clearInterval(pollIntervalMap[namespace]);
+    }
+    setPollIntervalMap(deleteNamespace(namespace));
     setLayerCountMap(deleteNamespace(namespace));
     setOnFileExportMap(deleteNamespace(namespace));
     setOnReadyMap(deleteNamespace(namespace));
@@ -267,15 +262,8 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
       ref: RefObject<HTMLIFrameElement>;
     },
   ) => {
-    console.log({
-      namespace,
-      onReadyMap,
-      onLayerCountChangeMap,
-      onFileExportMap,
-      onDoneMap,
-      pollIntervalMap,
-      photopeaRefMap,
-    });
+    // This ensures that we always starts with a clean slate.
+    clear(namespace);
     attachLayerCountChangeListener(namespace, onLayerCountChange);
     attachOnReadyListener(namespace, onReady);
     attachPhotopeaRef(namespace, ref);
