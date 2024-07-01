@@ -142,7 +142,7 @@ export default function DesignsPage() {
             <a className="text-primary underline" href="/app/sources">
               Source
             </a>{" "}
-            data given a design template. Not seeing the designs as expected? Please email us at{" "}
+            data given a design template. Not seeing the designs as expected? Please refresh the design or email us at{" "}
             <a className="hover:text-primary hover:underline" href="mailto:someone@example.com">
               <i>team@moovn.co</i>
             </a>{" "}

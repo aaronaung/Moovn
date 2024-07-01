@@ -1,19 +1,14 @@
 import { PSDActions, PSDActionType } from "./photoshop-v2";
 
 export const getLayerCountCmd = (namespace: string) => `
-try {
-    var doc = app.activeDocument;
-    if (doc) {
-        var layers = doc.artLayers;
-        if (layers && layers.length > 0) {
-            app.echoToOE("layer_count:${namespace}:" + layers.length);
-            app.echoToOE("loaded:${namespace}")
-        }
+var doc = app.activeDocument;
+if (doc) {
+    var layers = doc.artLayers;
+    if (layers && layers.length > 0) {
+        app.echoToOE("layer_count:${namespace}:" + layers.length);
+        app.echoToOE("loaded:${namespace}")
     }
-} catch(e) {
-    
 }
-
 `;
 
 export const updateLayersCmd = (updateActions: PSDActions) => `
@@ -51,6 +46,27 @@ for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) 
 }
 `;
 
+// export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
+// var doc = app.activeDocument;
+// var fromName = '${from}';
+// var toName = '${to}';
+
+// var from = doc.artLayers.getByName(fromName);
+// var to = doc.artLayers.getByName(toName);
+
+// if (from && to) {
+//   var toLeft = to.bounds[0].value;
+//   var fromLeft = from.bounds[0].value;
+
+//   var toTop = to.bounds[1].value;
+//   var fromTop = from.bounds[1].value;
+
+//   from.move(to, ElementPlacement.PLACEBEFORE)
+//   from.translate(toLeft - fromLeft, toTop - fromTop)
+//   to.remove();
+// }
+// `;
+
 export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
 var doc = app.activeDocument;
 var fromName = '${from}';
@@ -60,18 +76,36 @@ var from = doc.artLayers.getByName(fromName);
 var to = doc.artLayers.getByName(toName);
 
 if (from && to) {
-  var toLeft = to.bounds[0].value;
-  var fromLeft = from.bounds[0].value;
+    // Calculate the center of the 'to' layer
+    var toLeft = to.bounds[0].value;
+    var toTop = to.bounds[1].value;
+    var toRight = to.bounds[2].value;
+    var toBottom = to.bounds[3].value;
+    var toCenterX = (toLeft + toRight) / 2;
+    var toCenterY = (toTop + toBottom) / 2;
 
-  var toTop = to.bounds[1].value;
-  var fromTop = from.bounds[1].value;
+    // Calculate the center of the 'from' layer
+    var fromLeft = from.bounds[0].value;
+    var fromTop = from.bounds[1].value;
+    var fromRight = from.bounds[2].value;
+    var fromBottom = from.bounds[3].value;
+    var fromCenterX = (fromLeft + fromRight) / 2;
+    var fromCenterY = (fromTop + fromBottom) / 2;
 
-  from.move(to, ElementPlacement.PLACEBEFORE)
-  from.translate(toLeft - fromLeft, toTop - fromTop)
-  to.remove();
+    // Calculate the translation distances
+    var translateX = toCenterX - fromCenterX;
+    var translateY = toCenterY - fromCenterY;
+
+    // Move and translate the 'from' layer
+    from.move(to, ElementPlacement.PLACEBEFORE);
+    from.translate(translateX, translateY);
+
+    // Remove the 'to' layer
+    to.remove();
 }
+`;
 
-// active.move(target, ElementPlacement.PLACEBEFORE)
-// active.translate(targetLeft - activeLeft, targetTop - activeTop)
-// target.remove();  
+export const exportCmd = (namespace: string, format: "jpg" | "psd") => `
+app.activeDocument.saveToOE("${format}");
+app.echoToOE("export_file:${namespace}:${format}");
 `;

@@ -4,8 +4,9 @@ import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getScheduleDataForSource } from "@/src/data/sources";
-import { moveLayerCmd, updateLayersCmd } from "@/src/libs/designs/photopea";
+import { moveLayerCmd } from "@/src/libs/designs/photopea";
 import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/designs/photoshop-v2";
+import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { sleep } from "@/src/utils";
 import { Layer, Psd, readPsd } from "ag-psd";
 import _ from "lodash";
@@ -125,6 +126,7 @@ export default function Playground() {
       }
       if (e.data instanceof ArrayBuffer) {
         // This is a save event.
+        console.log("received save event", e.data);
         var blob = new Blob([e.data], { type: "image/jpeg" });
         var objectUrl = URL.createObjectURL(blob);
         setResultJpg(objectUrl);
@@ -157,7 +159,7 @@ export default function Playground() {
         setPpAnchor(ppAnchor);
         const templateFile = await (await fetch(data.signedUrl)).blob();
         const psd = readPsd(await templateFile.arrayBuffer());
-        const psdActions = determinePSDActions(todaySchedule, psd);
+        const psdActions = determinePSDActions(transformScheduleV2(todaySchedule), psd);
         console.log({ todaySchedule, psdActions, ppAnchor });
 
         setTimeout(async () => {
@@ -194,7 +196,7 @@ export default function Playground() {
       name,
       value,
     }));
-    const replaceSmartObject = Object.entries(psdActions[PSDActionType.ReplaceSmartObject as string]).map(
+    const replaceSmartObject = Object.entries(psdActions[PSDActionType.LoadSmartObjectFromUrl as string]).map(
       ([name, { value }], index) => {
         const valueSplit = value.split("/");
         // Photoshop always uses the last part of the URL as the layer name.
@@ -213,17 +215,6 @@ export default function Playground() {
         from: newlyCreatedLayerName,
         to: name,
       })),
-    );
-
-    sendCmd(
-      updateLayersCmd({
-        id: "123",
-        layers: {
-          editText,
-          deleteLayer,
-          replaceSmartObject,
-        },
-      }),
     );
 
     //   sendCmd(`

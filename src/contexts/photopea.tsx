@@ -3,17 +3,10 @@ import _ from "lodash";
 import { createContext, RefObject, useCallback, useContext, useEffect, useState } from "react";
 import { getLayerCountCmd } from "../libs/designs/photopea";
 
-type FileExport = {
-  data: ArrayBuffer;
-  format: "jpg" | "psd";
-};
+export type FileExport = { [key: string]: ArrayBuffer }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
 
 type PhotopeaContextValue = {
-  sendExportFileCmd: (namespace: string, format: "jpg" | "psd") => void;
   sendRawPhotopeaCmd: (namespace: string, cmd: string) => void;
-  exportQueue: ArrayBuffer[];
-  exportMetadataQueue: { namespace: string; format: string }[];
-  getCurrentLayerCount: (namespace: string) => number;
   initialize: (
     namespace: string,
     options: {
@@ -61,6 +54,8 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   }>({});
   const [photopeaRefMap, setPhotopeaRefMap] = useState<{ [key: string]: RefObject<HTMLIFrameElement> }>({});
 
+  console.log(exportMetadataQueue);
+
   const processEventFromPhotopea = useCallback(
     async (e: MessageEvent) => {
       if (_.isString(e.data)) {
@@ -103,6 +98,7 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
           if (onFileExportMap[namespace]) {
             const mostRecentExport = getMostRecentExport(namespace);
+
             onFileExportMap[namespace](mostRecentExport);
           }
         }
@@ -162,10 +158,7 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
       }));
     }
   };
-  const attachFileExportListener = (
-    namespace: string,
-    callback?: (args: { data: ArrayBuffer; format: "jpg" | "psd" } | null) => void,
-  ) => {
+  const attachFileExportListener = (namespace: string, callback?: (args: FileExport | null) => void) => {
     if (callback) {
       setOnFileExportMap((prev) => ({
         ...prev,
@@ -196,28 +189,25 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendExportFileCmd = (namespace: string, format: "jpg" | "psd") => {
-    sendRawPhotopeaCmd(
-      namespace,
-      `app.activeDocument.saveToOE("${format}");
-      app.echoToOE("export_file:${namespace}:${format}");`,
-    );
-  };
-
-  const getCurrentLayerCount = (namespace: string) => layerCountMap[namespace];
   const getMostRecentExport = (namespace: string): FileExport | null => {
-    let lastExportIndex = 0;
-    let lastExportMetadata;
+    let mostRecentJpgIndex = 0;
+    let mostRecentPsdIndex = 0;
+    let mostRecentJpgMetadata;
+    let mostRecentPsdMetadata;
     for (let i = 0; i < exportMetadataQueue.length; i++) {
-      if (exportMetadataQueue[i].namespace === namespace) {
-        lastExportIndex = i;
-        lastExportMetadata = exportMetadataQueue[i];
+      if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "jpg") {
+        mostRecentJpgIndex = i;
+        mostRecentJpgMetadata = exportMetadataQueue[i];
+      }
+      if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "psd") {
+        mostRecentPsdIndex = i;
+        mostRecentPsdMetadata = exportMetadataQueue[i];
       }
     }
-    if (lastExportMetadata && lastExportMetadata.format === "jpg" && exportQueue[lastExportIndex]) {
-      return { data: exportQueue[lastExportIndex], format: lastExportMetadata.format };
-    }
-    return null;
+    return {
+      jpg: exportQueue[mostRecentJpgIndex],
+      psd: exportQueue[mostRecentPsdIndex],
+    };
   };
 
   const deleteNamespace = (namespace: string) => {
@@ -276,11 +266,7 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
     <PhotopeaContext.Provider
       value={{
         initialize,
-        sendExportFileCmd,
         sendRawPhotopeaCmd,
-        getCurrentLayerCount,
-        exportQueue,
-        exportMetadataQueue,
         clear,
       }}
     >
