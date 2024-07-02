@@ -10,7 +10,8 @@ import { TooltipProvider } from "@/src/components/ui/tooltip";
 import { AsyncFileUploadProvider } from "@/src/contexts/async-file-upload";
 import { ThemeProvider } from "@/src/providers/theme-provider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { PhotopeaProvider } from "@/src/contexts/photopea";
+import { PhotopeaHeadlessProvider } from "@/src/contexts/photopea-headless";
+import { PhotopeaEditorProvider } from "@/src/contexts/photopea-editor";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -58,13 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ReactQueryProvider>
             {/* The rest of your application */}
             <ReactQueryDevtools initialIsOpen={false} />
-            <PhotopeaProvider>
-              <ReactDnDProvider>
-                <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                  <TooltipProvider>{children}</TooltipProvider>
-                </ThemeProvider>
-              </ReactDnDProvider>
-            </PhotopeaProvider>
+            <PhotopeaEditorProvider>
+              <PhotopeaHeadlessProvider>
+                <ReactDnDProvider>
+                  <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                    <TooltipProvider>{children}</TooltipProvider>
+                  </ThemeProvider>
+                </ReactDnDProvider>
+              </PhotopeaHeadlessProvider>
+            </PhotopeaEditorProvider>
           </ReactQueryProvider>
         </AsyncFileUploadProvider>
         <Toaster />

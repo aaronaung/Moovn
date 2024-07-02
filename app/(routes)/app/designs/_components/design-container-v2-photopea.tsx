@@ -12,7 +12,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
-import { FileExport, usePhotopea } from "@/src/contexts/photopea";
+import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
+import { FileExport, usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
@@ -21,7 +22,7 @@ import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/desig
 import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
-import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PaintBrushIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { readPsd } from "ag-psd";
 
 import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
@@ -57,6 +58,7 @@ export const DesignContainerV2 = ({
     refetchOnWindowFocus: false,
   });
 
+  const { setSrc: setPPEditorSrc } = usePhotopeaEditor();
   const { signedUrl, loading: isLoadingSignedUrl } = useSignedUrl({
     bucket: BUCKETS.templates,
     objectPath: `${template.owner_id}/${template.id}.psd`,
@@ -262,6 +264,21 @@ export const DesignContainerV2 = ({
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="secondary"
+                className="group"
+                disabled={isPreppingToRenderDesign || (!designUrl && !isScheduleEmpty)}
+                onClick={() => {
+                  setPPEditorSrc(`https://www.photopea.com#${JSON.stringify({ files: [psdUrl], environment: {} })}`);
+                }}
+              >
+                <PaintBrushIcon width={18} className="group-hover:text-primary" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit the design</TooltipContent>
+          </Tooltip>
         </CardFooter>
       </Card>
     </>
@@ -283,7 +300,7 @@ const PhotopeaRenderingContainer = ({
 }) => {
   const photopeaRef = useRef<HTMLIFrameElement>(null);
   const [isDone, setIsDone] = useState(false);
-  const { initialize: initPhotopea, clear: clearPhotopea, sendRawPhotopeaCmd } = usePhotopea();
+  const { initialize: initPhotopea, clear: clearPhotopea, sendRawPhotopeaCmd } = usePhotopeaHeadless();
 
   useEffect(() => {
     initPhotopea(namespace, {
@@ -302,6 +319,10 @@ const PhotopeaRenderingContainer = ({
       },
       onReady: async () => {
         sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
+        if (layerMovements.length === 0) {
+          sendRawPhotopeaCmd(namespace, exportCmd(namespace, "jpg"));
+          sendRawPhotopeaCmd(namespace, exportCmd(namespace, "psd"));
+        }
       },
       onDone: () => {
         setIsDone(true);

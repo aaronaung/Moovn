@@ -3,9 +3,9 @@ import _ from "lodash";
 import { createContext, RefObject, useCallback, useContext, useEffect, useState } from "react";
 import { getLayerCountCmd } from "../libs/designs/photopea";
 
-export type FileExport = { [key: string]: ArrayBuffer }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
+export type FileExport = { [key: string]: ArrayBuffer | null }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
 
-type PhotopeaContextValue = {
+type PhotopeaHeadlessContextValue = {
   sendRawPhotopeaCmd: (namespace: string, cmd: string) => void;
   initialize: (
     namespace: string,
@@ -20,19 +20,19 @@ type PhotopeaContextValue = {
   clear: (namespace: string) => void;
 };
 
-const PhotopeaContext = createContext<PhotopeaContextValue | null>(null);
+const PhotopeaHeadlessContext = createContext<PhotopeaHeadlessContextValue | null>(null);
 
-function usePhotopea() {
-  const context = useContext(PhotopeaContext);
+function usePhotopeaHeadless() {
+  const context = useContext(PhotopeaHeadlessContext);
   if (!context) {
-    throw new Error(`usePhotopea must be used within a PhotopeaProvider`);
+    throw new Error(`usePhotopeaHeadless must be used within a PhotopeaHeadlessProvider`);
   }
   return context;
 }
 
 const LAYER_COUNT_POLL_INTERVAL = 10; // Gives more resolution.
 
-function PhotopeaProvider({ children }: { children: React.ReactNode }) {
+function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
 
   // Internally managed
@@ -53,8 +53,6 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
     [key: string]: (args: FileExport | null) => void;
   }>({});
   const [photopeaRefMap, setPhotopeaRefMap] = useState<{ [key: string]: RefObject<HTMLIFrameElement> }>({});
-
-  console.log(exportMetadataQueue);
 
   const processEventFromPhotopea = useCallback(
     async (e: MessageEvent) => {
@@ -120,6 +118,7 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   // Set up polling.
   useEffect(() => {
     setPollIntervalMap({});
+
     setTimeout(() => {
       for (const [namespace, _] of Object.entries(photopeaRefMap)) {
         const intervalId = setInterval(() => {
@@ -190,23 +189,18 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getMostRecentExport = (namespace: string): FileExport | null => {
-    let mostRecentJpgIndex = 0;
-    let mostRecentPsdIndex = 0;
-    let mostRecentJpgMetadata;
-    let mostRecentPsdMetadata;
+    let mostRecentJpgIndex = -1;
+    let mostRecentPsdIndex = -1;
     for (let i = 0; i < exportMetadataQueue.length; i++) {
       if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "jpg") {
         mostRecentJpgIndex = i;
-        mostRecentJpgMetadata = exportMetadataQueue[i];
-      }
-      if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "psd") {
+      } else if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "psd") {
         mostRecentPsdIndex = i;
-        mostRecentPsdMetadata = exportMetadataQueue[i];
       }
     }
     return {
-      jpg: exportQueue[mostRecentJpgIndex],
-      psd: exportQueue[mostRecentPsdIndex],
+      jpg: mostRecentJpgIndex === -1 ? null : exportQueue[mostRecentJpgIndex],
+      psd: mostRecentPsdIndex === -1 ? null : exportQueue[mostRecentPsdIndex],
     };
   };
 
@@ -263,7 +257,7 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <PhotopeaContext.Provider
+    <PhotopeaHeadlessContext.Provider
       value={{
         initialize,
         sendRawPhotopeaCmd,
@@ -271,9 +265,9 @@ function PhotopeaProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </PhotopeaContext.Provider>
+    </PhotopeaHeadlessContext.Provider>
   );
 }
 
-export { PhotopeaProvider, usePhotopea };
-export default PhotopeaContext;
+export { PhotopeaHeadlessProvider, usePhotopeaHeadless };
+export default PhotopeaHeadlessContext;

@@ -20,22 +20,30 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { Header2 } from "@/src/components/common/header";
 import { userDisplayName } from "@/src/libs/user";
 import { ModeToggle } from "@/src/components/common/mode-toggle";
-import { Tables } from "@/types/db";
 import { MoovnLogo } from "@/src/components/ui/icons/moovn";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
+import { getAuthUser } from "@/src/data/users";
+import { Spinner } from "@/src/components/common/loading-spinner";
 
-export default function Dashboard({ user, children }: { user?: Tables<"users">; children: any }) {
+export default function Dashboard({ children }: { children: any }) {
   // const { data: currentSubscription, isLoading: isLoadingSubscription } =
   //   useSupaQuery(getStripeSubscriptionForBusiness, {
   //     queryKey: ["getStripeSubscriptionForBusiness"],
   //     arg: businesses[0]?.id,
   //   });
   // const currentPlan = derivePlanFromSubscription(currentSubscription);
+  const { data: user, isLoading } = useSupaQuery(getAuthUser, { queryKey: ["getAuthUser"] });
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const path = usePathname();
   const router = useRouter();
 
+  if (isLoading) {
+    return <Spinner className="mt-8" />;
+  }
+
   return (
-    <div className="grid h-screen w-full  md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <div className="grid h-screen w-full  md:grid-cols-[220px_1fr] lg:grid-cols-[220px_1fr]">
       <div className="z-20 hidden border-r bg-muted/40 md:block">
         <div className="fixed flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center gap-x-1.5 border-b px-4 lg:h-[60px] lg:px-6">
@@ -182,7 +190,7 @@ export default function Dashboard({ user, children }: { user?: Tables<"users">; 
           </DropdownMenu>
         </header>
 
-        <main className="flex w-screen flex-1 flex-col gap-4 p-4 py-6 md:w-[calc(100vw_-_280px)] md:px-6 lg:gap-6">
+        <main className="flex w-screen flex-1 flex-col gap-4 p-4 py-6 md:w-[calc(100vw_-_220px)] md:px-6 lg:gap-6">
           {children}
         </main>
       </div>
