@@ -59,15 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ReactQueryProvider>
             {/* The rest of your application */}
             <ReactQueryDevtools initialIsOpen={false} />
-            <PhotopeaEditorProvider>
-              <PhotopeaHeadlessProvider>
+            <PhotopeaHeadlessProvider>
+              <PhotopeaEditorProvider>
                 <ReactDnDProvider>
                   <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                     <TooltipProvider>{children}</TooltipProvider>
                   </ThemeProvider>
                 </ReactDnDProvider>
-              </PhotopeaHeadlessProvider>
-            </PhotopeaEditorProvider>
+              </PhotopeaEditorProvider>
+            </PhotopeaHeadlessProvider>
           </ReactQueryProvider>
         </AsyncFileUploadProvider>
         <Toaster />

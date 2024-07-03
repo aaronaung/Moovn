@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 
 export function ModeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
-  console.log("resolvedTheme", resolvedTheme);
+
   return (
     <Button
       onClick={() => {

@@ -94,9 +94,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // export_file:namespace-123:jpg
           const [_exportFile, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
+
           if (onFileExportMap[namespace]) {
             const mostRecentExport = getMostRecentExport(namespace);
-
             onFileExportMap[namespace](mostRecentExport);
           }
         }
@@ -105,7 +105,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         setExportQueue((prev) => [...prev, e.data]);
       }
     },
-    [isInitialized, layerCountMap], // We need this to be a dependency, because we need all callbacks to be set.
+    [isInitialized, layerCountMap, exportMetadataQueue, exportQueue, onFileExportMap], // We need this to be a dependency, because we need all callbacks to be set.
   );
 
   useEffect(() => {
@@ -114,23 +114,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("message", processEventFromPhotopea);
     };
   }, [processEventFromPhotopea]);
-
-  // Set up polling.
-  useEffect(() => {
-    setPollIntervalMap({});
-
-    setTimeout(() => {
-      for (const [namespace, _] of Object.entries(photopeaRefMap)) {
-        const intervalId = setInterval(() => {
-          sendRawPhotopeaCmd(namespace, getLayerCountCmd(namespace));
-        }, LAYER_COUNT_POLL_INTERVAL);
-
-        setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
-      }
-    }, 1500);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photopeaRefMap]);
 
   const sendRawPhotopeaCmd = (namespace: string, cmd: string) => {
     const ppRef = photopeaRefMap[namespace];
@@ -151,6 +134,14 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
   const attachLayerCountChangeListener = (namespace: string, callback?: (count: number) => void) => {
     if (callback) {
+      if (!pollIntervalMap[namespace]) {
+        const intervalId = setInterval(() => {
+          sendRawPhotopeaCmd(namespace, getLayerCountCmd(namespace));
+        }, LAYER_COUNT_POLL_INTERVAL);
+
+        setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
+      }
+
       setOnLayerCountChangeMap((prev) => ({
         ...prev,
         [namespace]: _.debounce(callback, 100),
@@ -212,10 +203,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     };
   };
   const clear = (namespace: string) => {
-    if (pollIntervalMap[namespace]) {
-      clearInterval(pollIntervalMap[namespace]);
-    }
-    setPollIntervalMap(deleteNamespace(namespace));
     setLayerCountMap(deleteNamespace(namespace));
     setOnFileExportMap(deleteNamespace(namespace));
     setOnReadyMap(deleteNamespace(namespace));
@@ -228,6 +215,12 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     setLastLayerCountChange(deleteNamespace(namespace));
     setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));
     setExportQueue(exportQueue.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace));
+
+    if (pollIntervalMap[namespace]) {
+      console.log("clearing interval for namespace", namespace, pollIntervalMap);
+      clearInterval(pollIntervalMap[namespace]);
+    }
+    setPollIntervalMap(deleteNamespace(namespace));
   };
 
   const initialize = (
@@ -248,12 +241,17 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   ) => {
     // This ensures that we always starts with a clean slate.
     clear(namespace);
-    attachLayerCountChangeListener(namespace, onLayerCountChange);
-    attachOnReadyListener(namespace, onReady);
+
     attachPhotopeaRef(namespace, ref);
-    attachFileExportListener(namespace, onFileExport);
-    attachOnDoneListener(namespace, onDone);
-    setIsInitialized((prev) => ({ ...prev, [namespace]: true }));
+
+    setTimeout(() => {
+      // We wait for the next tick to ensure the ref is attached before anything is done.
+      attachLayerCountChangeListener(namespace, onLayerCountChange);
+      attachOnReadyListener(namespace, onReady);
+      attachFileExportListener(namespace, onFileExport);
+      attachOnDoneListener(namespace, onDone);
+      setIsInitialized((prev) => ({ ...prev, [namespace]: true }));
+    });
   };
 
   return (

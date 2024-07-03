@@ -105,7 +105,10 @@ if (from && to) {
 }
 `;
 
-export const exportCmd = (namespace: string, format: "jpg" | "psd") => `
-app.activeDocument.saveToOE("${format}");
-app.echoToOE("export_file:${namespace}:${format}");
+export const exportCmd = (namespace: string) => `
+app.activeDocument.saveToOE("jpg");
+app.echoToOE("export_file:${namespace}:jpg");
+
+app.activeDocument.saveToOE("psd");
+app.echoToOE("export_file:${namespace}:psd");
 `;

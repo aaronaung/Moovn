@@ -58,7 +58,7 @@ export const DesignContainerV2 = ({
     refetchOnWindowFocus: false,
   });
 
-  const { setSrc: setPPEditorSrc } = usePhotopeaEditor();
+  const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { signedUrl, loading: isLoadingSignedUrl } = useSignedUrl({
     bucket: BUCKETS.templates,
     objectPath: `${template.owner_id}/${template.id}.psd`,
@@ -270,14 +270,42 @@ export const DesignContainerV2 = ({
                 variant="secondary"
                 className="group"
                 disabled={isPreppingToRenderDesign || (!designUrl && !isScheduleEmpty)}
-                onClick={() => {
-                  setPPEditorSrc(`https://www.photopea.com#${JSON.stringify({ files: [psdUrl], environment: {} })}`);
+                onClick={async () => {
+                  if (psdUrl) {
+                    const ab = await (await fetch(psdUrl)).arrayBuffer();
+                    openPhotopeaEditor({ title: template.name || "Untitled" }, ab, {
+                      onSaveConfirmationTitle: "This will overwrite the current design",
+                      onSave: async (fileExport: FileExport) => {
+                        console.log("SUCCESSFULLY SAVED DESIGN!", fileExport);
+                        // upload overwrite content to storage.
+                        // const psdPath = `${template.owner_id}/${template.id}.psd`;
+                        // const jpgPath = `${template.owner_id}/${template.id}.jpeg`;
+                        // const [psd, jpg] = await Promise.all([
+                        //   supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(psdPath),
+                        //   supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(jpgPath),
+                        // ]);
+
+                        // if (!psd.data?.token || !jpg.data?.token) {
+                        //   console.error("Failed to get signed URL");
+                        //   return;
+                        // }
+                        // await Promise.all([
+                        //   supaClientComponentClient.storage
+                        //     .from(BUCKETS.designs)
+                        //     .uploadToSignedUrl(psdPath, psd.data?.token, ""),
+                        //   supaClientComponentClient.storage
+                        //     .from(BUCKETS.designs)
+                        //     .uploadToSignedUrl(jpgPath, jpg.data?.token, ""),
+                        // ]);
+                      },
+                    });
+                  }
                 }}
               >
                 <PaintBrushIcon width={18} className="group-hover:text-primary" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Edit the design</TooltipContent>
+            <TooltipContent>Edit design</TooltipContent>
           </Tooltip>
         </CardFooter>
       </Card>
@@ -303,14 +331,16 @@ const PhotopeaRenderingContainer = ({
   const { initialize: initPhotopea, clear: clearPhotopea, sendRawPhotopeaCmd } = usePhotopeaHeadless();
 
   useEffect(() => {
+    if (isDone) {
+      return;
+    }
     initPhotopea(namespace, {
       ref: photopeaRef,
       onLayerCountChange: () => {
         for (const { from, to } of layerMovements) {
           sendRawPhotopeaCmd(namespace, moveLayerCmd({ from, to }));
         }
-        sendRawPhotopeaCmd(namespace, exportCmd(namespace, "jpg"));
-        sendRawPhotopeaCmd(namespace, exportCmd(namespace, "psd"));
+        sendRawPhotopeaCmd(namespace, exportCmd(namespace));
       },
       onFileExport: (fileExport) => {
         if (fileExport) {
@@ -320,8 +350,7 @@ const PhotopeaRenderingContainer = ({
       onReady: async () => {
         sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
         if (layerMovements.length === 0) {
-          sendRawPhotopeaCmd(namespace, exportCmd(namespace, "jpg"));
-          sendRawPhotopeaCmd(namespace, exportCmd(namespace, "psd"));
+          sendRawPhotopeaCmd(namespace, exportCmd(namespace));
         }
       },
       onDone: () => {
@@ -332,7 +361,7 @@ const PhotopeaRenderingContainer = ({
     return () => {
       clearPhotopea(namespace);
     };
-  }, [photopeaRef.current, namespace]);
+  }, [photopeaRef.current, namespace, isDone]);
 
   return <>{!isDone && <iframe ref={photopeaRef} className="hidden h-[300px] w-[300px]" src={photopeaIframeSrc} />}</>;
 };
