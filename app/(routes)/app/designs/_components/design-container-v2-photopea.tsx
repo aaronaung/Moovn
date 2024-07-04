@@ -280,7 +280,9 @@ export const DesignContainerV2 = ({
                   <TooltipTrigger>
                     <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">Overwritten</div>
                   </TooltipTrigger>
-                  <TooltipContent>This design was manually edited.</TooltipContent>
+                  <TooltipContent className="w-[300px]">
+                    This design was edited and overwrites the automatically generated design.
+                  </TooltipContent>
                 </Tooltip>
               )}
             </div>
