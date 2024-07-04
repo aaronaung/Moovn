@@ -115,7 +115,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     };
   }, [processEventFromPhotopea]);
 
-  const sendRawPhotopeaCmd = (namespace: string, cmd: string) => {
+  const sendRawPhotopeaCmd = async (namespace: string, cmd: string) => {
     const ppRef = photopeaRefMap[namespace];
     if (!ppRef?.current) {
       // console.log("photopea command rejected because ref is not ready", namespace, cmd);
@@ -126,8 +126,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       console.log("photopea command rejected because window is not ready", namespace, cmd);
       return;
     }
-    if (cmd.indexOf("layer_count") === -1) {
-      // console.log("sending photopea cmd", cmd);
+    if (!isLoadedMap[namespace]) {
+      // if the iframe is not loaded, we wait for a second before sending the command.
+      // await sleep(1200);
     }
     ppWindow.postMessage(cmd, "*");
   };

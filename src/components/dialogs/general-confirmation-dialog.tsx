@@ -9,13 +9,14 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import InputText from "../ui/input/text";
+import { Spinner } from "../common/loading-spinner";
 
 interface ConfirmationDialogProps {
   title: string;
   label?: string;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   isConfirming?: boolean;
 }
 
@@ -28,15 +29,23 @@ export function ConfirmationDialog({
   isConfirming = false,
 }: ConfirmationDialogProps) {
   const [inputValue, setInputValue] = useState("");
+  const [isConfirmingInternal, setIsConfirmingInternal] = useState(false);
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     setInputValue(event.target.value);
   }
 
-  function handleDelete() {
-    onConfirm();
-    setInputValue("");
-    onClose();
+  async function handleConfirm() {
+    try {
+      setIsConfirmingInternal(true);
+      await onConfirm();
+      setInputValue("");
+    } catch (err) {
+      console.error("Failed to confirm action", err);
+    } finally {
+      onClose();
+      setIsConfirmingInternal(false);
+    }
   }
 
   function handleOnClose() {
@@ -65,8 +74,8 @@ export function ConfirmationDialog({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleDelete} disabled={inputValue !== "yes" || isConfirming}>
-            Confirm
+          <Button onClick={handleConfirm} disabled={inputValue !== "yes" || isConfirming || isConfirmingInternal}>
+            {isConfirming || isConfirmingInternal ? <Spinner /> : "Confirm"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { Spinner } from "@/src/components/common/loading-spinner";
 import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
@@ -47,9 +48,6 @@ export default function PhotopeaEditor() {
             save(fileExport);
           }
         },
-        onReady: () => {
-          console.log("photopea editor ready");
-        },
       });
     }
 
@@ -74,9 +72,10 @@ export default function PhotopeaEditor() {
           <p className="mr-2 text-xl font-semibold text-secondary">{metadata.title}</p>
           <p className="text-sm text-neutral-400">
             Our design editing tool is powered by Photopea. You can access this tool separately at{" "}
-            <a target="_blank" className="hover:text-primary hover:underline" href="https://www.photopea.com.">
-              https://www.photopea.com.
+            <a target="_blank" className="hover:text-primary hover:underline" href="https://www.photopea.com">
+              https://www.photopea.com
             </a>
+            .
           </p>
         </div>
         <div className="flex-1"></div>
@@ -91,7 +90,7 @@ export default function PhotopeaEditor() {
             }
           }}
         >
-          Save
+          {isSaving || isExporting ? <Spinner className="text-secondary" /> : "Save"}
         </Button>
         <Button
           className="w-[80px]"

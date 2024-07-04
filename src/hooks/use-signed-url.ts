@@ -42,12 +42,15 @@ export const useSignedUrl = ({
         }
       }
 
-      const { data } = await supaClientComponentClient.storage
-        .from(bucket)
-        .createSignedUrl(objectPath, 24 * 3600);
+      const { data } = await supaClientComponentClient.storage.from(bucket).createSignedUrl(objectPath, 24 * 3600);
       if (!data?.signedUrl) {
         throw new Error("Signed url not found in createSignUrl response.");
       }
+      const resp = await fetch(data.signedUrl, { method: "GET" });
+      if (!resp.ok) {
+        throw new Error("Signed url is not valid");
+      }
+
       setSignedUrl(data.signedUrl);
     } catch (err: any) {
       setSignedUrl(null);

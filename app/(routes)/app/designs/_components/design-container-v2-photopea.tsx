@@ -1,6 +1,7 @@
 "use client";
 import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
+import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/src/components/ui/card";
 import {
@@ -10,10 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
+import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { FileExport, usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
@@ -63,6 +66,22 @@ export const DesignContainerV2 = ({
     bucket: BUCKETS.templates,
     objectPath: `${template.owner_id}/${template.id}.psd`,
   });
+  const {
+    signedUrl: overwritePsdSignedUrl,
+    loading: isLoadingOverwritePsdSignedUrl,
+    refresh: refreshOverwritePsd,
+  } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.psd`,
+  });
+  const {
+    signedUrl: overwriteJpgSignedUrl,
+    loading: isLoadingOverwriteJpgSignedUrl,
+    refresh: refreshOverwriteJpg,
+  } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.jpeg`,
+  });
 
   const [isBuildingPhotopeaActions, setIsBuildingPhotopeaActions] = useState(false);
   const [layerMovements, setLayerMovements] = useState<{ from: string; to: string }[]>([]);
@@ -70,8 +89,18 @@ export const DesignContainerV2 = ({
   const [designUrl, setDesignUrl] = useState<string>();
   const [psdUrl, setPsdUrl] = useState<string>();
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
+      return;
+    }
+    if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
+      setDesignUrl(overwriteJpgSignedUrl);
+      setPsdUrl(overwritePsdSignedUrl);
+      return;
+    }
+
     if (scheduleData && signedUrl) {
       const buildPhotopeaActions = async () => {
         try {
@@ -99,7 +128,14 @@ export const DesignContainerV2 = ({
       };
       buildPhotopeaActions();
     }
-  }, [scheduleData, signedUrl]);
+  }, [
+    scheduleData,
+    signedUrl,
+    isLoadingOverwriteJpgSignedUrl,
+    isLoadingOverwritePsdSignedUrl,
+    overwriteJpgSignedUrl,
+    overwritePsdSignedUrl,
+  ]);
 
   const fromAndToString = () => {
     const currDateTime = new Date();
@@ -131,25 +167,122 @@ export const DesignContainerV2 = ({
     ${format(fromAndTo.to, "MMM d")}`;
   };
 
-  const isPreppingToRenderDesign =
+  const uploadFileExport = async (fileExport: FileExport) => {
+    if (!fileExport["psd"] || !fileExport["jpg"]) {
+      console.error("missing either psd or jpg in file export:", { fileExport });
+      toast({
+        variant: "destructive",
+        title: "Failed to save design. Please try again or contact support.",
+      });
+      return;
+    }
+    // upload overwrite content to storage.
+    const psdPath = `${template.owner_id}/${template.id}.psd`;
+    const jpgPath = `${template.owner_id}/${template.id}.jpeg`;
+
+    // Unfortunately, we have to remove the existing files before uploading the new ones, because
+    // createSignedUploadUrl fails if the file already exists.
+    await supaClientComponentClient.storage.from(BUCKETS.designs).remove([psdPath, jpgPath]);
+    const [psd, jpg] = await Promise.all([
+      supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(psdPath),
+      supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(jpgPath),
+    ]);
+
+    if (!psd.data?.token || !jpg.data?.token) {
+      console.error("Failed to get signed URL: errors ->", { psd: psd.error, jpg: jpg.error });
+      return;
+    }
+    await Promise.all([
+      supaClientComponentClient.storage
+        .from(BUCKETS.designs)
+        .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {}),
+      supaClientComponentClient.storage
+        .from(BUCKETS.designs)
+        .uploadToSignedUrl(jpgPath, jpg.data?.token, fileExport["jpg"]),
+    ]);
+    toast({
+      variant: "success",
+      title: "Design saved",
+    });
+  };
+
+  const isDesignNotReady =
     isLoadingScheduleData ||
     isLoadingSignedUrl ||
     isBuildingPhotopeaActions ||
     isRefreshingScheduleData ||
-    !photopeaIframeSrc;
+    isLoadingOverwriteJpgSignedUrl ||
+    isLoadingOverwritePsdSignedUrl ||
+    (!photopeaIframeSrc && !(overwriteJpgSignedUrl && overwritePsdSignedUrl));
 
   const isScheduleEmpty = (scheduleData?.schedules || []).length === 0;
 
+  const renderDesignContent = () => {
+    if (isDesignNotReady) {
+      return <Spinner />;
+    }
+    if (isScheduleEmpty) {
+      return <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>;
+    }
+
+    return (
+      <>
+        {designUrl && <DesignImage url={designUrl} onClick={() => setIsImageViewerOpen(true)} />}
+        {photopeaIframeSrc && (
+          <PhotopeaRenderingContainer
+            namespace={template.id}
+            photopeaIframeSrc={photopeaIframeSrc}
+            layerMovements={layerMovements}
+            layerEdits={layerEdits}
+            onFileExport={(fileExport) => {
+              if (fileExport["psd"]) {
+                setPsdUrl(URL.createObjectURL(new Blob([fileExport["psd"]], { type: "image/vnd.adobe.photoshop" })));
+              }
+              if (fileExport["jpg"]) {
+                setDesignUrl(URL.createObjectURL(new Blob([fileExport["jpg"]], { type: "image/jpeg" })));
+              }
+            }}
+          />
+        )}
+      </>
+    );
+  };
+
   return (
     <>
+      {overwriteJpgSignedUrl && overwritePsdSignedUrl && (
+        <ConfirmationDialog
+          isOpen={isConfirmationDialogOpen}
+          onClose={() => {
+            setIsConfirmationDialogOpen(false);
+          }}
+          onConfirm={async () => {
+            await supaClientComponentClient.storage
+              .from(BUCKETS.designs)
+              .remove([`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`]);
+            refreshOverwritePsd();
+            refreshOverwriteJpg();
+          }}
+          title={"Refresh design"}
+          label={"This will remove the current design. This action cannot be undone. Are you sure you want to proceed?"}
+        />
+      )}
       <Card className="w-[320px]">
-        <CardHeader className="py-4 pl-4 pr-2">
+        <CardHeader className="py-2 pl-4 pr-2">
           <div className="flex">
-            <div className="flex h-16 flex-1 flex-col gap-1">
+            <div className="flex h-20 flex-1 flex-col gap-0.5">
               <Header2 className="line-clamp-1" title={template.name || "Untitled"}></Header2>
               <p className="text-sm text-muted-foreground">
                 {template.source_data_view} ({fromAndToString()})
               </p>
+              {overwriteJpgSignedUrl && overwritePsdSignedUrl && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">Overwritten</div>
+                  </TooltipTrigger>
+                  <TooltipContent>This design was manually edited.</TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <div className="flex gap-x-0.5">
               <PencilSquareIcon
@@ -168,48 +301,12 @@ export const DesignContainerV2 = ({
           </div>
         </CardHeader>
         <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
-          {isPreppingToRenderDesign ? (
-            <Spinner />
-          ) : isScheduleEmpty ? (
-            <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>
-          ) : (
-            <PhotopeaRenderingContainer
-              namespace={template.id}
-              photopeaIframeSrc={photopeaIframeSrc}
-              layerMovements={layerMovements}
-              layerEdits={layerEdits}
-              onFileExport={(fileExport) => {
-                if (fileExport["psd"]) {
-                  setPsdUrl(URL.createObjectURL(new Blob([fileExport["psd"]])));
-                }
-                if (fileExport["jpg"]) {
-                  setDesignUrl(URL.createObjectURL(new Blob([fileExport["jpg"]])));
-                }
-              }}
-            />
-          )}
-          {designUrl ? (
-            <>
-              <DesignImage
-                url={designUrl}
-                onClick={() => {
-                  setIsImageViewerOpen(true);
-                }}
-              />
-              <ImageViewer
-                visible={isImageViewerOpen}
-                onClose={() => {
-                  setIsImageViewerOpen(false);
-                }}
-                onMaskClick={() => {
-                  setIsImageViewerOpen(false);
-                }}
-                images={[{ src: designUrl }]}
-              />
-            </>
-          ) : (
-            !isPreppingToRenderDesign && !isScheduleEmpty && <Spinner />
-          )}
+          {renderDesignContent()}
+          <ImageViewer
+            visible={isImageViewerOpen}
+            images={[{ src: designUrl || "", alt: "Design" }]}
+            onClose={() => setIsImageViewerOpen(false)}
+          />
         </CardContent>
         <CardFooter className="flex flex-row-reverse gap-2 p-4">
           <DropdownMenu>
@@ -253,10 +350,14 @@ export const DesignContainerV2 = ({
               <Button
                 variant="secondary"
                 className="group"
-                disabled={isPreppingToRenderDesign || (!designUrl && !isScheduleEmpty)}
+                disabled={isDesignNotReady || (!designUrl && !isScheduleEmpty)}
                 onClick={async () => {
-                  setDesignUrl(undefined);
-                  refetch();
+                  if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
+                    setIsConfirmationDialogOpen(true);
+                  } else {
+                    setDesignUrl(undefined);
+                    refetch();
+                  }
                 }}
               >
                 <RefreshCwIcon width={18} className="group-hover:text-primary" />
@@ -269,35 +370,13 @@ export const DesignContainerV2 = ({
               <Button
                 variant="secondary"
                 className="group"
-                disabled={isPreppingToRenderDesign || (!designUrl && !isScheduleEmpty)}
+                disabled={isDesignNotReady || (!designUrl && !isScheduleEmpty)}
                 onClick={async () => {
                   if (psdUrl) {
                     const ab = await (await fetch(psdUrl)).arrayBuffer();
                     openPhotopeaEditor({ title: template.name || "Untitled" }, ab, {
                       onSaveConfirmationTitle: "This will overwrite the current design",
-                      onSave: async (fileExport: FileExport) => {
-                        console.log("SUCCESSFULLY SAVED DESIGN!", fileExport);
-                        // upload overwrite content to storage.
-                        // const psdPath = `${template.owner_id}/${template.id}.psd`;
-                        // const jpgPath = `${template.owner_id}/${template.id}.jpeg`;
-                        // const [psd, jpg] = await Promise.all([
-                        //   supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(psdPath),
-                        //   supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(jpgPath),
-                        // ]);
-
-                        // if (!psd.data?.token || !jpg.data?.token) {
-                        //   console.error("Failed to get signed URL");
-                        //   return;
-                        // }
-                        // await Promise.all([
-                        //   supaClientComponentClient.storage
-                        //     .from(BUCKETS.designs)
-                        //     .uploadToSignedUrl(psdPath, psd.data?.token, ""),
-                        //   supaClientComponentClient.storage
-                        //     .from(BUCKETS.designs)
-                        //     .uploadToSignedUrl(jpgPath, jpg.data?.token, ""),
-                        // ]);
-                      },
+                      onSave: uploadFileExport,
                     });
                   }
                 }}
