@@ -232,7 +232,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     },
   ) => {
     // This ensures that we always starts with a clean slate.
-    // clear(namespace);
+    clear(namespace);
 
     setTimeout(() => {
       // We wait for the next tick to ensure the ref is attached before anything is done.

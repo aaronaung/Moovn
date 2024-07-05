@@ -18,10 +18,12 @@ import { Spinner } from "../common/loading-spinner";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { Label } from "../ui/label";
 import _ from "lodash";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { BUCKETS } from "@/src/consts/storage";
+import { useSignedUrl } from "@/src/hooks/use-signed-url";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
@@ -211,6 +213,14 @@ const DesignSelectItem = ({
   onSelect: () => void;
 }) => {
   const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
+  const { signedUrl: overwritePsdSignedUrl, loading: isLoadingOverwritePsdSignedUrl } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.psd`,
+  });
+  const { signedUrl: overwriteJpgSignedUrl, loading: isLoadingOverwriteJpgSignedUrl } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.jpeg`,
+  });
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -221,10 +231,26 @@ const DesignSelectItem = ({
       psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
     };
   });
+  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl: string; psdUrl: string }>();
+  const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
+  const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
     generateDesign(template);
   }, []);
+
+  useEffect(() => {
+    if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
+      return;
+    }
+    if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
+      setDesignOverwrite({
+        jpgUrl: overwriteJpgSignedUrl,
+        psdUrl: overwritePsdSignedUrl,
+      });
+      return;
+    }
+  }, [isLoadingOverwriteJpgSignedUrl, isLoadingOverwritePsdSignedUrl, overwriteJpgSignedUrl, overwritePsdSignedUrl]);
 
   return (
     <div
@@ -251,7 +277,7 @@ const DesignSelectItem = ({
           {isScheduleEmpty ? (
             <p className="text-xs text-destructive">No schedule data found for the design</p>
           ) : (
-            <img src={designFromIndexedDb?.jpgUrl || ""} className="max-h-full max-w-full" alt={template.name} />
+            <img src={designJpgUrl} className="max-h-full max-w-full" alt={template.name} />
           )}
         </div>
       )}

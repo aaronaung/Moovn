@@ -71,6 +71,10 @@ export const DesignContainerV2 = ({
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
+    generateDesign(template);
+  }, []);
+
+  useEffect(() => {
     if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
       return;
     }
@@ -81,15 +85,7 @@ export const DesignContainerV2 = ({
       });
       return;
     }
-
-    generateDesign(template);
-  }, [
-    isLoadingOverwriteJpgSignedUrl,
-    isLoadingOverwritePsdSignedUrl,
-    overwriteJpgSignedUrl,
-    overwritePsdSignedUrl,
-    // isGeneratingDesign,
-  ]);
+  }, [isLoadingOverwriteJpgSignedUrl, isLoadingOverwritePsdSignedUrl, overwriteJpgSignedUrl, overwritePsdSignedUrl]);
 
   const fromAndToString = () => {
     const currDateTime = new Date();
@@ -186,7 +182,7 @@ export const DesignContainerV2 = ({
               .from(BUCKETS.designs)
               .remove([`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`]);
             setDesignOverwrite(undefined);
-            generateDesign(template);
+            generateDesign(template, true);
           }}
           title={"Refresh design"}
           label={`You edited this design, overwriting the generated version. Refreshing will create a new design and remove edits. 
@@ -284,7 +280,7 @@ export const DesignContainerV2 = ({
                   if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    generateDesign(template);
+                    generateDesign(template, true);
                   }
                 }}
               >

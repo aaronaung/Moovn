@@ -3,10 +3,12 @@ import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "@/src/com
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
+import { BUCKETS } from "@/src/consts/storage";
 import { getInstagramMedia } from "@/src/data/destinations-facebook";
 import { publishPost } from "@/src/data/posts";
 import { getTemplatesForPost } from "@/src/data/templates";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
+import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { cn } from "@/src/utils";
@@ -124,6 +126,14 @@ export default function InstagramPost({
 
 const CarosuelImageItem = ({ template }: { template: Tables<"templates"> & { source: Tables<"sources"> | null } }) => {
   const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
+  const { signedUrl: overwritePsdSignedUrl, loading: isLoadingOverwritePsdSignedUrl } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.psd`,
+  });
+  const { signedUrl: overwriteJpgSignedUrl, loading: isLoadingOverwriteJpgSignedUrl } = useSignedUrl({
+    bucket: BUCKETS.designs,
+    objectPath: `${template.owner_id}/${template.id}.jpeg`,
+  });
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -134,10 +144,26 @@ const CarosuelImageItem = ({ template }: { template: Tables<"templates"> & { sou
       psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
     };
   });
+  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl: string; psdUrl: string }>();
+  const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
+  const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
     generateDesign(template);
   }, []);
+
+  useEffect(() => {
+    if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
+      return;
+    }
+    if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
+      setDesignOverwrite({
+        jpgUrl: overwriteJpgSignedUrl,
+        psdUrl: overwritePsdSignedUrl,
+      });
+      return;
+    }
+  }, [isLoadingOverwriteJpgSignedUrl, isLoadingOverwritePsdSignedUrl, overwriteJpgSignedUrl, overwritePsdSignedUrl]);
 
   return (
     <CarouselItem
@@ -149,7 +175,7 @@ const CarosuelImageItem = ({ template }: { template: Tables<"templates"> & { sou
       ) : isScheduleEmpty ? (
         <p className="text-xs text-destructive">No schedule data found for the design</p>
       ) : (
-        <img src={designFromIndexedDb?.jpgUrl || ""} className="h-full w-full" alt={template.name} />
+        <img src={designJpgUrl} className="h-full w-full" alt={template.name} />
       )}
     </CarouselItem>
   );

@@ -28,7 +28,10 @@ export const useGenerateDesign = () => {
    * it saves the design to indexeddb, and removes the iframe from the document body.
    * @returns
    */
-  const generateDesign = async (template: Tables<"templates"> & { source: Tables<"sources"> | null }) => {
+  const generateDesign = async (
+    template: Tables<"templates"> & { source: Tables<"sources"> | null },
+    forceRefresh: boolean = false,
+  ) => {
     try {
       setIsLoading(true);
       const [schedule, signedTemplateUrl] = await Promise.all([
@@ -51,10 +54,12 @@ export const useGenerateDesign = () => {
         templateId: template.id,
         schedule,
       });
-      const design = await db.designs.get(template.id);
-      if (design?.hash === designHash) {
-        console.info(`schedule data hasn't changed for template ${template.id} - skipping design generation`);
-        return;
+      if (!forceRefresh) {
+        const design = await db.designs.get(template.id);
+        if (design?.hash === designHash) {
+          console.info(`schedule data hasn't changed for template ${template.id} - skipping design generation`);
+          return;
+        }
       }
 
       const templateFile = await (await fetch(signedTemplateUrl)).blob();
@@ -92,6 +97,7 @@ export const useGenerateDesign = () => {
           }
         },
         onDone: () => {
+          console.log("DONE removing iframe");
           document.body.removeChild(iframeEle);
         },
       });
