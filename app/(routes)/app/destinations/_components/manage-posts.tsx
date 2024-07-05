@@ -52,6 +52,10 @@ export default function ManagePosts({ destination }: { destination: Tables<"dest
     return <Spinner />;
   }
 
+  if (!destination.linked_ig_user_id) {
+    return <></>;
+  }
+
   if (!posts || posts.length === 0) {
     return (
       <>

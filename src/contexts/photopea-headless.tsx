@@ -1,20 +1,20 @@
 "use client";
 import _ from "lodash";
-import { createContext, RefObject, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getLayerCountCmd } from "../libs/designs/photopea";
 
 export type FileExport = { [key: string]: ArrayBuffer | null }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
 
 type PhotopeaHeadlessContextValue = {
-  sendRawPhotopeaCmd: (namespace: string, cmd: string) => void;
+  sendRawPhotopeaCmd: (namespace: string, photopea: HTMLIFrameElement, cmd: string) => void;
   initialize: (
     namespace: string,
     options: {
+      photopeaEl: HTMLIFrameElement;
       onReady?: () => void;
       onLayerCountChange?: (count: number) => void;
       onFileExport?: (args: FileExport | null) => void;
       onDone?: () => void;
-      ref: RefObject<HTMLIFrameElement>;
     },
   ) => void;
   clear: (namespace: string) => void;
@@ -52,7 +52,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const [onFileExportMap, setOnFileExportMap] = useState<{
     [key: string]: (args: FileExport | null) => void;
   }>({});
-  const [photopeaRefMap, setPhotopeaRefMap] = useState<{ [key: string]: RefObject<HTMLIFrameElement> }>({});
 
   const processEventFromPhotopea = useCallback(
     async (e: MessageEvent) => {
@@ -115,13 +114,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     };
   }, [processEventFromPhotopea]);
 
-  const sendRawPhotopeaCmd = async (namespace: string, cmd: string) => {
-    const ppRef = photopeaRefMap[namespace];
-    if (!ppRef?.current) {
-      // console.log("photopea command rejected because ref is not ready", namespace, cmd);
-      return;
-    }
-    const ppWindow = ppRef.current.contentWindow;
+  const sendRawPhotopeaCmd = async (namespace: string, photopea: HTMLIFrameElement, cmd: string) => {
+    const ppWindow = photopea.contentWindow;
     if (!ppWindow) {
       console.log("photopea command rejected because window is not ready", namespace, cmd);
       return;
@@ -133,11 +127,15 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     ppWindow.postMessage(cmd, "*");
   };
 
-  const attachLayerCountChangeListener = (namespace: string, callback?: (count: number) => void) => {
+  const attachLayerCountChangeListener = (
+    namespace: string,
+    photopea: HTMLIFrameElement,
+    callback?: (count: number) => void,
+  ) => {
     if (callback) {
       if (!pollIntervalMap[namespace]) {
         const intervalId = setInterval(() => {
-          sendRawPhotopeaCmd(namespace, getLayerCountCmd(namespace));
+          sendRawPhotopeaCmd(namespace, photopea, getLayerCountCmd(namespace));
         }, LAYER_COUNT_POLL_INTERVAL);
 
         setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
@@ -156,12 +154,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         [namespace]: _.debounce(callback, 100),
       }));
     }
-  };
-  const attachPhotopeaRef = (namespace: string, ref: RefObject<HTMLIFrameElement>) => {
-    setPhotopeaRefMap((prev) => ({
-      ...prev,
-      [namespace]: ref,
-    }));
   };
   const attachOnReadyListener = (namespace: string, callback?: () => void) => {
     if (callback) {
@@ -208,7 +200,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     setOnFileExportMap(deleteNamespace(namespace));
     setOnReadyMap(deleteNamespace(namespace));
     setOnLayerCountChangeMap(deleteNamespace(namespace));
-    setPhotopeaRefMap(deleteNamespace(namespace));
     setIsInitialized(deleteNamespace(namespace));
     setOnDoneMap(deleteNamespace(namespace));
     setIsLoadedMap(deleteNamespace(namespace));
@@ -227,32 +218,30 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const initialize = (
     namespace: string,
     {
+      photopeaEl,
       onReady,
       onLayerCountChange,
       onFileExport,
       onDone,
-      ref,
     }: {
+      photopeaEl: HTMLIFrameElement;
       onReady?: () => void;
       onFileExport?: (args: FileExport | null) => void;
       onLayerCountChange?: (count: number) => void;
       onDone?: () => void;
-      ref: RefObject<HTMLIFrameElement>;
     },
   ) => {
     // This ensures that we always starts with a clean slate.
-    clear(namespace);
-
-    attachPhotopeaRef(namespace, ref);
+    // clear(namespace);
 
     setTimeout(() => {
       // We wait for the next tick to ensure the ref is attached before anything is done.
-      attachLayerCountChangeListener(namespace, onLayerCountChange);
+      attachLayerCountChangeListener(namespace, photopeaEl, onLayerCountChange);
       attachOnReadyListener(namespace, onReady);
       attachFileExportListener(namespace, onFileExport);
       attachOnDoneListener(namespace, onDone);
       setIsInitialized((prev) => ({ ...prev, [namespace]: true }));
-    });
+    }, 100);
   };
 
   return (

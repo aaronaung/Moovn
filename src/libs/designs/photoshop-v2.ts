@@ -16,9 +16,15 @@ export type PSDActions = {
   }[];
 };
 
-export const determinePSDActions = (schedules: any, psd: Psd): PSDActions => {
+export const determinePSDActions = (
+  schedules: any,
+  psd: Psd,
+): { edits: PSDActions; translates: { from: string; to: string }[] } => {
   if (!psd.children) {
-    return {};
+    return {
+      edits: {},
+      translates: [],
+    };
   }
 
   const psdActions: PSDActions = {
@@ -85,5 +91,12 @@ export const determinePSDActions = (schedules: any, psd: Psd): PSDActions => {
       ];
     }
   }
-  return psdActions;
+
+  return {
+    edits: psdActions,
+    translates: psdActions[PSDActionType.LoadSmartObjectFromUrl as string].map(({ name, newLayerName }) => ({
+      from: newLayerName || name,
+      to: name,
+    })),
+  };
 };

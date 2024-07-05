@@ -18,13 +18,16 @@ export default function PhotopeaEditor() {
   const { initialize: initHeadless, clear: clearHeadless, sendRawPhotopeaCmd } = usePhotopeaHeadless();
 
   const handleSave = async () => {
+    if (!ref.current) {
+      return;
+    }
     setIsExporting(true);
 
     const forcedRetryCount = 3;
     let retryCount = 0;
     while (retryCount < forcedRetryCount) {
       // We have to retry because the export command sometimes doesn't work on the first try. This is a hack.
-      sendRawPhotopeaCmd(photopeaEditorNamespace, exportCmd(photopeaEditorNamespace));
+      sendRawPhotopeaCmd(photopeaEditorNamespace, ref.current, exportCmd(photopeaEditorNamespace));
       retryCount++;
     }
 
@@ -38,7 +41,7 @@ export default function PhotopeaEditor() {
       });
 
       initHeadless(photopeaEditorNamespace, {
-        ref,
+        photopeaEl: ref.current,
         onFileExport: async (fileExport) => {
           if (!isExporting) {
             return;

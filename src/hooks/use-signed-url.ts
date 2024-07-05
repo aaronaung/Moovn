@@ -5,10 +5,12 @@ export const useSignedUrl = ({
   bucket,
   objectPath,
   initialUrl,
+  refreshDepKey,
 }: {
   bucket?: string;
   objectPath?: string;
   initialUrl?: string;
+  refreshDepKey?: any;
 }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(initialUrl ?? null);
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export const useSignedUrl = ({
         isRefresh: true,
       });
     }
-  }, [bucket, objectPath]);
+  }, [bucket, objectPath, refreshDepKey]);
 
   useEffect(() => {
     if (!signedUrl) {
@@ -46,7 +48,7 @@ export const useSignedUrl = ({
       if (!data?.signedUrl) {
         throw new Error("Signed url not found in createSignUrl response.");
       }
-      const resp = await fetch(data.signedUrl, { method: "GET" });
+      const resp = await fetch(data.signedUrl, { method: "GET", cache: "reload" });
       if (!resp.ok) {
         throw new Error("Signed url is not valid");
       }

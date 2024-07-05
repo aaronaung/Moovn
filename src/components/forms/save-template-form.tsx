@@ -157,9 +157,6 @@ export default function SaveTemplateForm({ defaultValues, availableSources, onSu
 
               if (signedJpegUrlData) {
                 await fetchWithRetry(signedJpegUrlData?.signedUrl);
-                queryClient.invalidateQueries({
-                  queryKey: ["getDesignsForTemplate", templateId],
-                });
               }
               onSubmitted();
             },
@@ -172,8 +169,16 @@ export default function SaveTemplateForm({ defaultValues, availableSources, onSu
           owner_id: user.id,
           ...(formValues.id ? { updated_at: new Date().toISOString() } : {}),
         });
+        queryClient.invalidateQueries({
+          queryKey: ["getScheduleDataForSource", templateId],
+        });
         onSubmitted();
       }
+      toast({
+        variant: "success",
+        title: "Design template saved",
+        description: "Changes have been saved successfully",
+      });
     } catch (err) {
       console.error(err);
       toast({

@@ -15,23 +15,20 @@ import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
-import { FileExport, usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
+import { FileExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSignedUrl } from "@/src/hooks/use-signed-url";
-import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { exportCmd, moveLayerCmd, updateLayersCmd } from "@/src/libs/designs/photopea";
-import { determinePSDActions, PSDActions, PSDActionType } from "@/src/libs/designs/photoshop-v2";
-import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { readPsd } from "ag-psd";
 
 import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/src/libs/indexeddb/indexeddb";
+import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -44,97 +41,54 @@ export const DesignContainerV2 = ({
   onDeleteTemplate: () => void;
   onEditTemplate: () => void;
 }) => {
-  const [photopeaIframeSrc, setPhotopeaIframeSrc] = useState<string | null>(null);
-
-  const {
-    data: scheduleData,
-    isLoading: isLoadingScheduleData,
-    refetch,
-    isRefetching: isRefreshingScheduleData,
-  } = useSupaQuery(getScheduleDataForSource, {
-    arg: {
-      id: template.source?.id || "",
-      view: template.source_data_view as SourceDataView,
-    },
-    queryKey: ["getScheduleDataForSource", template.id],
-    enabled: !!template.source,
-    refetchOnWindowFocus: false,
-  });
-
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
-  const { signedUrl, loading: isLoadingSignedUrl } = useSignedUrl({
-    bucket: BUCKETS.templates,
-    objectPath: `${template.owner_id}/${template.id}.psd`,
-  });
-  const {
-    signedUrl: overwritePsdSignedUrl,
-    loading: isLoadingOverwritePsdSignedUrl,
-    refresh: refreshOverwritePsd,
-  } = useSignedUrl({
+  const { generateDesign, isLoading: isGeneratingDesign, isScheduleEmpty } = useGenerateDesign();
+
+  const { signedUrl: overwritePsdSignedUrl, loading: isLoadingOverwritePsdSignedUrl } = useSignedUrl({
     bucket: BUCKETS.designs,
     objectPath: `${template.owner_id}/${template.id}.psd`,
   });
-  const {
-    signedUrl: overwriteJpgSignedUrl,
-    loading: isLoadingOverwriteJpgSignedUrl,
-    refresh: refreshOverwriteJpg,
-  } = useSignedUrl({
+  const { signedUrl: overwriteJpgSignedUrl, loading: isLoadingOverwriteJpgSignedUrl } = useSignedUrl({
     bucket: BUCKETS.designs,
     objectPath: `${template.owner_id}/${template.id}.jpeg`,
   });
 
-  const [isBuildingPhotopeaActions, setIsBuildingPhotopeaActions] = useState(false);
-  const [layerMovements, setLayerMovements] = useState<{ from: string; to: string }[]>([]);
-  const [layerEdits, setLayerEdits] = useState<PSDActions>({});
-  const [designUrl, setDesignUrl] = useState<string>();
-  const [psdUrl, setPsdUrl] = useState<string>();
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
+
+  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl: string; psdUrl: string }>();
+  const designFromIndexedDb = useLiveQuery(async () => {
+    const design = await db.designs.get(template.id);
+    if (!design) {
+      return undefined;
+    }
+    return {
+      jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
+      psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
+    };
+  });
+  const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
+  const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
     if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
       return;
     }
     if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
-      setDesignUrl(overwriteJpgSignedUrl);
-      setPsdUrl(overwritePsdSignedUrl);
+      setDesignOverwrite({
+        jpgUrl: overwriteJpgSignedUrl,
+        psdUrl: overwritePsdSignedUrl,
+      });
       return;
     }
 
-    if (scheduleData && signedUrl) {
-      const buildPhotopeaActions = async () => {
-        try {
-          setIsBuildingPhotopeaActions(true);
-          const templateFile = await (await fetch(signedUrl)).blob();
-          const psd = readPsd(await templateFile.arrayBuffer());
-          const psdActions = determinePSDActions(transformScheduleV2(scheduleData), psd);
-
-          setLayerEdits(psdActions);
-          // We only want to move the layers after the smart objects have been loaded via the updateLayersCmd.
-          // LayerMovements are usually processed upon layer count change.
-          setLayerMovements(
-            psdActions[PSDActionType.LoadSmartObjectFromUrl as string].map(({ name, newLayerName }) => ({
-              from: newLayerName || name,
-              to: name,
-            })),
-          );
-          setPhotopeaIframeSrc(`https://www.photopea.com#${JSON.stringify({ files: [signedUrl], environment: {} })}`);
-        } catch (err) {
-          console.error("failed to determine PSD actions", err);
-        } finally {
-          setIsBuildingPhotopeaActions(false);
-        }
-        // Use the schedule data to determine the actions to take on the template PSD.
-      };
-      buildPhotopeaActions();
-    }
+    generateDesign(template);
   }, [
-    scheduleData,
-    signedUrl,
     isLoadingOverwriteJpgSignedUrl,
     isLoadingOverwritePsdSignedUrl,
     overwriteJpgSignedUrl,
     overwritePsdSignedUrl,
+    // isGeneratingDesign,
   ]);
 
   const fromAndToString = () => {
@@ -206,46 +160,17 @@ export const DesignContainerV2 = ({
     });
   };
 
-  const isDesignNotReady =
-    isLoadingScheduleData ||
-    isLoadingSignedUrl ||
-    isBuildingPhotopeaActions ||
-    isRefreshingScheduleData ||
-    isLoadingOverwriteJpgSignedUrl ||
-    isLoadingOverwritePsdSignedUrl ||
-    (!photopeaIframeSrc && !(overwriteJpgSignedUrl && overwritePsdSignedUrl));
-
-  const isScheduleEmpty = (scheduleData?.schedules || []).length === 0;
+  const isDesignNotReady = isGeneratingDesign || isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl;
 
   const renderDesignContent = () => {
-    if (isDesignNotReady) {
-      return <Spinner />;
-    }
     if (isScheduleEmpty) {
       return <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>;
     }
+    if (isDesignNotReady || !designJpgUrl) {
+      return <Spinner />;
+    }
 
-    return (
-      <>
-        {designUrl && <DesignImage url={designUrl} onClick={() => setIsImageViewerOpen(true)} />}
-        {photopeaIframeSrc && (
-          <PhotopeaRenderingContainer
-            namespace={template.id}
-            photopeaIframeSrc={photopeaIframeSrc}
-            layerMovements={layerMovements}
-            layerEdits={layerEdits}
-            onFileExport={(fileExport) => {
-              if (fileExport["psd"]) {
-                setPsdUrl(URL.createObjectURL(new Blob([fileExport["psd"]], { type: "image/vnd.adobe.photoshop" })));
-              }
-              if (fileExport["jpg"]) {
-                setDesignUrl(URL.createObjectURL(new Blob([fileExport["jpg"]], { type: "image/jpeg" })));
-              }
-            }}
-          />
-        )}
-      </>
-    );
+    return <DesignImage url={designJpgUrl} onClick={() => setIsImageViewerOpen(true)} />;
   };
 
   return (
@@ -260,11 +185,12 @@ export const DesignContainerV2 = ({
             await supaClientComponentClient.storage
               .from(BUCKETS.designs)
               .remove([`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`]);
-            refreshOverwritePsd();
-            refreshOverwriteJpg();
+            setDesignOverwrite(undefined);
+            generateDesign(template);
           }}
           title={"Refresh design"}
-          label={"This will remove the current design. This action cannot be undone. Are you sure you want to proceed?"}
+          label={`You edited this design, overwriting the generated version. Refreshing will create a new design and remove edits. 
+          This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
       <Card className="w-[320px]">
@@ -275,7 +201,7 @@ export const DesignContainerV2 = ({
               <p className="text-sm text-muted-foreground">
                 {template.source_data_view} ({fromAndToString()})
               </p>
-              {overwriteJpgSignedUrl && overwritePsdSignedUrl && (
+              {designOverwrite && (
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">Overwritten</div>
@@ -306,16 +232,17 @@ export const DesignContainerV2 = ({
           {renderDesignContent()}
           <ImageViewer
             visible={isImageViewerOpen}
-            images={[{ src: designUrl || "", alt: "Design" }]}
+            onMaskClick={() => setIsImageViewerOpen(false)}
+            images={[{ src: designJpgUrl || "", alt: "Design" }]}
             onClose={() => setIsImageViewerOpen(false)}
           />
         </CardContent>
         <CardFooter className="flex flex-row-reverse gap-2 p-4">
           <DropdownMenu>
-            <DropdownMenuTrigger disabled={!psdUrl && !designUrl}>
+            <DropdownMenuTrigger disabled={!designPsdUrl && !designJpgUrl}>
               <Tooltip>
                 <TooltipTrigger>
-                  <Button className="group" variant="secondary" disabled={!psdUrl && !designUrl}>
+                  <Button className="group" variant="secondary" disabled={!designPsdUrl && !designJpgUrl}>
                     <DownloadCloudIcon width={18} className="group-hover:text-primary" />
                   </Button>
                 </TooltipTrigger>
@@ -323,22 +250,22 @@ export const DesignContainerV2 = ({
               </Tooltip>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {psdUrl && (
+              {designPsdUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
-                    download(psdUrl, `${template.name}.psd`);
+                    download(designPsdUrl, `${template.name}.psd`);
                   }}
                 >
                   PSD
                 </DropdownMenuItem>
               )}
-              {designUrl && (
+              {designJpgUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
-                    if (designUrl) {
-                      download(designUrl, `${template.name}.jpeg`);
+                    if (designJpgUrl) {
+                      download(designJpgUrl, `${template.name}.jpeg`);
                     }
                   }}
                 >
@@ -352,13 +279,12 @@ export const DesignContainerV2 = ({
               <Button
                 variant="secondary"
                 className="group"
-                disabled={isDesignNotReady || (!designUrl && !isScheduleEmpty)}
+                disabled={isDesignNotReady || (!designJpgUrl && !isScheduleEmpty)}
                 onClick={async () => {
-                  if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
+                  if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    setDesignUrl(undefined);
-                    refetch();
+                    generateDesign(template);
                   }
                 }}
               >
@@ -372,10 +298,10 @@ export const DesignContainerV2 = ({
               <Button
                 variant="secondary"
                 className="group"
-                disabled={isDesignNotReady || (!designUrl && !isScheduleEmpty)}
+                disabled={isDesignNotReady || (!designJpgUrl && !isScheduleEmpty)}
                 onClick={async () => {
-                  if (psdUrl) {
-                    const ab = await (await fetch(psdUrl)).arrayBuffer();
+                  if (designPsdUrl) {
+                    const ab = await (await fetch(designPsdUrl)).arrayBuffer();
                     openPhotopeaEditor({ title: template.name || "Untitled" }, ab, {
                       onSaveConfirmationTitle: "This will overwrite the current design",
                       onSave: uploadFileExport,
@@ -392,59 +318,6 @@ export const DesignContainerV2 = ({
       </Card>
     </>
   );
-};
-
-const PhotopeaRenderingContainer = ({
-  namespace,
-  photopeaIframeSrc,
-  layerMovements,
-  layerEdits,
-  onFileExport,
-}: {
-  namespace: string;
-  photopeaIframeSrc: string;
-  layerMovements: { from: string; to: string }[];
-  layerEdits: PSDActions;
-  onFileExport: (file: FileExport) => void;
-}) => {
-  const photopeaRef = useRef<HTMLIFrameElement>(null);
-  const [isDone, setIsDone] = useState(false);
-  const { initialize: initPhotopea, clear: clearPhotopea, sendRawPhotopeaCmd } = usePhotopeaHeadless();
-
-  useEffect(() => {
-    if (isDone) {
-      return;
-    }
-    initPhotopea(namespace, {
-      ref: photopeaRef,
-      onLayerCountChange: () => {
-        for (const { from, to } of layerMovements) {
-          sendRawPhotopeaCmd(namespace, moveLayerCmd({ from, to }));
-        }
-        sendRawPhotopeaCmd(namespace, exportCmd(namespace));
-      },
-      onFileExport: (fileExport) => {
-        if (fileExport) {
-          onFileExport(fileExport);
-        }
-      },
-      onReady: async () => {
-        sendRawPhotopeaCmd(namespace, updateLayersCmd(layerEdits));
-        if (layerMovements.length === 0) {
-          sendRawPhotopeaCmd(namespace, exportCmd(namespace));
-        }
-      },
-      onDone: () => {
-        setIsDone(true);
-      },
-    });
-
-    return () => {
-      clearPhotopea(namespace);
-    };
-  }, [photopeaRef.current, namespace, isDone]);
-
-  return <>{!isDone && <iframe ref={photopeaRef} className="hidden h-[300px] w-[300px]" src={photopeaIframeSrc} />}</>;
 };
 
 const DesignImage = ({ url, onClick }: { url?: string; onClick: () => void }) => {
