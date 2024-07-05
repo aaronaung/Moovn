@@ -1,18 +1,18 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "@/src/components/ui/carousel";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
-import Image from "@/src/components/ui/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
-import { BUCKETS } from "@/src/consts/storage";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getInstagramMedia } from "@/src/data/destinations-facebook";
 import { publishPost } from "@/src/data/posts";
 import { getTemplatesForPost } from "@/src/data/templates";
+import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { db } from "@/src/libs/indexeddb/indexeddb";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { CloudArrowUpIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 
 import { useEffect, useState } from "react";
@@ -27,7 +27,6 @@ export default function InstagramPost({
   onDeletePost: () => void;
 }) {
   const [isLoadingDesigns, setIsLoadingDesigns] = useState(false);
-  const [designUrls, setDesignUrls] = useState<string[]>([]);
   const { data: templates, isLoading: isLoadingTemplatesForPost } = useSupaQuery(getTemplatesForPost, {
     queryKey: ["getTemplatesForPost", post.id],
     arg: post.id,
@@ -58,40 +57,6 @@ export default function InstagramPost({
       });
     },
   });
-
-  useEffect(() => {
-    if (templates && templates.length > 0) {
-      const toastErr = (err: any) => {
-        console.error(err);
-        toast({
-          title: "Failed to fetch designs",
-          variant: "destructive",
-        });
-      };
-
-      const fetchDesigns = async () => {
-        setIsLoadingDesigns(true);
-
-        try {
-          const { data, error } = await supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUrls(
-            templates.map((t) => `${t.owner_id}/${t.id}/latest.jpeg`),
-            24 * 3600,
-          );
-          if (error || !data) {
-            toastErr(error || "No data returned from createSignedUrls");
-            return;
-          }
-          setDesignUrls(data.map((d) => d.signedUrl));
-        } catch (err) {
-          toastErr(err);
-        } finally {
-          setIsLoadingDesigns(false);
-        }
-      };
-
-      fetchDesigns();
-    }
-  }, [templates]);
 
   if (isLoadingTemplatesForPost || isLoadingDesigns) {
     return <Spinner className="my-2" />;
@@ -140,13 +105,11 @@ export default function InstagramPost({
         )}
       </div>
       {/** mb for carousel dots when there are more than one design */}
-      <div className={cn(" flex flex-col items-center", designUrls.length > 1 && "mb-8")}>
+      <div className={cn(" flex flex-col items-center", (templates || []).length > 1 && "mb-6")}>
         <Carousel className="h-[300px] w-[300px]">
           <CarouselContent>
-            {designUrls.map((url) => (
-              <CarouselItem key={url} className="max-h-full max-w-full">
-                <Image retryOnError className="max-h-full max-w-full" src={url} alt={url} />
-              </CarouselItem>
+            {(templates || []).map((template) => (
+              <CarosuelImageItem template={template} />
             ))}
           </CarouselContent>
           <CarouselDots className="mt-4" />
@@ -158,3 +121,36 @@ export default function InstagramPost({
     </div>
   );
 }
+
+const CarosuelImageItem = ({ template }: { template: Tables<"templates"> & { source: Tables<"sources"> | null } }) => {
+  const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
+  const designFromIndexedDb = useLiveQuery(async () => {
+    const design = await db.designs.get(template.id);
+    if (!design) {
+      return undefined;
+    }
+    return {
+      jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
+      psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
+    };
+  });
+
+  useEffect(() => {
+    generateDesign(template);
+  }, []);
+
+  return (
+    <CarouselItem
+      key={template.id}
+      className={cn("flex max-h-full min-h-[250px] max-w-full items-center justify-center hover:bg-secondary")}
+    >
+      {isLoading ? (
+        <Spinner />
+      ) : isScheduleEmpty ? (
+        <p className="text-xs text-destructive">No schedule data found for the design</p>
+      ) : (
+        <img src={designFromIndexedDb?.jpgUrl || ""} className="h-full w-full" alt={template.name} />
+      )}
+    </CarouselItem>
+  );
+};

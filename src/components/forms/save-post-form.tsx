@@ -6,7 +6,6 @@ import { Loader2 } from "lucide-react";
 import InputSelect from "../ui/input/select";
 
 import { useAuthUser } from "@/src/contexts/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { toast } from "../ui/use-toast";
 import { savePost } from "@/src/data/posts";
@@ -16,12 +15,13 @@ import { getTemplatesBySchedule, getTemplatesForPost } from "@/src/data/template
 import InputTextArea from "../ui/input/textarea";
 import { Tables } from "@/types/db";
 import { Spinner } from "../common/loading-spinner";
-import { BUCKETS } from "@/src/consts/storage";
-import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { Label } from "../ui/label";
 import _ from "lodash";
 import { useEffect } from "react";
+import { useGenerateDesign } from "@/src/hooks/use-generate-design";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/src/libs/indexeddb/indexeddb";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
@@ -40,8 +40,6 @@ type SavePostFormProps = {
 };
 
 export default function SavePostForm({ destination, defaultValues, onSubmitted }: SavePostFormProps) {
-  const queryClient = useQueryClient();
-
   const {
     register,
     handleSubmit,
@@ -79,6 +77,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
       setValue("template_ids", []);
     }
   }, [schedule, setValue, defaultValues?.source_data_view]);
+
   useEffect(() => {
     if (initialTemplates) {
       setValue(
@@ -108,7 +107,6 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 
   const handleOnFormSuccess = async (formValues: SavePostFormSchemaType) => {
     const templateChanges = strListDiff(defaultValues?.template_ids || [], Array.from(formValues.template_ids) || []);
-    console.log("templateChanges", templateChanges);
     if (user?.id) {
       _savePost({
         post: {
@@ -137,7 +135,6 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     return templates.map((template) => (
       <DesignSelectItem
         key={template.id}
-        userId={user.id}
         template={template}
         isSelected={templateIds.includes(template.id)}
         onSelect={() => {
@@ -193,7 +190,11 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
           placeholder: "Write a caption for this post",
         }}
       />
-      <Button className="float-right mt-6" type="submit" disabled={isSavingPost || !hasTemplates}>
+      <Button
+        className="float-right mt-6"
+        type="submit"
+        disabled={isSavingPost || !hasTemplates || templateIds.length === 0}
+      >
         {isSavingPost ? <Loader2 className="animate-spin" /> : "Save"}
       </Button>
     </form>
@@ -201,37 +202,45 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 }
 
 const DesignSelectItem = ({
-  userId,
   template,
   isSelected,
   onSelect,
 }: {
-  userId: string;
-  template: Tables<"templates">;
+  template: Tables<"templates"> & { source: Tables<"sources"> | null };
   isSelected: boolean;
   onSelect: () => void;
 }) => {
-  const { signedUrl, loading } = useSignedUrl({
-    bucket: BUCKETS.designs,
-    objectPath: `${userId}/${template.id}/latest.jpeg`,
+  const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
+  const designFromIndexedDb = useLiveQuery(async () => {
+    const design = await db.designs.get(template.id);
+    if (!design) {
+      return undefined;
+    }
+    return {
+      jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
+      psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
+    };
   });
 
-  if (!signedUrl) {
-    return <></>;
-  }
+  useEffect(() => {
+    generateDesign(template);
+  }, []);
 
   return (
     <div
       key={template.id}
       className={cn(
-        "flex h-fit w-[200px] shrink-0 cursor-pointer flex-col gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
-        isSelected && "bg-secondary",
+        "flex h-fit min-h-[225px] w-[200px] shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
+        (isSelected || isLoading) && "bg-secondary",
       )}
       onClick={() => {
+        if (isScheduleEmpty) {
+          return;
+        }
         onSelect();
       }}
     >
-      {loading ? (
+      {isLoading ? (
         <Spinner />
       ) : (
         <div>
@@ -239,7 +248,11 @@ const DesignSelectItem = ({
             <p className="flex-1 text-xs text-muted-foreground">{template.name}</p>
             <div>{isSelected ? <CheckCircleIcon className="ml-2 text-green-700" width={24} /> : <></>}</div>
           </div>
-          <img src={signedUrl || ""} className="max-h-full max-w-full" alt={template.name} />
+          {isScheduleEmpty ? (
+            <p className="text-xs text-destructive">No schedule data found for the design</p>
+          ) : (
+            <img src={designFromIndexedDb?.jpgUrl || ""} className="max-h-full max-w-full" alt={template.name} />
+          )}
         </div>
       )}
     </div>
