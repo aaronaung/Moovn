@@ -9,10 +9,7 @@ export const savePost = async (
     templateIds,
   }: {
     post: Partial<Tables<"posts">>;
-    templateIds?: {
-      added: string[];
-      removed: string[];
-    };
+    templateIds?: string[];
   },
   { client }: SupabaseOptions,
 ) => {
@@ -27,10 +24,9 @@ export const savePost = async (
 
   if (templateIds) {
     try {
-      await client.rpc("manage_post_template_links", {
+      await client.rpc("set_template_links", {
         arg_post_id: saved.id,
-        added_template_ids: templateIds.added || [],
-        removed_template_ids: templateIds.removed || [],
+        new_template_ids: templateIds,
       });
     } catch (err) {
       console.error(err);

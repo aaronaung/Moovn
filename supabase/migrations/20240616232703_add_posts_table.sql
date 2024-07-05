@@ -25,6 +25,7 @@ with check (auth.uid() = owner_id);
 create table "public"."posts_templates" (
   "post_id" uuid not null,
   "template_id" uuid not null,
+  "position" integer not null default 0,
   "created_at" timestamp with time zone default now()
 );
 create unique index if not exists posts_templates_pkey on public."posts_templates" using btree (post_id, template_id);
@@ -41,27 +42,77 @@ to authenticated
 using (auth.uid() = (select owner_id from posts where id = post_id))
 with check (auth.uid() = (select owner_id from posts where id = post_id));
 
-CREATE OR REPLACE FUNCTION manage_post_template_links(
+
+/* 
+unnest(new_template_ids) converts the array new_template_ids into a set of rows, one for each element in the array.
+WITH ORDINALITY adds a column that provides a unique row number for each element in the set of rows produced by unnest. This row number starts at 1 and increments by 1 for each element.
+AS t(template_id, idx) gives an alias t to the result set and assigns names to the columns. In this case:
+template_id corresponds to the elements of the array.
+idx corresponds to the ordinality (the row number).
+So, t(template_id, idx) names the columns of the result set, making it clear which values are the template IDs and which are the corresponding indices. This naming allows you to refer to these columns in the SELECT clause for insertion into the posts_templates table.
+*/
+CREATE OR REPLACE FUNCTION set_template_links(
     arg_post_id UUID,
-    added_template_ids UUID[],
-    removed_template_ids UUID[]
+    new_template_ids UUID[]
 ) RETURNS VOID AS $$
 BEGIN
     -- Remove all existing links for the given post_id
     DELETE FROM posts_templates WHERE post_id = arg_post_id;
     
-    -- Insert new links for the added_template_ids
-    IF array_length(added_template_ids, 1) IS NOT NULL THEN
-        INSERT INTO posts_templates (post_id, template_id)
-        SELECT arg_post_id, unnest(added_template_ids);
-    END IF;
-    
-    -- Remove specific links for the removed_template_ids
-    IF array_length(removed_template_ids, 1) IS NOT NULL THEN
-        DELETE FROM posts_templates
-        WHERE post_id = arg_post_id AND template_id = ANY(removed_template_ids);
+    -- Insert new links for the new_template_ids with position
+    IF array_length(new_template_ids, 1) IS NOT NULL THEN
+        INSERT INTO posts_templates (post_id, template_id, position)
+        SELECT arg_post_id, template_id, idx - 1
+        FROM unnest(new_template_ids) WITH ORDINALITY AS t(template_id, idx);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
+
+insert into storage.buckets
+  (id, name)
+values
+  ('posts', 'posts')
+on conflict (id) do nothing;
+
+create policy "Enable read to owner of the posts"
+on storage.objects
+as permissive
+for select
+to authenticated
+using (
+    bucket_id = 'posts' and
+    auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
+);
+create policy "Enable delete to owner of the posts"
+on storage.objects
+as permissive
+for delete
+to authenticated
+using (
+    bucket_id = 'posts' and
+    auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
+);
+create policy "Enable update to owner of the posts"
+on storage.objects
+as permissive
+for update
+to authenticated
+using (
+    bucket_id = 'posts' and
+    auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
+)
+with check(
+    bucket_id = 'posts' and
+    auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
+);
+create policy "Enable insert to owner of the posts"
+on storage.objects
+as permissive
+for insert
+to authenticated
+with check (
+    bucket_id = 'posts' and
+    auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
+);
 

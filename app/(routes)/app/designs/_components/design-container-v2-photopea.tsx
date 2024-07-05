@@ -17,7 +17,6 @@ import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { FileExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { useSignedUrl } from "@/src/hooks/use-signed-url";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -43,20 +42,11 @@ export const DesignContainerV2 = ({
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateDesign, isLoading: isGeneratingDesign, isScheduleEmpty } = useGenerateDesign();
-
-  const { signedUrl: overwritePsdSignedUrl, loading: isLoadingOverwritePsdSignedUrl } = useSignedUrl({
-    bucket: BUCKETS.designs,
-    objectPath: `${template.owner_id}/${template.id}.psd`,
-  });
-  const { signedUrl: overwriteJpgSignedUrl, loading: isLoadingOverwriteJpgSignedUrl } = useSignedUrl({
-    bucket: BUCKETS.designs,
-    objectPath: `${template.owner_id}/${template.id}.jpeg`,
-  });
-
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
-  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl: string; psdUrl: string }>();
+  const [isLoadingOverwrites, setIsLoadingOverwrites] = useState(false);
+  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl?: string; psdUrl?: string }>();
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -71,21 +61,36 @@ export const DesignContainerV2 = ({
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
+    const fetchOverwrites = async () => {
+      try {
+        setIsLoadingOverwrites(true);
+        const result = await supaClientComponentClient.storage
+          .from(BUCKETS.designs)
+          .createSignedUrls(
+            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`],
+            24 * 60 * 60,
+          );
+        if (!result.data) {
+          console.log("failed to create signed url", result.error);
+          return;
+        }
+
+        for (const overwrite of result.data) {
+          if (overwrite.signedUrl) {
+            if (overwrite.path === `${template.owner_id}/${template.id}.psd`) {
+              setDesignOverwrite((prev) => ({ ...prev, psdUrl: overwrite.signedUrl }));
+            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpeg`) {
+              setDesignOverwrite((prev) => ({ ...prev, jpgUrl: overwrite.signedUrl }));
+            }
+          }
+        }
+      } finally {
+        setIsLoadingOverwrites(false);
+      }
+    };
+    fetchOverwrites();
     generateDesign(template);
   }, []);
-
-  useEffect(() => {
-    if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
-      return;
-    }
-    if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
-      setDesignOverwrite({
-        jpgUrl: overwriteJpgSignedUrl,
-        psdUrl: overwritePsdSignedUrl,
-      });
-      return;
-    }
-  }, [isLoadingOverwriteJpgSignedUrl, isLoadingOverwritePsdSignedUrl, overwriteJpgSignedUrl, overwritePsdSignedUrl]);
 
   const fromAndToString = () => {
     const currDateTime = new Date();
@@ -145,10 +150,14 @@ export const DesignContainerV2 = ({
     await Promise.all([
       supaClientComponentClient.storage
         .from(BUCKETS.designs)
-        .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {}),
+        .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {
+          contentType: "application/vnd.adobe.photoshop",
+        }),
       supaClientComponentClient.storage
         .from(BUCKETS.designs)
-        .uploadToSignedUrl(jpgPath, jpg.data?.token, fileExport["jpg"]),
+        .uploadToSignedUrl(jpgPath, jpg.data?.token, fileExport["jpg"], {
+          contentType: "image/jpeg",
+        }),
     ]);
     toast({
       variant: "success",
@@ -156,7 +165,7 @@ export const DesignContainerV2 = ({
     });
   };
 
-  const isDesignNotReady = isGeneratingDesign || isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl;
+  const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
     if (isScheduleEmpty) {
@@ -171,7 +180,7 @@ export const DesignContainerV2 = ({
 
   return (
     <>
-      {overwriteJpgSignedUrl && overwritePsdSignedUrl && (
+      {designOverwrite && (
         <ConfirmationDialog
           isOpen={isConfirmationDialogOpen}
           onClose={() => {

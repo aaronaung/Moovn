@@ -9,13 +9,12 @@ import { useAuthUser } from "@/src/contexts/auth";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { toast } from "../ui/use-toast";
 import { savePost } from "@/src/data/posts";
-import { cn, strListDiff } from "@/src/utils";
+import { cn } from "@/src/utils";
 import { SourceDataView } from "@/src/consts/sources";
 import { getTemplatesBySchedule, getTemplatesForPost } from "@/src/data/templates";
 import InputTextArea from "../ui/input/textarea";
 import { Tables } from "@/types/db";
 import { Spinner } from "../common/loading-spinner";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { Label } from "../ui/label";
 import _ from "lodash";
 import { useEffect, useState } from "react";
@@ -23,7 +22,7 @@ import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { BUCKETS } from "@/src/consts/storage";
-import { useSignedUrl } from "@/src/hooks/use-signed-url";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
@@ -108,7 +107,6 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
   });
 
   const handleOnFormSuccess = async (formValues: SavePostFormSchemaType) => {
-    const templateChanges = strListDiff(defaultValues?.template_ids || [], Array.from(formValues.template_ids) || []);
     if (user?.id) {
       _savePost({
         post: {
@@ -117,7 +115,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
           ...(defaultValues?.id ? { id: defaultValues.id } : {}),
           ..._.omit(formValues, "template_ids"),
         },
-        templateIds: templateChanges,
+        templateIds: formValues.template_ids,
       });
     }
   };
@@ -135,21 +133,24 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
       );
     }
     return templates.map((template) => (
-      <DesignSelectItem
-        key={template.id}
-        template={template}
-        isSelected={templateIds.includes(template.id)}
-        onSelect={() => {
-          const newSet = new Set(templateIds);
-          if (newSet.has(template.id)) {
-            newSet.delete(template.id);
-          } else {
-            newSet.add(template.id);
-          }
-          setValue("template_ids", Array.from(newSet));
-          trigger("template_ids");
-        }}
-      />
+      <>
+        <DesignSelectItem
+          key={template.id}
+          index={templateIds.indexOf(template.id)}
+          template={template}
+          isSelected={templateIds.includes(template.id)}
+          onSelect={() => {
+            const newSet = new Set(templateIds);
+            if (newSet.has(template.id)) {
+              newSet.delete(template.id);
+            } else {
+              newSet.add(template.id);
+            }
+            setValue("template_ids", Array.from(newSet));
+            trigger("template_ids");
+          }}
+        />
+      </>
     ));
   };
 
@@ -176,9 +177,15 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
           <Label className="flex-1 leading-4">Pick designs to include in the post</Label>
           <p className="text-sm text-muted-foreground">{(templates || []).length} available</p>
         </div>
+
         <div className="mt-2 flex w-full gap-x-2 overflow-scroll">{renderDesignSelectItems()}</div>
+        <p className="my-1 text-xs text-muted-foreground">
+          The order in a carousel post is determined by the number displayed on each selected design.
+        </p>
         {templateIds.length > 1 && (
-          <p className="mt-2 text-xs text-muted-foreground text-yellow-600">{`Multiple designs selected. This post will be published as a carousel.`}</p>
+          <>
+            <p className="mt-2 text-xs text-muted-foreground text-yellow-600">{`Multiple designs selected. This post will be published as a carousel.`}</p>
+          </>
         )}
         <p className="my-2 text-sm text-destructive">{errors.template_ids?.message}</p>
       </div>
@@ -204,23 +211,17 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 }
 
 const DesignSelectItem = ({
+  index,
   template,
   isSelected,
   onSelect,
 }: {
+  index: number;
   template: Tables<"templates"> & { source: Tables<"sources"> | null };
   isSelected: boolean;
   onSelect: () => void;
 }) => {
   const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
-  const { signedUrl: overwritePsdSignedUrl, loading: isLoadingOverwritePsdSignedUrl } = useSignedUrl({
-    bucket: BUCKETS.designs,
-    objectPath: `${template.owner_id}/${template.id}.psd`,
-  });
-  const { signedUrl: overwriteJpgSignedUrl, loading: isLoadingOverwriteJpgSignedUrl } = useSignedUrl({
-    bucket: BUCKETS.designs,
-    objectPath: `${template.owner_id}/${template.id}.jpeg`,
-  });
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -231,26 +232,42 @@ const DesignSelectItem = ({
       psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
     };
   });
-  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl: string; psdUrl: string }>();
+  const [isLoadingOverwrites, setIsLoadingOverwrites] = useState(false);
+  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl?: string; psdUrl?: string }>();
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
   useEffect(() => {
+    const fetchOverwrites = async () => {
+      try {
+        setIsLoadingOverwrites(true);
+        const result = await supaClientComponentClient.storage
+          .from(BUCKETS.designs)
+          .createSignedUrls(
+            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`],
+            24 * 60 * 60,
+          );
+        if (!result.data) {
+          console.log("failed to create signed url", result.error);
+          return;
+        }
+
+        for (const overwrite of result.data) {
+          if (overwrite.signedUrl) {
+            if (overwrite.path === `${template.owner_id}/${template.id}.psd`) {
+              setDesignOverwrite((prev) => ({ ...prev, psdUrl: overwrite.signedUrl }));
+            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpeg`) {
+              setDesignOverwrite((prev) => ({ ...prev, jpgUrl: overwrite.signedUrl }));
+            }
+          }
+        }
+      } finally {
+        setIsLoadingOverwrites(false);
+      }
+    };
+    fetchOverwrites();
     generateDesign(template);
   }, []);
-
-  useEffect(() => {
-    if (isLoadingOverwriteJpgSignedUrl || isLoadingOverwritePsdSignedUrl) {
-      return;
-    }
-    if (overwriteJpgSignedUrl && overwritePsdSignedUrl) {
-      setDesignOverwrite({
-        jpgUrl: overwriteJpgSignedUrl,
-        psdUrl: overwritePsdSignedUrl,
-      });
-      return;
-    }
-  }, [isLoadingOverwriteJpgSignedUrl, isLoadingOverwritePsdSignedUrl, overwriteJpgSignedUrl, overwritePsdSignedUrl]);
 
   return (
     <div
@@ -266,13 +283,21 @@ const DesignSelectItem = ({
         onSelect();
       }}
     >
-      {isLoading ? (
+      {isLoading || isLoadingOverwrites ? (
         <Spinner />
       ) : (
         <div>
           <div className="flex h-8 items-center">
             <p className="flex-1 text-xs text-muted-foreground">{template.name}</p>
-            <div>{isSelected ? <CheckCircleIcon className="ml-2 text-green-700" width={24} /> : <></>}</div>
+            <div>
+              {isSelected ? (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-700">
+                  <p className="text-xs text-secondary">{index + 1}</p>
+                </div>
+              ) : (
+                <></>
+              )}
+            </div>
           </div>
           {isScheduleEmpty ? (
             <p className="text-xs text-destructive">No schedule data found for the design</p>

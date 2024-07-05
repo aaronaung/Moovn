@@ -250,7 +250,7 @@ const CarouselDots = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
           <Button
             key={i}
             className={`mx-1 h-1.5 w-1.5 rounded-full p-0 ${
-              i === currentSlide ? "scale-125 transform bg-gray-500 hover:bg-gray-500" : "bg-gray-300 hover:bg-gray-300"
+              i === currentSlide ? "scale-125 transform bg-gray-500 dark:bg-gray-300" : "bg-gray-300 dark:bg-gray-500"
             }`}
             aria-label={`Go to slide ${i + 1}`}
             onClick={() => api?.scrollTo(i)}

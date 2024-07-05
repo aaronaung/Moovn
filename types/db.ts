@@ -49,7 +49,7 @@ export type Database = {
           long_lived_token: string | null
           name: string
           owner_id: string
-          token_last_refreshed_at: string
+          token_last_refreshed_at: string | null
           type: string
           updated_at: string | null
         }
@@ -60,7 +60,7 @@ export type Database = {
           long_lived_token?: string | null
           name: string
           owner_id: string
-          token_last_refreshed_at?: string
+          token_last_refreshed_at?: string | null
           type: string
           updated_at?: string | null
         }
@@ -71,7 +71,7 @@ export type Database = {
           long_lived_token?: string | null
           name?: string
           owner_id?: string
-          token_last_refreshed_at?: string
+          token_last_refreshed_at?: string | null
           type?: string
           updated_at?: string | null
         }
@@ -139,16 +139,19 @@ export type Database = {
       posts_templates: {
         Row: {
           created_at: string | null
+          position: number
           post_id: string
           template_id: string
         }
         Insert: {
           created_at?: string | null
+          position?: number
           post_id: string
           template_id: string
         }
         Update: {
           created_at?: string | null
+          position?: number
           post_id?: string
           template_id?: string
         }
@@ -298,6 +301,13 @@ export type Database = {
           arg_post_id: string
           added_template_ids: string[]
           removed_template_ids: string[]
+        }
+        Returns: undefined
+      }
+      set_template_links: {
+        Args: {
+          arg_post_id: string
+          new_template_ids: string[]
         }
         Returns: undefined
       }

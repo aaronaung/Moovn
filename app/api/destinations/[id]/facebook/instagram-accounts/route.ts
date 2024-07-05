@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const fbClient = new FacebookGraphAPIClient({
     accessToken: destination.long_lived_token,
-    lastRefreshedAt: new Date(destination.token_last_refreshed_at),
+    lastRefreshedAt: new Date(destination.token_last_refreshed_at ?? 0),
   });
 
   const accounts = await fbClient.getInstagramAccounts();

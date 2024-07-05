@@ -7,7 +7,6 @@ import { Loader2 } from "lucide-react";
 import InputSelect from "../ui/input/select";
 
 import { useAuthUser } from "@/src/contexts/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { toast } from "../ui/use-toast";
 import { saveDestination } from "@/src/data/destinations";
@@ -27,48 +26,36 @@ type SaveDestinationFormProps = {
   onSubmitted: () => void;
 };
 
-export default function SaveDestinationForm({
-  defaultValues,
-  onSubmitted,
-}: SaveDestinationFormProps) {
-  const queryClient = useQueryClient();
-
+export default function SaveDestinationForm({ defaultValues, onSubmitted }: SaveDestinationFormProps) {
   const {
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors },
   } = useForm<SaveDestinationFormSchemaType>({
     defaultValues: {
-      type:
-        defaultValues?.type === undefined
-          ? DestinationTypes.INSTAGRAM
-          : defaultValues.type,
+      type: defaultValues?.type === undefined ? DestinationTypes.INSTAGRAM : defaultValues.type,
       ...defaultValues,
     },
     resolver: zodResolver(formSchema),
   });
   const { user } = useAuthUser();
-  const { mutate: _saveDestination, isPending: isSavingDestination } =
-    useSupaMutation(saveDestination, {
-      invalidate: [["getDestinationsForAuthUser"]],
-      onSuccess: () => {
-        onSubmitted();
-      },
-      onError: (error) => {
-        console.error(error);
-        toast({
-          title: "Failed to save changes",
-          variant: "destructive",
-          description: "Please try again or contact support.",
-        });
-      },
-    });
+  const { mutate: _saveDestination, isPending: isSavingDestination } = useSupaMutation(saveDestination, {
+    invalidate: [["getDestinationsForAuthUser"]],
+    onSuccess: () => {
+      onSubmitted();
+    },
+    onError: (error) => {
+      console.error(error);
+      toast({
+        title: "Failed to save changes",
+        variant: "destructive",
+        description: "Please try again or contact support.",
+      });
+    },
+  });
 
-  const handleOnFormSuccess = async (
-    formValues: SaveDestinationFormSchemaType,
-  ) => {
+  const handleOnFormSuccess = async (formValues: SaveDestinationFormSchemaType) => {
     if (user?.id) {
       _saveDestination({
         ...(defaultValues?.id ? { id: defaultValues.id } : {}),
@@ -79,17 +66,13 @@ export default function SaveDestinationForm({
   };
 
   return (
-    <form
-      className="flex flex-col gap-y-3"
-      onSubmit={handleSubmit(handleOnFormSuccess)}
-    >
+    <form className="flex flex-col gap-y-3" onSubmit={handleSubmit(handleOnFormSuccess)}>
       <InputText
         label="Name"
         rhfKey="name"
         register={register}
         inputProps={{
-          placeholder:
-            "Give your destination a name (e.g. 'Studio XYZ instagram')",
+          placeholder: "Give your destination a name (e.g. 'Studio XYZ instagram')",
         }}
         error={errors.name?.message}
       />
@@ -105,11 +88,7 @@ export default function SaveDestinationForm({
         label="Destination"
       />
 
-      <Button
-        className="float-right mt-6"
-        type="submit"
-        disabled={isSavingDestination}
-      >
+      <Button className="float-right mt-6" type="submit" disabled={isSavingDestination}>
         {isSavingDestination ? <Loader2 className="animate-spin" /> : "Save"}
       </Button>
     </form>

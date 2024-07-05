@@ -4,7 +4,7 @@ import { supaServerClient } from "@/src/data/clients/server";
 import { getPostById } from "@/src/data/posts";
 import { getTemplatesForPost } from "@/src/data/templates";
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
-import { Tables } from "@/types/db";
+import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -19,6 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return Response.json({ message: "Post does not have a destination" }, { status: 400 });
   }
 
+  // These templates are ordered by position in ascending order. This ensures that
+  // the carousel posts are in the correct order.
   const templates = await getTemplatesForPost(post.id, {
     client: supaServerClient(),
   });
@@ -37,11 +39,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       const fbClient = new FacebookGraphAPIClient({
         accessToken: post.destination.long_lived_token,
-        lastRefreshedAt: new Date(post.destination.token_last_refreshed_at),
+        lastRefreshedAt: new Date(post.destination.token_last_refreshed_at ?? 0),
       });
 
       try {
-        const signedLatestDesignUrls = await fetchSignedDesignUrls(templates);
+        const signedLatestDesignUrls = await Promise.all(
+          templates.map((template) => {
+            return signUrl({
+              bucket: BUCKETS.posts,
+              objectPath: `${post.owner_id}/${template.id}.jpeg`,
+              client: supaServerClient(),
+              expiresIn: 24 * 3600,
+            });
+          }),
+        );
         if (signedLatestDesignUrls.length === 0) {
           return Response.json({ message: "Failed to fetch designs" }, { status: 500 });
         }
@@ -65,6 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             caption: post.caption ?? undefined,
           });
         }
+        console.log("Published media", publishedMedia);
         await supaServerClient()
           .from("posts")
           .update({ last_published_at: new Date().toISOString(), published_ig_media_id: publishedMedia.id })
@@ -77,18 +89,3 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return Response.json({ message: `Destination type ${post.destination.type} not supported` }, { status: 400 });
   }
 }
-
-const fetchSignedDesignUrls = async (templates: Tables<"templates">[]) => {
-  const signedLatestDesignUrls: string[] = [];
-  for (const template of templates) {
-    const { data, error } = await supaServerClient()
-      .storage.from(BUCKETS.designs)
-      .createSignedUrl(`${template.owner_id}/${template.id}/latest.jpeg`, 24 * 3600);
-
-    if (error || !data) {
-      throw new Error("Failed to fetch design");
-    }
-    signedLatestDesignUrls.push(data.signedUrl);
-  }
-  return signedLatestDesignUrls;
-};

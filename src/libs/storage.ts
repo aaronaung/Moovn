@@ -2,14 +2,8 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SupabaseOptions } from "../data/clients/types";
 
 // NOTE: This function does something very specific. It constructs a supabase storage object url with the timestamp as the version attached to the url as query param. This is usually used to bust the cache on the image url.
-export const getTimestampedObjUrl = (
-  bucket: string,
-  path: string,
-  timestamp?: string | null,
-): string => {
-  const { data } = supaClientComponentClient.storage
-    .from(bucket)
-    .getPublicUrl(path);
+export const getTimestampedObjUrl = (bucket: string, path: string, timestamp?: string | null): string => {
+  const { data } = supaClientComponentClient.storage.from(bucket).getPublicUrl(path);
 
   if (!timestamp) {
     return data.publicUrl;
@@ -25,7 +19,7 @@ export const signUrl = async ({
   bucket,
   objectPath,
   expiresIn = 24 * 3600,
-  isUpload = false,
+  isUpload = false, // this is legacy
   client,
 }: {
   bucket: string;
@@ -41,13 +35,32 @@ export const signUrl = async ({
     : await bucketClient.createSignedUrl(objectPath, expiresIn);
 
   if (!data?.signedUrl) {
-    throw new Error(
-      `Failed to sign ${
-        isUpload ? "upload " : ""
-      }url for path ${bucket}/${objectPath}: ${error}`,
-    );
+    throw new Error(`Failed to sign ${isUpload ? "upload " : ""}url for path ${bucket}/${objectPath}: ${error}`);
   }
   return data?.signedUrl;
+};
+
+export const signUploadUrl = async ({
+  bucket,
+  objectPath,
+  client,
+}: {
+  bucket: string;
+  objectPath: string;
+
+  client: SupabaseOptions["client"];
+}) => {
+  const bucketClient = client.storage.from(bucket);
+
+  const { data, error } = await bucketClient.createSignedUploadUrl(objectPath);
+
+  if (!data?.signedUrl || !data?.token) {
+    throw new Error(`Failed to sign upload url for path ${bucket}/${objectPath}: ${error}`);
+  }
+  return {
+    signedUrl: data.signedUrl,
+    token: data.token,
+  };
 };
 
 export const checkIfObjectExistsAtUrl = async (url: string) => {

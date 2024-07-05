@@ -111,15 +111,18 @@ export class FacebookGraphAPIClient {
       this.createMediaContainer(accountId, { ...input, isCarouselItem: true }),
     );
     const mediaContainers = await Promise.all($createMediaContainers);
+    console.log("mediaContainers", mediaContainers);
     const carouselContainer = await this.createCarouselContainer(accountId, {
       ...carouselInput,
       children: mediaContainers.map((result) => result.id),
     });
+    console.log("carouselContainer", carouselContainer);
     return this.publishMediaContainer(accountId, carouselContainer.id);
   }
 
   private async publishMediaContainer(accountId: string, mediaContainerId: string) {
     const searchParams = new URLSearchParams();
+    console.log("mediaContainerId", mediaContainerId);
     searchParams.set("creation_id", mediaContainerId);
     return this.request("POST", `/${accountId}/media_publish`, searchParams);
   }
