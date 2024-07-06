@@ -3,14 +3,17 @@ import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "@/src/com
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
+import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getInstagramMedia } from "@/src/data/destinations-facebook";
 import { publishPost } from "@/src/data/posts";
+import { getScheduleDataForSource } from "@/src/data/sources";
 import { getTemplatesForPost } from "@/src/data/templates";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { renderCaption } from "@/src/libs/posts";
 import { signUploadUrl, signUrl } from "@/src/libs/storage";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -42,6 +45,14 @@ export default function InstagramPost({
       mediaId: post.published_ig_media_id ?? "",
     },
     queryKey: ["getInstagramMedia", post.destination?.id, post.published_ig_media_id],
+  });
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+    enabled: !!post.source_id,
+    arg: {
+      id: post.source_id,
+      view: post.source_data_view as SourceDataView,
+    },
+    queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
   });
 
   const [isPublishingPost, setIsPublishingPost] = useState(false);
@@ -98,7 +109,7 @@ export default function InstagramPost({
     }
   };
 
-  if (isLoadingTemplatesForPost) {
+  if (isLoadingTemplatesForPost || isLoadingScheduleData) {
     return <Spinner className="my-2" />;
   }
   return (
@@ -163,7 +174,9 @@ export default function InstagramPost({
         </Carousel>
       </div>
       <div className="max-w-[300px] overflow-scroll p-2">
-        <p className="overflow-scroll whitespace-pre-wrap text-sm">{post.caption}</p>
+        <p className="overflow-scroll whitespace-pre-wrap text-sm">
+          {renderCaption(post.caption || "", scheduleData as any)}
+        </p>
       </div>
     </div>
   );

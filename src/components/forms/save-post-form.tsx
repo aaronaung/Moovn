@@ -23,9 +23,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { getScheduleDataForSource } from "@/src/data/sources";
+import { renderCaption } from "@/src/libs/posts";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
+  source_id: z.string().min(1, { message: "Source is required." }),
   source_data_view: z.string().min(1, { message: "Schedule is required." }),
   template_ids: z.array(z.string()).min(1, { message: "At least one design is required." }),
 });
@@ -59,12 +62,21 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     resolver: zodResolver(formSchema),
   });
   const { user } = useAuthUser();
-  const schedule = watch("source_data_view");
+  const sourceDataView = watch("source_data_view");
   const templateIds = watch("template_ids") || [];
+  const caption = watch("caption") || "";
 
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
+    queryKey: ["getScheduleDataForSource", defaultValues?.source_id, sourceDataView],
+    enabled: !!sourceDataView,
+    arg: {
+      id: defaultValues?.source_id || "",
+      view: sourceDataView as SourceDataView,
+    },
+  });
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesBySchedule, {
-    queryKey: ["getTemplatesBySchedule", schedule],
-    arg: schedule as SourceDataView,
+    queryKey: ["getTemplatesBySchedule", sourceDataView],
+    arg: sourceDataView as SourceDataView,
   });
   const { data: initialTemplates } = useSupaQuery(getTemplatesForPost, {
     queryKey: ["getTemplatesForPost", defaultValues?.id],
@@ -73,11 +85,11 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
   });
 
   useEffect(() => {
-    if (schedule !== defaultValues?.source_data_view) {
+    if (sourceDataView !== defaultValues?.source_data_view) {
       // Reset template_ids when schedule selection changes.
       setValue("template_ids", []);
     }
-  }, [schedule, setValue, defaultValues?.source_data_view]);
+  }, [sourceDataView, setValue, defaultValues?.source_data_view]);
 
   useEffect(() => {
     if (initialTemplates) {
@@ -129,7 +141,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     }
     if (!templates || templates.length === 0) {
       return (
-        <p className="text-sm text-muted-foreground">{`No designs found for ${schedule.toLowerCase()}'s schedule. Please select a different schedule`}</p>
+        <p className="text-sm text-muted-foreground">{`No designs found for ${sourceDataView.toLowerCase()}'s schedule. Please select a different schedule`}</p>
       );
     }
     return templates.map((template) => (
@@ -189,16 +201,26 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         )}
         <p className="my-2 text-sm text-destructive">{errors.template_ids?.message}</p>
       </div>
-      <InputTextArea
-        rhfKey="caption"
-        register={register}
-        error={errors.caption?.message}
-        label="Caption"
-        textareaProps={{
-          rows: 7,
-          placeholder: "Write a caption for this post",
-        }}
-      />
+      <div className="flex gap-6">
+        <InputTextArea
+          rhfKey="caption"
+          register={register}
+          error={errors.caption?.message}
+          label="Caption"
+          className="w-full"
+          textareaProps={{
+            rows: 7,
+            placeholder: "Write a caption for this post",
+          }}
+        />
+        {scheduleData && (
+          <div className="w-full">
+            <Label className="leading-4">Preview</Label>
+            <pre className="mt-1 rounded-md bg-secondary p-3">{renderCaption(caption, scheduleData as any)}</pre>
+          </div>
+        )}
+      </div>
+
       <Button
         className="float-right mt-6"
         type="submit"

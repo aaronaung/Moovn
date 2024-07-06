@@ -3,6 +3,7 @@ create table "public"."posts" (
   "owner_id" uuid not null,
   "destination_id" uuid not null,
   "caption" text,
+  "source_id" uuid not null references "public"."sources" ("id"),
   "source_data_view" text not null,
   "last_published_at" timestamp with time zone,
   "published_ig_media_id" text,

@@ -1,9 +1,12 @@
 import { DestinationTypes } from "@/src/consts/destinations";
+import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getPostById } from "@/src/data/posts";
+import { getScheduleDataForSource } from "@/src/data/sources";
 import { getTemplatesForPost } from "@/src/data/templates";
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
+import { renderCaption } from "@/src/libs/posts";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 
@@ -27,6 +30,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (templates.length === 0) {
     return Response.json({ message: "Post does not contain any designs to publish" }, { status: 400 });
   }
+
+  const scheduleData = await getScheduleDataForSource({
+    id: post.source_id,
+    view: post.source_data_view as SourceDataView,
+  });
 
   switch (post.destination.type) {
     case DestinationTypes.INSTAGRAM:
@@ -60,6 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         let publishedMedia: Awaited<
           ReturnType<FacebookGraphAPIClient["postSingle"]> | ReturnType<FacebookGraphAPIClient["postCarousel"]>
         >;
+        const caption = post.caption ? renderCaption(post.caption, scheduleData as any) : undefined;
         if (signedLatestDesignUrls.length > 1) {
           publishedMedia = await fbClient.postCarousel(
             post.destination.linked_ig_user_id,
@@ -67,13 +76,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               imageUrl: url,
             })),
             {
-              caption: post.caption ?? undefined,
+              caption,
             },
           );
         } else {
           publishedMedia = await fbClient.postSingle(post.destination.linked_ig_user_id, {
             imageUrl: signedLatestDesignUrls[0],
-            caption: post.caption ?? undefined,
+            caption,
           });
         }
         console.log("Published media", publishedMedia);

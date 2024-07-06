@@ -7,7 +7,6 @@ import { signUrl } from "../libs/storage";
 import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
 import { determinePSDActions } from "../libs/designs/photoshop-v2";
-import { transformScheduleV2 } from "../libs/sources/utils";
 import { exportCmd, moveLayerCmd, updateLayersCmd } from "../libs/designs/photopea";
 import { db } from "../libs/indexeddb/indexeddb";
 import { MD5 as hash } from "object-hash";
@@ -64,7 +63,7 @@ export const useGenerateDesign = () => {
 
       const templateFile = await (await fetch(signedTemplateUrl)).blob();
       const psd = readPsd(await templateFile.arrayBuffer());
-      const psdActions = determinePSDActions(transformScheduleV2(schedule), psd);
+      const psdActions = determinePSDActions(schedule, psd);
 
       const iframeSrc = `https://www.photopea.com#${JSON.stringify({ files: [signedTemplateUrl], environment: {} })}`;
       const iframeEle = document.createElement("iframe");

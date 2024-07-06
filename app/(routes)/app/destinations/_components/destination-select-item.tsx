@@ -28,12 +28,12 @@ const scopes = [
 
   // Needed for content publishing
   "instagram_basic",
-  "pages_read_engagement",
   "instagram_content_publish",
   "business_management",
   "ads_management",
   "pages_read_engagement",
 ];
+
 const generateFacebookLoginUrl = (destinationId: string) => `https://www.facebook.com/v20.0/dialog/oauth
 ?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
 &display=page

@@ -95,6 +95,7 @@ export type Database = {
           owner_id: string
           published_ig_media_id: string | null
           source_data_view: string
+          source_id: string
           updated_at: string | null
         }
         Insert: {
@@ -106,6 +107,7 @@ export type Database = {
           owner_id: string
           published_ig_media_id?: string | null
           source_data_view: string
+          source_id: string
           updated_at?: string | null
         }
         Update: {
@@ -117,6 +119,7 @@ export type Database = {
           owner_id?: string
           published_ig_media_id?: string | null
           source_data_view?: string
+          source_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -132,6 +135,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
             referencedColumns: ["id"]
           },
         ]

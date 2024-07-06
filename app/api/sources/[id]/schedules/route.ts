@@ -3,6 +3,7 @@ import { SourceDataView, SourceTypes } from "@/src/consts/sources";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getSourceById } from "@/src/data/sources";
 import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
+import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         businessUrl: sourceSettings.url,
       });
 
-      return Response.json(await pike13Client.getScheduleDataForView(view));
+      return Response.json(transformScheduleV2(await pike13Client.getScheduleDataForView(view)));
     default:
       return new Response(`Source with id ${params.id} has type ${source.type} which is not supported.`, {
         status: 422,
