@@ -46,27 +46,6 @@ for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) 
 }
 `;
 
-// export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
-// var doc = app.activeDocument;
-// var fromName = '${from}';
-// var toName = '${to}';
-
-// var from = doc.artLayers.getByName(fromName);
-// var to = doc.artLayers.getByName(toName);
-
-// if (from && to) {
-//   var toLeft = to.bounds[0].value;
-//   var fromLeft = from.bounds[0].value;
-
-//   var toTop = to.bounds[1].value;
-//   var fromTop = from.bounds[1].value;
-
-//   from.move(to, ElementPlacement.PLACEBEFORE)
-//   from.translate(toLeft - fromLeft, toTop - fromTop)
-//   to.remove();
-// }
-// `;
-
 export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
 var doc = app.activeDocument;
 var fromName = '${from}';

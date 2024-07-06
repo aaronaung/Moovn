@@ -164,7 +164,7 @@ export default function Playground() {
 
         setTimeout(async () => {
           console.log("sending edit cmd to pp");
-          await handleSendEditCmds(psdActions);
+          // await handleSendEditCmds(psdActions);
         }, 1000);
       } catch (err) {
         console.error("error", err);

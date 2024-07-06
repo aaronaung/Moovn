@@ -5,10 +5,7 @@ import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
 export async function GET(req: NextRequest, { params }: { params: { id: string; mediaId: string } }) {
   const verifyResult = await verifyDestinationAccess(params.id);
   if (verifyResult.status !== 200) {
-    return {
-      status: verifyResult.status,
-      body: { message: verifyResult.error },
-    };
+    return Response.json({ message: verifyResult.error }, { status: verifyResult.status });
   }
 
   const destination = verifyResult.data!;

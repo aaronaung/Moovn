@@ -83,7 +83,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
             inputProps={{
               placeholder: "Enter your Pike13 business URL",
             }}
-            error={errors.settings?.url?.message}
+            error={(errors.settings as any)?.url?.message}
           />
         );
       default:

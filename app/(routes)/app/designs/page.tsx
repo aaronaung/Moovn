@@ -12,7 +12,7 @@ import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import Link from "next/link";
 import { useState } from "react";
-import { DesignContainerV2 } from "./_components/design-container-v2-photopea";
+import { DesignContainer } from "./_components/design-container";
 
 export default function DesignsPage() {
   const [overwriteDesignDialogState, setOverwriteDesignDialogState] = useState<{
@@ -161,7 +161,7 @@ export default function DesignsPage() {
       </div>
       <div className="flex flex-wrap gap-4">
         {([...templates] || []).map((template) => (
-          <DesignContainerV2
+          <DesignContainer
             key={template.id}
             template={template}
             onDeleteTemplate={() => {
