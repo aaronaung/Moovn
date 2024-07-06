@@ -1,4 +1,3 @@
-import { env } from "@/env.mjs";
 import { NextRequest } from "next/server";
 import { stripeClient } from "..";
 import Stripe from "stripe";
@@ -46,11 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    event = stripeClient.webhooks.constructEvent(
-      body,
-      sig,
-      env.STRIPE_WEBHOOK_SECRET,
-    );
+    event = stripeClient.webhooks.constructEvent(body, sig, "env.STRIPE_WEBHOOK_SECRET");
   } catch (err: any) {
     console.log(`⚠️  Webhook signature verification failed.`, err.message);
     return new Response("Webhook signature verification failed", {
@@ -63,9 +58,7 @@ export async function POST(req: NextRequest) {
       const checkoutSessionCompleteEvent = event.data.object;
       if (checkoutSessionCompleteEvent.mode === "payment") {
         // This handles free products.
-        await handleProductPurchase(
-          checkoutSessionCompleteEvent.metadata as unknown as StripeCheckoutMetadata,
-        );
+        await handleProductPurchase(checkoutSessionCompleteEvent.metadata as unknown as StripeCheckoutMetadata);
       }
 
       console.log("checkout.session.completed", checkoutSessionCompleteEvent);
@@ -75,9 +68,7 @@ export async function POST(req: NextRequest) {
       break;
     case "payment_intent.succeeded":
       const paymentSuccessEvent = event.data.object;
-      await handleProductPurchase(
-        paymentSuccessEvent.metadata as unknown as StripeCheckoutMetadata,
-      );
+      await handleProductPurchase(paymentSuccessEvent.metadata as unknown as StripeCheckoutMetadata);
       break;
     case "payment_intent.payment_failed":
       break;

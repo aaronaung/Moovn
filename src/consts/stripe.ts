@@ -1,5 +1,3 @@
-import { env } from "@/env.mjs";
-
 export enum SubscriptionPlan {
   Hobby = "Hobby",
   Starter = "Starter",
@@ -45,11 +43,11 @@ export const SubscriptionRules = {
 };
 
 export const SubscriptionPriceId = {
-  [SubscriptionPlan.Starter]: env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID,
-  [SubscriptionPlan.Pro]: env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID,
+  [SubscriptionPlan.Starter]: "env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID",
+  [SubscriptionPlan.Pro]: "env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID",
 };
 
 export const SubscriptionPriceIdToPlan = {
-  [env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID]: SubscriptionPlan.Starter,
-  [env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID]: SubscriptionPlan.Pro,
+  ["env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID"]: SubscriptionPlan.Starter,
+  ["env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID"]: SubscriptionPlan.Pro,
 };
