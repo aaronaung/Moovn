@@ -67,25 +67,25 @@ using (auth.uid() = owner_id)
 with check (auth.uid() = owner_id);
 
 --------------------------------------------
-create table "public"."design_jobs" (
-  "id" uuid not null default gen_random_uuid(),
-  "template_id" uuid not null,
-  "raw_result" jsonb,
-  "created_at" timestamp with time zone default now(),
-  "updated_at" timestamp with time zone default now()
-);
-create unique index design_jobs_pkey on public."design_jobs" using btree (id);
-alter table "public"."design_jobs" add constraint "design_jobs_pkey" primary key using index "design_jobs_pkey";
-alter table "public"."design_jobs" add constraint "design_jobs_template_id_foreign" foreign key ("template_id") references "public"."templates" ("id") on delete cascade;
+-- create table "public"."design_jobs" (
+--   "id" uuid not null default gen_random_uuid(),
+--   "template_id" uuid not null,
+--   "raw_result" jsonb,
+--   "created_at" timestamp with time zone default now(),
+--   "updated_at" timestamp with time zone default now()
+-- );
+-- create unique index design_jobs_pkey on public."design_jobs" using btree (id);
+-- alter table "public"."design_jobs" add constraint "design_jobs_pkey" primary key using index "design_jobs_pkey";
+-- alter table "public"."design_jobs" add constraint "design_jobs_template_id_foreign" foreign key ("template_id") references "public"."templates" ("id") on delete cascade;
 
-alter table "public"."design_jobs" enable row level security;
-create policy "Enable owner access to design jobs"
-on "public"."design_jobs"
-as permissive
-for all
-to authenticated
-using (auth.uid() = (select owner_id from templates where id = template_id))
-with check (auth.uid() = (select owner_id from templates where id = template_id));
+-- alter table "public"."design_jobs" enable row level security;
+-- create policy "Enable owner access to design jobs"
+-- on "public"."design_jobs"
+-- as permissive
+-- for all
+-- to authenticated
+-- using (auth.uid() = (select owner_id from templates where id = template_id))
+-- with check (auth.uid() = (select owner_id from templates where id = template_id));
 /**
 * This trigger automatically creates a user entry when a new user signs up via Supabase Auth.
 */ 
