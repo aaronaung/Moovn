@@ -9,31 +9,96 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      design_jobs: {
+      content: {
         Row: {
+          caption: string | null
           created_at: string | null
+          destination_id: string
           id: string
-          raw_result: Json | null
-          template_id: string
+          last_published_at: string | null
+          owner_id: string
+          published_ig_media_id: string | null
+          source_data_view: string
+          source_id: string
           updated_at: string | null
         }
         Insert: {
+          caption?: string | null
           created_at?: string | null
+          destination_id: string
           id?: string
-          raw_result?: Json | null
-          template_id: string
+          last_published_at?: string | null
+          owner_id: string
+          published_ig_media_id?: string | null
+          source_data_view: string
+          source_id: string
           updated_at?: string | null
         }
         Update: {
+          caption?: string | null
           created_at?: string | null
+          destination_id?: string
           id?: string
-          raw_result?: Json | null
-          template_id?: string
+          last_published_at?: string | null
+          owner_id?: string
+          published_ig_media_id?: string | null
+          source_data_view?: string
+          source_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "design_jobs_template_id_foreign"
+            foreignKeyName: "content_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_owner_id_foreign"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_templates: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          position: number
+          template_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          position?: number
+          template_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          position?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_templates_content_id_foreign"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_templates_template_id_foreign"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
@@ -85,103 +150,6 @@ export type Database = {
           },
         ]
       }
-      posts: {
-        Row: {
-          caption: string | null
-          created_at: string | null
-          destination_id: string
-          id: string
-          last_published_at: string | null
-          owner_id: string
-          published_ig_media_id: string | null
-          source_data_view: string
-          source_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string | null
-          destination_id: string
-          id?: string
-          last_published_at?: string | null
-          owner_id: string
-          published_ig_media_id?: string | null
-          source_data_view: string
-          source_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string | null
-          destination_id?: string
-          id?: string
-          last_published_at?: string | null
-          owner_id?: string
-          published_ig_media_id?: string | null
-          source_data_view?: string
-          source_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_destination_id_foreign"
-            columns: ["destination_id"]
-            isOneToOne: false
-            referencedRelation: "destinations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_owner_id_foreign"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts_templates: {
-        Row: {
-          created_at: string | null
-          position: number
-          post_id: string
-          template_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          position?: number
-          post_id: string
-          template_id: string
-        }
-        Update: {
-          created_at?: string | null
-          position?: number
-          post_id?: string
-          template_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_templates_post_id_foreign"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_templates_template_id_foreign"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sources: {
         Row: {
           created_at: string | null
@@ -224,31 +192,25 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          latest_design_hash: string | null
           name: string
           owner_id: string
           source_data_view: string
-          source_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
-          latest_design_hash?: string | null
           name: string
           owner_id: string
           source_data_view: string
-          source_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
-          latest_design_hash?: string | null
           name?: string
           owner_id?: string
           source_data_view?: string
-          source_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -257,13 +219,6 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "templates_source_id_foreign"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources"
             referencedColumns: ["id"]
           },
         ]
@@ -306,17 +261,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      manage_post_template_links: {
+      set_content_template_links: {
         Args: {
-          arg_post_id: string
-          added_template_ids: string[]
-          removed_template_ids: string[]
-        }
-        Returns: undefined
-      }
-      set_template_links: {
-        Args: {
-          arg_post_id: string
+          arg_content_id: string
           new_template_ids: string[]
         }
         Returns: undefined

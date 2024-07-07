@@ -11,7 +11,6 @@ import { useEffect, useState } from "react";
 import DestinationSelectItem from "./_components/destination-select-item";
 import { deleteDestination, getDestinationsForAuthUser } from "@/src/data/destinations";
 import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination-dialog";
-import ManagePosts from "./_components/manage-posts";
 
 export default function DestinationsPage() {
   const [destinationDialogState, setDestinationDialogState] = useState<{
@@ -41,23 +40,26 @@ export default function DestinationsPage() {
     }
   }, [destinations, selectedDestination]);
 
-  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(deleteDestination, {
-    invalidate: [["getDestinationsForAuthUser"]],
-    onSuccess: () => {
-      toast({
-        title: "Destination deleted",
-        variant: "success",
-      });
+  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(
+    deleteDestination,
+    {
+      invalidate: [["getDestinationsForAuthUser"]],
+      onSuccess: () => {
+        toast({
+          title: "Destination deleted",
+          variant: "success",
+        });
+      },
+      onError: (error) => {
+        console.error(error);
+        toast({
+          title: "Failed to delete destination",
+          variant: "destructive",
+          description: "Please try again or contact support.",
+        });
+      },
     },
-    onError: (error) => {
-      console.error(error);
-      toast({
-        title: "Failed to delete destination",
-        variant: "destructive",
-        description: "Please try again or contact support.",
-      });
-    },
-  });
+  );
 
   if (isLoadingDestinations) {
     return <Spinner />;
@@ -103,8 +105,6 @@ export default function DestinationsPage() {
           This destination is not connected. Please connect it to start publishing.
         </p>
       );
-    } else {
-      return <ManagePosts destination={selectedDestination} />;
     }
   };
 
@@ -167,7 +167,9 @@ export default function DestinationsPage() {
           />
         ))}
       </div>
-      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">{renderDestinationView()}</div>
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
+        {renderDestinationView()}
+      </div>
     </div>
   );
 }

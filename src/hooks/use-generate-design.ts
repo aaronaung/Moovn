@@ -28,15 +28,19 @@ export const useGenerateDesign = () => {
    * @returns
    */
   const generateDesign = async (
-    template: Tables<"templates"> & { source: Tables<"sources"> | null },
+    template: Tables<"templates">,
+    source: {
+      id: string;
+      view: SourceDataView;
+    },
     forceRefresh: boolean = false,
   ) => {
     try {
       setIsLoading(true);
       const [schedule, signedTemplateUrl] = await Promise.all([
         getScheduleDataForSource({
-          id: template.source_id,
-          view: template.source_data_view as SourceDataView,
+          id: source.id,
+          view: source.view as SourceDataView,
         }),
         signUrl({
           bucket: BUCKETS.templates,
@@ -56,7 +60,9 @@ export const useGenerateDesign = () => {
       if (!forceRefresh) {
         const design = await db.designs.get(template.id);
         if (design?.hash === designHash) {
-          console.info(`schedule data hasn't changed for template ${template.id} - skipping design generation`);
+          console.info(
+            `schedule data hasn't changed for template ${template.id} - skipping design generation`,
+          );
           return;
         }
       }
@@ -65,7 +71,10 @@ export const useGenerateDesign = () => {
       const psd = readPsd(await templateFile.arrayBuffer());
       const psdActions = determinePSDActions(schedule, psd);
 
-      const iframeSrc = `https://www.photopea.com#${JSON.stringify({ files: [signedTemplateUrl], environment: {} })}`;
+      const iframeSrc = `https://www.photopea.com#${JSON.stringify({
+        files: [signedTemplateUrl],
+        environment: {},
+      })}`;
       const iframeEle = document.createElement("iframe");
       iframeEle.src = iframeSrc;
       iframeEle.className = "hidden";

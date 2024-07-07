@@ -2,7 +2,11 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SupabaseOptions } from "../data/clients/types";
 
 // NOTE: This function does something very specific. It constructs a supabase storage object url with the timestamp as the version attached to the url as query param. This is usually used to bust the cache on the image url.
-export const getTimestampedObjUrl = (bucket: string, path: string, timestamp?: string | null): string => {
+export const getTimestampedObjUrl = (
+  bucket: string,
+  path: string,
+  timestamp?: string | null,
+): string => {
   const { data } = supaClientComponentClient.storage.from(bucket).getPublicUrl(path);
 
   if (!timestamp) {
@@ -35,7 +39,9 @@ export const signUrl = async ({
     : await bucketClient.createSignedUrl(objectPath, expiresIn);
 
   if (!data?.signedUrl) {
-    throw new Error(`Failed to sign ${isUpload ? "upload " : ""}url for path ${bucket}/${objectPath}: ${error}`);
+    throw new Error(
+      `Failed to sign ${isUpload ? "upload " : ""}url for path ${bucket}/${objectPath}: ${error}`,
+    );
   }
   return data?.signedUrl;
 };
@@ -70,4 +76,31 @@ export const checkIfObjectExistsAtUrl = async (url: string) => {
   } catch (err) {
     return false;
   }
+};
+
+export const upsertObjectAtPath = async ({
+  bucket,
+  objectPath,
+  content,
+  contentType,
+  client,
+}: {
+  bucket: string;
+  objectPath: string;
+  content: ArrayBuffer;
+  contentType: string;
+  client: SupabaseOptions["client"];
+}) => {
+  // Unfortunately, we have to remove the existing files before uploading the new ones, because
+  // createSignedUploadUrl fails if the file already exists.
+  await client.storage.from(bucket).remove([objectPath]);
+  const signedUrl = await signUploadUrl({
+    bucket: bucket,
+    objectPath: objectPath,
+    client: client,
+  });
+
+  await client.storage.from(bucket).uploadToSignedUrl(objectPath, signedUrl.token, content, {
+    contentType,
+  });
 };

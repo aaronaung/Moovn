@@ -26,7 +26,10 @@ type SaveDestinationFormProps = {
   onSubmitted: () => void;
 };
 
-export default function SaveDestinationForm({ defaultValues, onSubmitted }: SaveDestinationFormProps) {
+export default function SaveDestinationForm({
+  defaultValues,
+  onSubmitted,
+}: SaveDestinationFormProps) {
   const {
     register,
     handleSubmit,
@@ -40,20 +43,23 @@ export default function SaveDestinationForm({ defaultValues, onSubmitted }: Save
     resolver: zodResolver(formSchema),
   });
   const { user } = useAuthUser();
-  const { mutate: _saveDestination, isPending: isSavingDestination } = useSupaMutation(saveDestination, {
-    invalidate: [["getDestinationsForAuthUser"]],
-    onSuccess: () => {
-      onSubmitted();
+  const { mutate: _saveDestination, isPending: isSavingDestination } = useSupaMutation(
+    saveDestination,
+    {
+      invalidate: [["getDestinationsForAuthUser"]],
+      onSuccess: () => {
+        onSubmitted();
+      },
+      onError: (error) => {
+        console.error(error);
+        toast({
+          title: "Failed to save changes",
+          variant: "destructive",
+          description: "Please try again or contact support.",
+        });
+      },
     },
-    onError: (error) => {
-      console.error(error);
-      toast({
-        title: "Failed to save changes",
-        variant: "destructive",
-        description: "Please try again or contact support.",
-      });
-    },
-  });
+  );
 
   const handleOnFormSuccess = async (formValues: SaveDestinationFormSchemaType) => {
     if (user?.id) {
@@ -85,7 +91,7 @@ export default function SaveDestinationForm({ defaultValues, onSubmitted }: Save
         control={control}
         error={errors.type?.message}
         description="Select the platfrom to which you want to publish designs."
-        label="Destination"
+        label="Destination type"
       />
 
       <Button className="float-right mt-6" type="submit" disabled={isSavingDestination}>

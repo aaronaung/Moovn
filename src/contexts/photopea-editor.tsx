@@ -1,24 +1,28 @@
 "use client";
 import { createContext, RefObject, useContext, useState } from "react";
 import { FileExport } from "./photopea-headless";
-import { Tables } from "@/types/db";
+import { SourceDataView } from "../consts/sources";
 
-type PhotopeaEditorMetadata = {
+export type PhotopeaEditorMetadata = {
   title: string;
-  template?: Tables<"templates"> & { source: Tables<"sources"> | null };
+  source_data_view: string;
 };
 
 type PhotopeaEditorOptions = {
-  onSave?: (fileExport: FileExport) => Promise<void>;
+  onSave?: (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => Promise<void>;
   onSaveConfirmationTitle?: string;
 };
 type PhotopeaEditorContextValue = {
   initialize: (args: { ref: RefObject<HTMLIFrameElement> }) => void;
   isOpen: boolean;
   close: () => void;
-  save: (fileExport: FileExport) => Promise<void>;
+  save: (fileExport: FileExport, metadata: PhotopeaEditorMetadata) => Promise<void>;
   isSaving: boolean;
-  open: (metadata: PhotopeaEditorMetadata, arrayBuffer: ArrayBuffer, options: PhotopeaEditorOptions) => void;
+  open: (
+    metadata: PhotopeaEditorMetadata,
+    arrayBuffer: ArrayBuffer,
+    options: PhotopeaEditorOptions,
+  ) => void;
   options?: PhotopeaEditorOptions;
   metadata: PhotopeaEditorMetadata;
 };
@@ -37,12 +41,17 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   const [ref, setRef] = useState<RefObject<HTMLIFrameElement> | null>(null);
   const [metadata, setMetadata] = useState<PhotopeaEditorMetadata>({
     title: "Untitled",
+    source_data_view: SourceDataView.TODAY,
   });
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [options, setOptions] = useState<PhotopeaEditorOptions>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  const open = (metadata: PhotopeaEditorMetadata, arrayBuffer: ArrayBuffer, options?: PhotopeaEditorOptions) => {
+  const open = (
+    metadata: PhotopeaEditorMetadata,
+    arrayBuffer: ArrayBuffer,
+    options?: PhotopeaEditorOptions,
+  ) => {
     setMetadata(metadata);
     if (ref?.current?.contentWindow) {
       ref.current.contentWindow.postMessage(arrayBuffer, "*");
@@ -51,10 +60,10 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     setOptions(options || {});
   };
 
-  const save = async (fileExport: FileExport) => {
+  const save = async (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => {
     try {
       setIsSaving(true);
-      await options.onSave?.(fileExport);
+      await options.onSave?.(fileExport, metadata);
       // close();
     } catch (err) {
       console.error("failed to save editor changes", err);
@@ -67,6 +76,11 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     if (ref?.current?.contentWindow) {
       ref.current.contentWindow.postMessage("app.activeDocument.close()", "*");
     }
+    setMetadata({
+      title: "Untitled",
+      source_data_view: SourceDataView.TODAY,
+    });
+    setOptions({});
     setIsOpen(false);
   };
 
@@ -75,7 +89,9 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <PhotopeaEditorContext.Provider value={{ initialize, isOpen, options, close, open, save, isSaving, metadata }}>
+    <PhotopeaEditorContext.Provider
+      value={{ initialize, isOpen, options, close, open, save, isSaving, metadata }}
+    >
       {children}
     </PhotopeaEditorContext.Provider>
   );

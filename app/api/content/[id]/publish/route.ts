@@ -2,16 +2,16 @@ import { DestinationTypes } from "@/src/consts/destinations";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
-import { getPostById } from "@/src/data/posts";
+import { getContentById } from "@/src/data/content";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { getTemplatesForPost } from "@/src/data/templates";
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
-import { renderCaption } from "@/src/libs/posts";
+import { renderCaption } from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const post = await getPostById(params.id, {
+  const post = await getContentById(params.id, {
     client: supaServerClient(),
   });
 
@@ -28,7 +28,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     client: supaServerClient(),
   });
   if (templates.length === 0) {
-    return Response.json({ message: "Post does not contain any designs to publish" }, { status: 400 });
+    return Response.json(
+      { message: "Post does not contain any designs to publish" },
+      { status: 400 },
+    );
   }
 
   const scheduleData = await getScheduleDataForSource({
@@ -39,10 +42,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   switch (post.destination.type) {
     case DestinationTypes.INSTAGRAM:
       if (!post.destination.linked_ig_user_id) {
-        return Response.json({ message: "Destination not connected: missing linked IG user ID" }, { status: 400 });
+        return Response.json(
+          { message: "Destination not connected: missing linked IG user ID" },
+          { status: 400 },
+        );
       }
       if (!post.destination.long_lived_token) {
-        return Response.json({ message: "Destination not connected: missing access token" }, { status: 400 });
+        return Response.json(
+          { message: "Destination not connected: missing access token" },
+          { status: 400 },
+        );
       }
 
       const fbClient = new FacebookGraphAPIClient({
@@ -54,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const signedLatestDesignUrls = await Promise.all(
           templates.map((template) => {
             return signUrl({
-              bucket: BUCKETS.posts,
+              bucket: BUCKETS.content,
               objectPath: `${post.owner_id}/${template.id}.jpeg`,
               client: supaServerClient(),
               expiresIn: 24 * 3600,
@@ -66,7 +75,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         let publishedMedia: Awaited<
-          ReturnType<FacebookGraphAPIClient["postSingle"]> | ReturnType<FacebookGraphAPIClient["postCarousel"]>
+          | ReturnType<FacebookGraphAPIClient["postSingle"]>
+          | ReturnType<FacebookGraphAPIClient["postCarousel"]>
         >;
         const caption = post.caption ? renderCaption(post.caption, scheduleData as any) : undefined;
         if (signedLatestDesignUrls.length > 1) {
@@ -88,13 +98,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         console.log("Published media", publishedMedia);
         await supaServerClient()
           .from("posts")
-          .update({ last_published_at: new Date().toISOString(), published_ig_media_id: publishedMedia.id })
+          .update({
+            last_published_at: new Date().toISOString(),
+            published_ig_media_id: publishedMedia.id,
+          })
           .eq("id", post.id);
         return Response.json({ id: post.id });
       } catch (err: any) {
-        return Response.json({ message: `Failed to publish post: ${err.message}` }, { status: 500 });
+        return Response.json(
+          { message: `Failed to publish post: ${err.message}` },
+          { status: 500 },
+        );
       }
     default:
-      return Response.json({ message: `Destination type ${post.destination.type} not supported` }, { status: 400 });
+      return Response.json(
+        { message: `Destination type ${post.destination.type} not supported` },
+        { status: 400 },
+      );
   }
 }

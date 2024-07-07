@@ -46,15 +46,13 @@ with check (auth.uid() = owner_id);
 create table "public"."templates" (
   "id" uuid not null default gen_random_uuid(),
   "owner_id" uuid not null,
-  "source_id" uuid not null,
+  "source_data_view" text not null,
   "name" text not null,
-  "source_data_view" text not null, -- Daily, Weekly, Monthly
   "created_at" timestamp with time zone default now(),
   "updated_at" timestamp with time zone default now()
 );
 create unique index templates_pkey on public."templates" using btree (id);
 alter table "public"."templates" add constraint "templates_pkey" primary key using index "templates_pkey";
-alter table "public"."templates" add constraint "templates_source_id_foreign" foreign key ("source_id") references "public"."sources" ("id");
 alter table "public"."templates" add constraint "templates_owner_id_foreign" foreign key ("owner_id") references "public"."users" ("id") on delete cascade;
 
 alter table "public"."templates" enable row level security;

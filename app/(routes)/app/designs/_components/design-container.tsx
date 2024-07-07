@@ -46,7 +46,10 @@ export const DesignContainer = ({
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
   const [isLoadingOverwrites, setIsLoadingOverwrites] = useState(false);
-  const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl?: string; psdUrl?: string }>();
+  const [designOverwrite, setDesignOverwrite] = useState<{
+    jpgUrl?: string;
+    psdUrl?: string;
+  }>();
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -78,9 +81,15 @@ export const DesignContainer = ({
         for (const overwrite of result.data) {
           if (overwrite.signedUrl) {
             if (overwrite.path === `${template.owner_id}/${template.id}.psd`) {
-              setDesignOverwrite((prev) => ({ ...prev, psdUrl: overwrite.signedUrl }));
+              setDesignOverwrite((prev) => ({
+                ...prev,
+                psdUrl: overwrite.signedUrl,
+              }));
             } else if (overwrite.path === `${template.owner_id}/${template.id}.jpeg`) {
-              setDesignOverwrite((prev) => ({ ...prev, jpgUrl: overwrite.signedUrl }));
+              setDesignOverwrite((prev) => ({
+                ...prev,
+                jpgUrl: overwrite.signedUrl,
+              }));
             }
           }
         }
@@ -124,7 +133,9 @@ export const DesignContainer = ({
 
   const uploadFileExport = async (fileExport: FileExport) => {
     if (!fileExport["psd"] || !fileExport["jpg"]) {
-      console.error("missing either psd or jpg in file export:", { fileExport });
+      console.error("missing either psd or jpg in file export:", {
+        fileExport,
+      });
       toast({
         variant: "destructive",
         title: "Failed to save design. Please try again or contact support.",
@@ -144,14 +155,17 @@ export const DesignContainer = ({
     ]);
 
     if (!psd.data?.token || !jpg.data?.token) {
-      console.error("Failed to get signed URL: errors ->", { psd: psd.error, jpg: jpg.error });
+      console.error("Failed to get signed URL: errors ->", {
+        psd: psd.error,
+        jpg: jpg.error,
+      });
       return;
     }
     await Promise.all([
       supaClientComponentClient.storage
         .from(BUCKETS.designs)
         .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {
-          contentType: "application/vnd.adobe.photoshop",
+          contentType: "image/vnd.adobe.photoshop",
         }),
       supaClientComponentClient.storage
         .from(BUCKETS.designs)
@@ -189,7 +203,10 @@ export const DesignContainer = ({
           onConfirm={async () => {
             await supaClientComponentClient.storage
               .from(BUCKETS.designs)
-              .remove([`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`]);
+              .remove([
+                `${template.owner_id}/${template.id}.psd`,
+                `${template.owner_id}/${template.id}.jpeg`,
+              ]);
             setDesignOverwrite(undefined);
             generateDesign(template, true);
           }}
@@ -209,7 +226,9 @@ export const DesignContainer = ({
               {designOverwrite && (
                 <Tooltip>
                   <TooltipTrigger>
-                    <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">Overwritten</div>
+                    <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">
+                      Overwritten
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="w-[300px]">
                     This design was edited and overwrites the automatically generated design.
@@ -247,7 +266,11 @@ export const DesignContainer = ({
             <DropdownMenuTrigger disabled={!designPsdUrl && !designJpgUrl}>
               <Tooltip>
                 <TooltipTrigger>
-                  <Button className="group" variant="secondary" disabled={!designPsdUrl && !designJpgUrl}>
+                  <Button
+                    className="group"
+                    variant="secondary"
+                    disabled={!designPsdUrl && !designJpgUrl}
+                  >
                     <DownloadCloudIcon width={18} className="group-hover:text-primary" />
                   </Button>
                 </TooltipTrigger>
@@ -307,10 +330,17 @@ export const DesignContainer = ({
                 onClick={async () => {
                   if (designPsdUrl) {
                     const ab = await (await fetch(designPsdUrl)).arrayBuffer();
-                    openPhotopeaEditor({ title: template.name || "Untitled", template }, ab, {
-                      onSaveConfirmationTitle: "This will overwrite the current design",
-                      onSave: uploadFileExport,
-                    });
+                    openPhotopeaEditor(
+                      {
+                        title: template.name || "Untitled",
+                        source_data_view: template.source_data_view,
+                      },
+                      ab,
+                      {
+                        onSaveConfirmationTitle: "This will overwrite the current design",
+                        onSave: uploadFileExport,
+                      },
+                    );
                   }
                 }}
               >

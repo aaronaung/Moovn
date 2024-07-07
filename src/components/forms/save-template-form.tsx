@@ -28,8 +28,6 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
-  source_id: z.string(),
-  source_data_view: z.string(),
 });
 
 export type SaveTemplateFormSchemaType = z.infer<typeof formSchema> & {
@@ -42,7 +40,11 @@ type SaveTemplateFormProps = {
   onSubmitted: () => void;
 };
 
-export default function SaveTemplateForm({ defaultValues, availableSources, onSubmitted }: SaveTemplateFormProps) {
+export default function SaveTemplateForm({
+  defaultValues,
+  availableSources,
+  onSubmitted,
+}: SaveTemplateFormProps) {
   const queryClient = useQueryClient();
   const {
     register,
@@ -50,12 +52,7 @@ export default function SaveTemplateForm({ defaultValues, availableSources, onSu
     control,
     formState: { errors },
   } = useForm<SaveTemplateFormSchemaType>({
-    defaultValues: {
-      source_data_view:
-        defaultValues?.source_data_view === undefined ? SourceDataView.TODAY : defaultValues.source_data_view,
-
-      ...defaultValues,
-    },
+    defaultValues,
     resolver: zodResolver(formSchema),
   });
   const { user, session } = useAuthUser();
@@ -75,10 +72,14 @@ export default function SaveTemplateForm({ defaultValues, availableSources, onSu
     }
   }, [currentTemplateUrl]);
 
-  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(saveTemplate, {
-    invalidate: [["getTemplatesForAuthUser"]],
-  });
-  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } = useSupaMutation(generateDesign);
+  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(
+    saveTemplate,
+    {
+      invalidate: [["getTemplatesForAuthUser"]],
+    },
+  );
+  const { mutateAsync: _generateDesign, isPending: isGeneratingDesign } =
+    useSupaMutation(generateDesign);
 
   const onTemplateFileDrop = useCallback(async (accepted: File[], rejections: FileRejection[]) => {
     if (rejections.length > 0) {
@@ -201,21 +202,7 @@ export default function SaveTemplateForm({ defaultValues, availableSources, onSu
         }}
         error={errors.name?.message}
       />
-      {availableSources.length > 0 && (
-        <InputSelect
-          rhfKey="source_id"
-          options={(availableSources || []).map((s) => ({
-            label: `${s.name} (${s.type})`,
-            value: s.id,
-          }))}
-          control={control}
-          error={errors.source_id?.message}
-          label="Source"
-          inputProps={{
-            placeholder: "Select a data source for this template",
-          }}
-        />
-      )}
+
       <InputSelect
         rhfKey="source_data_view"
         options={Object.keys(SourceDataView).map((key) => ({

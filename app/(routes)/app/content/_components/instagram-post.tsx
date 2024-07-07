@@ -1,5 +1,10 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "@/src/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselDots,
+  CarouselItem,
+} from "@/src/components/ui/carousel";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
@@ -7,13 +12,13 @@ import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getInstagramMedia } from "@/src/data/destinations-facebook";
-import { publishPost } from "@/src/data/posts";
+import { publishContent } from "@/src/data/content";
 import { getScheduleDataForSource } from "@/src/data/sources";
-import { getTemplatesForPost } from "@/src/data/templates";
+import { getTemplatesForContent } from "@/src/data/templates";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { renderCaption } from "@/src/libs/posts";
+import { renderCaption } from "@/src/libs/content";
 import { signUploadUrl, signUrl } from "@/src/libs/storage";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -28,14 +33,17 @@ export default function InstagramPost({
   onEditPost,
   onDeletePost,
 }: {
-  post: Tables<"posts"> & { destination: Tables<"destinations"> | null };
+  post: Tables<"content"> & { destination: Tables<"destinations"> | null };
   onEditPost: () => void;
   onDeletePost: () => void;
 }) {
-  const { data: templates, isLoading: isLoadingTemplatesForPost } = useSupaQuery(getTemplatesForPost, {
-    queryKey: ["getTemplatesForPost", post.id],
-    arg: post.id,
-  });
+  const { data: templates, isLoading: isLoadingTemplatesForPost } = useSupaQuery(
+    getTemplatesForContent,
+    {
+      queryKey: ["getTemplatesForContent", post.id],
+      arg: post.id,
+    },
+  );
   const [designMap, setDesignMap] = useState<{ [templateId: string]: ArrayBuffer }>({});
 
   const { data: igMedia } = useSupaQuery(getInstagramMedia, {
@@ -46,17 +54,20 @@ export default function InstagramPost({
     },
     queryKey: ["getInstagramMedia", post.destination?.id, post.published_ig_media_id],
   });
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
-    enabled: !!post.source_id,
-    arg: {
-      id: post.source_id,
-      view: post.source_data_view as SourceDataView,
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
+    getScheduleDataForSource,
+    {
+      enabled: !!post.source_id,
+      arg: {
+        id: post.source_id,
+        view: post.source_data_view as SourceDataView,
+      },
+      queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
     },
-    queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
-  });
+  );
 
   const [isPublishingPost, setIsPublishingPost] = useState(false);
-  const { mutateAsync: _publishPost } = useSupaMutation(publishPost, {
+  const { mutateAsync: _publishContent } = useSupaMutation(publishContent, {
     invalidate: [["getPostsByDestinationId", post.destination?.id ?? ""]],
     onSuccess: () => {
       toast({
@@ -74,29 +85,33 @@ export default function InstagramPost({
     },
   });
 
-  const handlePublishPost = async () => {
+  const handlePublishContent = async () => {
     try {
       setIsPublishingPost(true);
 
       await supaClientComponentClient.storage
-        .from(BUCKETS.posts)
-        .remove(Object.entries(designMap).map(([templateId, _]) => `${post.owner_id}/${templateId}.jpeg`));
+        .from(BUCKETS.content)
+        .remove(
+          Object.entries(designMap).map(([templateId, _]) => `${post.owner_id}/${templateId}.jpeg`),
+        );
 
       await Promise.all(
         Object.entries(designMap).map(async ([templateId, design]) => {
           const objectPath = `${post.owner_id}/${templateId}.jpeg`;
           const { token } = await signUploadUrl({
-            bucket: BUCKETS.posts,
+            bucket: BUCKETS.content,
             objectPath,
             client: supaClientComponentClient,
           });
-          return supaClientComponentClient.storage.from(BUCKETS.posts).uploadToSignedUrl(objectPath, token, design, {
-            contentType: "image/jpeg",
-          });
+          return supaClientComponentClient.storage
+            .from(BUCKETS.content)
+            .uploadToSignedUrl(objectPath, token, design, {
+              contentType: "image/jpeg",
+            });
         }),
       );
 
-      await _publishPost(post.id);
+      await _publishContent(post.id);
     } catch (err) {
       console.error(err);
       toast({
@@ -144,7 +159,7 @@ export default function InstagramPost({
             <Tooltip>
               <TooltipTrigger>
                 <CloudArrowUpIcon
-                  onClick={handlePublishPost}
+                  onClick={handlePublishContent}
                   className="ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary"
                 />
               </TooltipTrigger>
@@ -167,6 +182,7 @@ export default function InstagramPost({
                 }}
                 key={template.id}
                 template={template}
+                post={post}
               />
             ))}
           </CarouselContent>
@@ -184,9 +200,11 @@ export default function InstagramPost({
 
 const CarosuelImageItem = ({
   template,
+  post,
   onDesignLoaded,
 }: {
-  template: Tables<"templates"> & { source: Tables<"sources"> | null };
+  template: Tables<"templates">;
+  post: Tables<"content">;
   onDesignLoaded: (jpg: ArrayBuffer) => void;
 }) => {
   const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
@@ -232,13 +250,18 @@ const CarosuelImageItem = ({
       }
     };
     fetchOverwrites();
-    generateDesign(template);
+    generateDesign(template, {
+      id: post.source_id,
+      view: post.source_data_view as SourceDataView,
+    });
   }, []);
 
   return (
     <CarouselItem
       key={template.id}
-      className={cn("flex max-h-full min-h-[250px] max-w-full items-center justify-center hover:bg-secondary")}
+      className={cn(
+        "flex max-h-full min-h-[250px] max-w-full items-center justify-center hover:bg-secondary",
+      )}
     >
       {isLoading || isLoadingOverwrites ? (
         <Spinner />
@@ -246,7 +269,11 @@ const CarosuelImageItem = ({
         <p className="text-xs text-destructive">No schedule data found for the design</p>
       ) : (
         designJpg && (
-          <img src={URL.createObjectURL(new Blob([designJpg]))} className="h-full w-full" alt={template.name} />
+          <img
+            src={URL.createObjectURL(new Blob([designJpg]))}
+            className="h-full w-full"
+            alt={template.name}
+          />
         )
       )}
     </CarouselItem>

@@ -1,97 +1,104 @@
 "use client";
-import EmptyState from "@/src/components/common/empty-state";
 import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
-import { SaveTemplateDialog } from "@/src/components/dialogs/save-template-dialog";
-import TemplatesTable, {
-  TemplatesTableSchema,
-} from "@/src/components/tables/templates-table";
-import { RowAction } from "@/src/components/tables/types";
 import { Button } from "@/src/components/ui/button";
-import { getSourcesForAuthUser } from "@/src/data/sources";
-import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
+import { deleteTemplate, getTemplatesForAuthUser, saveTemplate } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
-import { Row } from "@tanstack/react-table";
-import Link from "next/link";
 import { useState } from "react";
+import { TemplateContainer } from "./_components/template-container";
+import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
+import { FileExport } from "@/src/contexts/photopea-headless";
+import { toast } from "@/src/components/ui/use-toast";
+import { upsertObjectAtPath } from "@/src/libs/storage";
+import { BUCKETS } from "@/src/consts/storage";
+import { useAuthUser } from "@/src/contexts/auth";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { SourceDataView } from "@/src/consts/sources";
 
 export default function TemplatesPage() {
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(
-    getTemplatesForAuthUser,
+  const { user } = useAuthUser();
+  const { open: openPhotopeaEditor, close } = usePhotopeaEditor();
+  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
+    queryKey: ["getTemplatesForAuthUser"],
+  });
+
+  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
+    deleteTemplate,
     {
-      queryKey: ["getTemplatesForAuthUser"],
-    },
-  );
-  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(
-    getSourcesForAuthUser,
-    {
-      queryKey: ["getSourcesForAuthUser"],
-    },
-  );
-  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } =
-    useSupaMutation(deleteTemplate, {
       invalidate: [["getTemplatesForAuthUser"]],
-    });
-  const [saveTemplateDialogState, setSaveTemplateDialogState] = useState<{
+    },
+  );
+  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(
+    saveTemplate,
+    {
+      invalidate: [["getTemplatesForAuthUser"]],
+    },
+  );
+
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
   }>({
     isOpen: false,
   });
-  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
-    useState<{
-      isOpen: boolean;
-      template?: Tables<"templates">;
-    }>({
-      isOpen: false,
-    });
 
-  const handleRowAction = (
-    row: Row<TemplatesTableSchema>,
-    action: RowAction,
-  ) => {
-    switch (action) {
-      case RowAction.EDIT:
-        setSaveTemplateDialogState({
-          isOpen: true,
-          template: row.original ?? undefined,
-        });
-        break;
-      case RowAction.DELETE:
-        setDeleteConfirmationDialogState({
-          isOpen: true,
-          template: row.original ?? undefined,
-        });
-        break;
-    }
-  };
-
-  if (isLoadingTemplates || isLoadingSources) {
+  if (isLoadingTemplates || !user) {
     return <Spinner />;
   }
 
-  if (!sources || sources.length === 0) {
-    return (
-      <EmptyState
-        title="No Sources set up"
-        description="Please complete setting up at least one Source before creating a template."
-        actionButtonOverride={
-          <Link href="/app/sources">
-            <Button>Set up a Source</Button>
-          </Link>
-        }
-      />
-    );
-  }
+  const handleTemplateCreate = async (
+    fileExport: FileExport,
+    metadataChanges: Partial<PhotopeaEditorMetadata>,
+  ) => {
+    if (!fileExport["psd"]) {
+      console.error("missing psd file in export:", {
+        fileExport,
+      });
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support.",
+      });
+      return;
+    }
+
+    try {
+      const saved: Tables<"templates"> = await _saveTemplate({
+        name: metadataChanges.title,
+        source_data_view: metadataChanges.source_data_view,
+        owner_id: user.id,
+      });
+      await upsertObjectAtPath({
+        bucket: BUCKETS.templates,
+        objectPath: `${user.id}/${saved.id}.psd`,
+        client: supaClientComponentClient,
+        content: fileExport["psd"],
+        contentType: "image/vnd.adobe.photoshop",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support",
+      });
+    } finally {
+      close();
+    }
+
+    toast({
+      variant: "success",
+      title: "Template saved",
+    });
+  };
 
   return (
     <div>
+      {/** Todo: check if the template is associated with any content that's to be published */}
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
-          "Deleting the template will also delete all designs created from it. Are you sure you want to delete this template?"
+          "You'll no longer be able to generate designs from this template. Are you sure you want to delete this template?"
         }
         isDeleting={isDeletingTemplate}
         onClose={() => {
@@ -102,41 +109,62 @@ export default function TemplatesPage() {
         onDelete={async () => {
           if (deleteConfirmationDialogState.template) {
             await _deleteTemplate(deleteConfirmationDialogState.template);
+            await supaClientComponentClient.storage
+              .from(BUCKETS.templates)
+              .remove([`${user.id}/${deleteConfirmationDialogState.template.id}.psd`]);
           }
           setDeleteConfirmationDialogState({
             isOpen: false,
           });
         }}
       />
-      <SaveTemplateDialog
-        isOpen={saveTemplateDialogState.isOpen}
-        initFormValues={saveTemplateDialogState.template}
-        onClose={() => {
-          setSaveTemplateDialogState({
-            isOpen: false,
-          });
-        }}
-        availableSources={sources}
-      />
+
       <div className="mb-3 flex items-end">
         <div className="flex-1">
           <Header2 title="Design templates" />
           <p className="text-sm text-muted-foreground">
-            Design templates translate schedule data from platforms like Pike13
-            or Mindbody into designs ready to be published on social media.
+            Design templates translate your schedule data into designs ready to be published to a
+            destination.
           </p>
         </div>
         <Button
+          disabled={isSavingTemplate}
           onClick={() => {
-            setSaveTemplateDialogState({
-              isOpen: true,
-            });
+            openPhotopeaEditor(
+              {
+                title: "Untitled",
+                source_data_view: SourceDataView.TODAY,
+              },
+              new ArrayBuffer(0),
+              {
+                onSave: handleTemplateCreate,
+              },
+            );
           }}
         >
-          Create template
+          {isSavingTemplate ? <Spinner /> : "Create template"}
         </Button>
       </div>
-      <TemplatesTable data={templates || []} onRowAction={handleRowAction} />
+      <div className="flex flex-wrap gap-4">
+        {!templates || templates.length === 0 ? (
+          <p className="mt-16 w-full text-center text-muted-foreground">
+            No templates found. Create one to get started.
+          </p>
+        ) : (
+          templates.map((template) => (
+            <TemplateContainer
+              key={template.id}
+              template={template}
+              onDeleteTemplate={() => {
+                setDeleteConfirmationDialogState({
+                  isOpen: true,
+                  template,
+                });
+              }}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

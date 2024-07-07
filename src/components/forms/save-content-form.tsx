@@ -8,42 +8,49 @@ import InputSelect from "../ui/input/select";
 import { useAuthUser } from "@/src/contexts/auth";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { toast } from "../ui/use-toast";
-import { savePost } from "@/src/data/posts";
+import { saveContent } from "@/src/data/content";
 import { cn } from "@/src/utils";
 import { SourceDataView } from "@/src/consts/sources";
-import { getTemplatesBySchedule, getTemplatesForPost } from "@/src/data/templates";
+import { getTemplatesBySchedule, getTemplatesForContent } from "@/src/data/templates";
 import InputTextArea from "../ui/input/textarea";
 import { Tables } from "@/types/db";
 import { Spinner } from "../common/loading-spinner";
 import { Label } from "../ui/label";
 import _ from "lodash";
 import { useEffect, useState } from "react";
-import { useGenerateDesign } from "@/src/hooks/use-generate-design";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/src/libs/indexeddb/indexeddb";
-import { BUCKETS } from "@/src/consts/storage";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getScheduleDataForSource } from "@/src/data/sources";
-import { renderCaption } from "@/src/libs/posts";
+import { renderCaption } from "@/src/libs/content";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useGenerateDesign } from "@/src/hooks/use-generate-design";
+import { db } from "@/src/libs/indexeddb/indexeddb";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { BUCKETS } from "@/src/consts/storage";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
   source_id: z.string().min(1, { message: "Source is required." }),
   source_data_view: z.string().min(1, { message: "Schedule is required." }),
+  destination_id: z.string().min(1, { message: "Destination is required." }),
   template_ids: z.array(z.string()).min(1, { message: "At least one design is required." }),
 });
 
-export type SavePostFormSchemaType = z.infer<typeof formSchema> & {
+export type SaveContentFormSchemaType = z.infer<typeof formSchema> & {
   id?: string;
 };
 
-type SavePostFormProps = {
-  destination: Tables<"destinations">;
-  defaultValues?: SavePostFormSchemaType;
+type SaveContentFormProps = {
+  availableSources: Tables<"sources">[];
+  availableDestinations: Tables<"destinations">[];
+  defaultValues?: SaveContentFormSchemaType;
   onSubmitted: () => void;
 };
 
-export default function SavePostForm({ destination, defaultValues, onSubmitted }: SavePostFormProps) {
+export default function SaveContentForm({
+  availableSources,
+  availableDestinations,
+  defaultValues,
+  onSubmitted,
+}: SaveContentFormProps) {
   const {
     register,
     handleSubmit,
@@ -52,34 +59,40 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     setValue,
     trigger,
     formState: { errors },
-  } = useForm<SavePostFormSchemaType>({
+  } = useForm<SaveContentFormSchemaType>({
     defaultValues: {
       source_data_view:
-        defaultValues?.source_data_view === undefined ? SourceDataView.TODAY : defaultValues.source_data_view,
+        defaultValues?.source_data_view === undefined
+          ? SourceDataView.TODAY
+          : defaultValues.source_data_view,
       ...defaultValues,
       template_ids: defaultValues?.template_ids || [],
     },
     resolver: zodResolver(formSchema),
   });
   const { user } = useAuthUser();
+  const sourceId = watch("source_id");
   const sourceDataView = watch("source_data_view");
   const templateIds = watch("template_ids") || [];
   const caption = watch("caption") || "";
 
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
-    queryKey: ["getScheduleDataForSource", defaultValues?.source_id, sourceDataView],
-    enabled: !!sourceDataView,
-    arg: {
-      id: defaultValues?.source_id || "",
-      view: sourceDataView as SourceDataView,
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
+    getScheduleDataForSource,
+    {
+      queryKey: ["getScheduleDataForSource", sourceId, sourceDataView],
+      enabled: !!sourceDataView,
+      arg: {
+        id: sourceId || "",
+        view: sourceDataView as SourceDataView,
+      },
     },
-  });
+  );
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesBySchedule, {
     queryKey: ["getTemplatesBySchedule", sourceDataView],
     arg: sourceDataView as SourceDataView,
   });
-  const { data: initialTemplates } = useSupaQuery(getTemplatesForPost, {
-    queryKey: ["getTemplatesForPost", defaultValues?.id],
+  const { data: initialTemplates } = useSupaQuery(getTemplatesForContent, {
+    queryKey: ["getTemplatesForContent", defaultValues?.id],
     arg: defaultValues?.id,
     enabled: !!defaultValues?.id,
   });
@@ -100,10 +113,10 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     }
   }, [initialTemplates, setValue]);
 
-  const { mutate: _savePost, isPending: isSavingPost } = useSupaMutation(savePost, {
+  const { mutate: _saveContent, isPending: isSavingPost } = useSupaMutation(saveContent, {
     invalidate: [
-      ["getPostsByDestinationId", destination.id],
-      defaultValues?.id ? ["getTemplatesForPost", defaultValues.id] : [],
+      ["getPostsForAuthUser"],
+      defaultValues?.id ? ["getTemplatesForContent", defaultValues.id] : [],
     ],
     onSuccess: () => {
       onSubmitted();
@@ -118,11 +131,10 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
     },
   });
 
-  const handleOnFormSuccess = async (formValues: SavePostFormSchemaType) => {
+  const handleOnFormSuccess = async (formValues: SaveContentFormSchemaType) => {
     if (user?.id) {
-      _savePost({
-        post: {
-          destination_id: destination.id,
+      _saveContent({
+        content: {
           owner_id: user.id,
           ...(defaultValues?.id ? { id: defaultValues.id } : {}),
           ..._.omit(formValues, "template_ids"),
@@ -131,7 +143,6 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
       });
     }
   };
-  console.log(scheduleData);
 
   const renderDesignSelectItems = () => {
     if (!user) {
@@ -150,6 +161,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         <DesignSelectItem
           key={template.id}
           index={templateIds.indexOf(template.id)}
+          sourceId={sourceId}
           template={template}
           isSelected={templateIds.includes(template.id)}
           onSelect={() => {
@@ -169,7 +181,25 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 
   const hasTemplates = templates && templates.length > 0;
   return (
-    <form className="flex flex-col gap-y-3 overflow-hidden p-1" onSubmit={handleSubmit(handleOnFormSuccess)}>
+    <form
+      className="flex flex-col gap-y-3 overflow-hidden p-1"
+      onSubmit={handleSubmit(handleOnFormSuccess)}
+    >
+      {availableSources.length > 0 && (
+        <InputSelect
+          rhfKey="source_id"
+          options={(availableSources || []).map((s) => ({
+            label: `${s.name} (${s.type})`,
+            value: s.id,
+          }))}
+          control={control}
+          error={errors.source_id?.message}
+          label="Source"
+          inputProps={{
+            placeholder: "Select a data source",
+          }}
+        />
+      )}
       <InputSelect
         rhfKey="source_data_view"
         options={Object.keys(SourceDataView).map((key) => ({
@@ -180,11 +210,26 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         }))}
         control={control}
         error={errors.source_data_view?.message}
-        label="Schedule"
+        label="Schedule range"
         inputProps={{
-          placeholder: "Select a schedule",
+          placeholder: "Select a schedule range",
         }}
       />
+      {availableDestinations.length > 0 && (
+        <InputSelect
+          rhfKey="destination_id"
+          options={(availableDestinations || []).map((d) => ({
+            label: `${d.name} (${d.type})`,
+            value: d.id,
+          }))}
+          control={control}
+          error={errors.destination_id?.message}
+          label="Destination"
+          inputProps={{
+            placeholder: "Select a destination to publish to",
+          }}
+        />
+      )}
       <div>
         <div className="flex items-center">
           <Label className="flex-1 leading-4">Pick designs to include in the post</Label>
@@ -193,7 +238,8 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 
         <div className="mt-2 flex w-full gap-x-2 overflow-scroll">{renderDesignSelectItems()}</div>
         <p className="my-1 text-xs text-muted-foreground">
-          The order in a carousel post is determined by the number displayed on each selected design.
+          The order in a carousel post is determined by the number displayed on each selected
+          design.
         </p>
         {templateIds.length > 1 && (
           <>
@@ -237,12 +283,14 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
 
 const DesignSelectItem = ({
   index,
+  sourceId,
   template,
   isSelected,
   onSelect,
 }: {
   index: number;
-  template: Tables<"templates"> & { source: Tables<"sources"> | null };
+  sourceId: string;
+  template: Tables<"templates">;
   isSelected: boolean;
   onSelect: () => void;
 }) => {
@@ -291,7 +339,10 @@ const DesignSelectItem = ({
       }
     };
     fetchOverwrites();
-    generateDesign(template);
+    generateDesign(template, {
+      id: sourceId,
+      view: template.source_data_view as SourceDataView,
+    });
   }, []);
 
   return (
