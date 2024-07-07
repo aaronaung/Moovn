@@ -44,7 +44,7 @@ export const useGenerateDesign = () => {
           client: supaClientComponentClient,
         }),
       ]);
-      if (schedule.schedules.length === 0) {
+      if (Object.keys(schedule).length === 0) {
         setIsScheduleEmpty(true);
         return;
       }
@@ -86,6 +86,7 @@ export const useGenerateDesign = () => {
               jpg: fileExport["jpg"],
               psd: fileExport["psd"],
               hash: designHash,
+              lastUpdated: new Date(),
             });
           }
         },

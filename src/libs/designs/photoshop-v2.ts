@@ -42,8 +42,8 @@ export const determinePSDActions = (
     const [layerName, dateFormat] = layer.name.trim().split("|") || [];
     const value = schedules[layerName];
 
-    if (!layerName.startsWith("schedules")) {
-      // Skip if the layer name does not start with "schedules". We don't want to
+    if (!layerName.startsWith("day")) {
+      // Skip if the layer name does not start with "day". We don't want to
       // replace the layer if it's not a schedule layer.
       continue;
     }
@@ -57,7 +57,7 @@ export const determinePSDActions = (
       ];
       continue;
     }
-    if (layerName.endsWith("start_at") || layerName.endsWith("end_at") || layerName.endsWith("date")) {
+    if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
       psdActions[PSDActionType.EditText] = [
         ...psdActions[PSDActionType.EditText],
         {

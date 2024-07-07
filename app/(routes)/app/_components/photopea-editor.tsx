@@ -3,6 +3,7 @@ import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmatio
 import { Button } from "@/src/components/ui/button";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
+import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { exportCmd } from "@/src/libs/designs/photopea";
 import { cn } from "@/src/utils";
 import { useEffect, useRef, useState } from "react";
@@ -16,8 +17,10 @@ export default function PhotopeaEditor() {
   const [isExporting, setIsExporting] = useState(false);
 
   const { initialize: initHeadless, clear: clearHeadless, sendRawPhotopeaCmd } = usePhotopeaHeadless();
+  const { generateDesign, isLoading: isGeneratingDesign } = useGenerateDesign();
 
   const handleSave = async () => {
+    // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onFileExport callback.
     if (!ref.current) {
       return;
     }
@@ -74,14 +77,23 @@ export default function PhotopeaEditor() {
         <div>
           <p className="mr-2 text-xl font-semibold text-secondary">{metadata.title}</p>
           <p className="text-sm text-neutral-400">
-            Our design editing tool is powered by Photopea. You can access this tool separately at{" "}
-            <a target="_blank" className="hover:text-primary hover:underline" href="https://www.photopea.com">
-              https://www.photopea.com
-            </a>
-            .
+            Not seeing the design as expected? Please refresh the design. If the issue persists, please contact support.
           </p>
         </div>
         <div className="flex-1"></div>
+        {metadata.template && (
+          <Button
+            className="w-[80px]"
+            disabled={isSaving || isExporting || isGeneratingDesign}
+            onClick={async () => {
+              if (metadata.template) {
+                generateDesign(metadata.template, true);
+              }
+            }}
+          >
+            {isGeneratingDesign ? <Spinner className="text-secondary" /> : "Refresh"}
+          </Button>
+        )}
         <Button
           className="w-[80px]"
           disabled={isSaving || isExporting}

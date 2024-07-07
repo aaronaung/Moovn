@@ -58,23 +58,24 @@ export class Pike13Client {
     const staffMembersById = _.keyBy(staffMembers, "id");
     const groupedEvents = this.groupEventsByDay(events);
 
+    // We try to keep the keys short and singular for ease of reference when creating layers in templates.
     return {
-      schedules: groupedEvents.map((eventsByDay) => {
+      day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          events: (eventsByDay || []).map((event: any) => ({
-            staff_members: (event.staff_members || []).map((s: any) => {
+          event: (eventsByDay || []).map((event: any) => ({
+            staff: (event.staff_members || []).map((s: any) => {
               const staffMember = staffMembersById[s.id];
               return {
                 name: staffMember.name,
-                profile_photo:
+                photo:
                   staffMember.profile_photo?.["x400"] ??
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
               };
             }),
             name: event.name,
-            start_at: event.start_at,
-            end_at: event.end_at,
+            start: event.start_at,
+            end: event.end_at,
           })),
         };
       }),

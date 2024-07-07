@@ -225,6 +225,8 @@ const CarosuelImageItem = ({
           ...prev,
           jpg: jpgData,
         }));
+      } catch (err) {
+        console.error(err);
       } finally {
         setIsLoadingOverwrites(false);
       }

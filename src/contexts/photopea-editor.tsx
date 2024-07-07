@@ -1,9 +1,11 @@
 "use client";
 import { createContext, RefObject, useContext, useState } from "react";
 import { FileExport } from "./photopea-headless";
+import { Tables } from "@/types/db";
 
 type PhotopeaEditorMetadata = {
   title: string;
+  template?: Tables<"templates"> & { source: Tables<"sources"> | null };
 };
 
 type PhotopeaEditorOptions = {

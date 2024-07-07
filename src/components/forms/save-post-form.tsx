@@ -131,6 +131,7 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
       });
     }
   };
+  console.log(scheduleData);
 
   const renderDesignSelectItems = () => {
     if (!user) {
@@ -201,22 +202,24 @@ export default function SavePostForm({ destination, defaultValues, onSubmitted }
         )}
         <p className="my-2 text-sm text-destructive">{errors.template_ids?.message}</p>
       </div>
-      <div className="flex gap-6">
+      <div className=" grid grid-cols-2 gap-6">
         <InputTextArea
           rhfKey="caption"
           register={register}
           error={errors.caption?.message}
           label="Caption"
-          className="w-full"
+          className="col-span-1"
           textareaProps={{
             rows: 7,
             placeholder: "Write a caption for this post",
           }}
         />
         {scheduleData && (
-          <div className="w-full">
+          <div className="col-span-1">
             <Label className="leading-4">Preview</Label>
-            <pre className="mt-1 rounded-md bg-secondary p-3">{renderCaption(caption, scheduleData as any)}</pre>
+            <p className="mt-1 overflow-scroll whitespace-pre-wrap rounded-md bg-secondary p-3">
+              {renderCaption(caption, scheduleData as any)}
+            </p>
           </div>
         )}
       </div>

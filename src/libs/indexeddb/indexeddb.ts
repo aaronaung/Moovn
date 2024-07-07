@@ -5,6 +5,7 @@ export type Design = {
   psd: ArrayBuffer;
   jpg: ArrayBuffer;
   hash: string;
+  lastUpdated: Date;
 };
 
 export const db = new Dexie("moovn") as Dexie & {
@@ -12,5 +13,5 @@ export const db = new Dexie("moovn") as Dexie & {
 };
 
 db.version(1).stores({
-  designs: "templateId, psd, jpg, hash",
+  designs: "templateId, psd, jpg, hash, lastUpdated",
 });

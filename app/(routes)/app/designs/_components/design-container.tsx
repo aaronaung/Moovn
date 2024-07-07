@@ -307,7 +307,7 @@ export const DesignContainer = ({
                 onClick={async () => {
                   if (designPsdUrl) {
                     const ab = await (await fetch(designPsdUrl)).arrayBuffer();
-                    openPhotopeaEditor({ title: template.name || "Untitled" }, ab, {
+                    openPhotopeaEditor({ title: template.name || "Untitled", template }, ab, {
                       onSaveConfirmationTitle: "This will overwrite the current design",
                       onSave: uploadFileExport,
                     });

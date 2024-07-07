@@ -90,6 +90,6 @@ export const transformScheduleV2 = (input?: ScheduleData) => {
     }
   };
   const result = {};
-  internalTransform(input.schedules, "schedules", result);
+  internalTransform(input.day, "day", result);
   return result;
 };
