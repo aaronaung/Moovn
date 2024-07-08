@@ -24,6 +24,8 @@ import { useEffect, useState } from "react";
 import { signUrl, upsertObjectAtPath } from "@/src/libs/storage";
 import { useGenerateTemplateJpg } from "@/src/hooks/use-generate-template-jpg";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { SourceDataView } from "@/src/consts/sources";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -128,6 +130,35 @@ export const TemplateContainer = ({
       title: "Template saved",
     });
   };
+  const fromAndToString = () => {
+    const currDateTime = new Date();
+
+    // Default to daily view
+    let fromAndTo: { from: Date; to?: Date } = {
+      from: startOfDay(currDateTime),
+    };
+    switch (template.source_data_view) {
+      case SourceDataView.THIS_WEEK:
+        fromAndTo = {
+          from: startOfWeek(currDateTime),
+          to: endOfWeek(currDateTime),
+        };
+        break;
+      case SourceDataView.THIS_MONTH:
+        fromAndTo = {
+          from: startOfMonth(currDateTime),
+          to: endOfMonth(currDateTime),
+        };
+        break;
+      default:
+    }
+
+    if (!fromAndTo.to) {
+      return format(fromAndTo.from, "MMM d");
+    }
+    return `${format(fromAndTo.from, "MMM d")} - 
+    ${format(fromAndTo.to, "MMM d")}`;
+  };
 
   const renderTemplateContent = () => {
     if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !jpgBlobUrl) {
@@ -145,9 +176,17 @@ export const TemplateContainer = ({
 
   return (
     <Card className="w-[320px]">
-      <CardHeader className="py-2 pl-4 pr-2">
-        <div className="flex items-center">
-          <p className="line-clamp-2 flex-1 text-sm font-medium">{template.name || "Untitled"}</p>
+      <CardHeader className="py-4 pl-4 pr-2">
+        <div className="flex ">
+          <div className="flex-1">
+            <p className="mb-1 line-clamp-2 flex-1 text-sm font-medium">
+              {template.name || "Untitled"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Schedule range: {template.source_data_view} ({fromAndToString()})
+            </p>
+          </div>
+
           <div className="flex gap-x-0.5">
             <TrashIcon
               onClick={() => {
@@ -224,6 +263,7 @@ export const TemplateContainer = ({
                     templateData.psd,
                     {
                       onSave: handleTemplateSave,
+                      isMetadataEditable: true,
                     },
                   );
                 }

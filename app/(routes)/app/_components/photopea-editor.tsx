@@ -134,7 +134,7 @@ export default function PhotopeaEditor() {
           ) : (
             <p className="mr-2 text-xl font-semibold text-secondary">{title}</p>
           )}
-          {!isEditingTitle && (
+          {!isEditingTitle && options?.isMetadataEditable && (
             <PencilIcon
               className="h-8 w-8 cursor-pointer rounded-full p-2 text-secondary hover:bg-secondary-foreground"
               onClick={() => {
@@ -144,22 +144,26 @@ export default function PhotopeaEditor() {
           )}
         </div>
         <div className="ml-12 flex flex-col justify-start gap-2">
-          <p className="text-xs text-secondary">
-            What schedule range does this template work with?
-          </p>
-          <InputSelect
-            value={sourceDataView}
-            className="w-[200px]"
-            options={Object.keys(SourceDataView).map((key) => ({
-              // @ts-ignore
-              label: SourceDataView[key],
-              // @ts-ignore
-              value: SourceDataView[key],
-            }))}
-            onChange={(value) => {
-              setSourceDataView(value);
-            }}
-          />
+          {options?.isMetadataEditable && (
+            <>
+              <p className="text-xs text-secondary">
+                What schedule range does this template work with?
+              </p>
+              <InputSelect
+                value={sourceDataView}
+                className="w-[200px]"
+                options={Object.keys(SourceDataView).map((key) => ({
+                  // @ts-ignore
+                  label: SourceDataView[key],
+                  // @ts-ignore
+                  value: SourceDataView[key],
+                }))}
+                onChange={(value) => {
+                  setSourceDataView(value);
+                }}
+              />
+            </>
+          )}
         </div>
 
         <div className="flex-1"></div>

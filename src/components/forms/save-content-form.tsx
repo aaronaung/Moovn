@@ -115,7 +115,7 @@ export default function SaveContentForm({
 
   const { mutate: _saveContent, isPending: isSavingPost } = useSupaMutation(saveContent, {
     invalidate: [
-      ["getPostsForAuthUser"],
+      ["getContentForAuthUser"],
       defaultValues?.id ? ["getTemplatesForContent", defaultValues.id] : [],
     ],
     onSuccess: () => {
@@ -230,20 +230,21 @@ export default function SaveContentForm({
           }}
         />
       )}
-      <div>
+      <div className="mt-2">
         <div className="flex items-center">
           <Label className="flex-1 leading-4">Pick designs to include in the post</Label>
           <p className="text-sm text-muted-foreground">{(templates || []).length} available</p>
         </div>
 
         <div className="mt-2 flex w-full gap-x-2 overflow-scroll">{renderDesignSelectItems()}</div>
-        <p className="my-1 text-xs text-muted-foreground">
-          The order in a carousel post is determined by the number displayed on each selected
-          design.
-        </p>
+
         {templateIds.length > 1 && (
           <>
             <p className="mt-2 text-xs text-muted-foreground text-yellow-600">{`Multiple designs selected. This post will be published as a carousel.`}</p>
+            <p className="my-1 text-xs text-muted-foreground">
+              The order in a carousel post is determined by the number displayed on each selected
+              design.
+            </p>
           </>
         )}
         <p className="my-2 text-sm text-destructive">{errors.template_ids?.message}</p>

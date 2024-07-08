@@ -1,9 +1,8 @@
 "use client";
-import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/src/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/src/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +18,8 @@ import { FileExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
-import { PaintBrushIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PaintBrushIcon } from "@heroicons/react/24/outline";
 
-import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
@@ -34,16 +32,14 @@ const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 export const DesignContainer = ({
   template,
   source,
-  onDeleteTemplate,
-  onEditTemplate,
+  onDesignLoaded,
 }: {
   template: Tables<"templates">;
   source: {
     id: string;
     view: SourceDataView;
   };
-  onDeleteTemplate: () => void;
-  onEditTemplate: () => void;
+  onDesignLoaded: (jpg: ArrayBuffer) => void;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateDesign, isLoading: isGeneratingDesign, isScheduleEmpty } = useGenerateDesign();
@@ -67,6 +63,17 @@ export const DesignContainer = ({
   });
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
+
+  useEffect(() => {
+    if (designJpgUrl) {
+      const fetchDesignJpg = async () => {
+        const designJpg = await (await fetch(designJpgUrl)).arrayBuffer();
+        onDesignLoaded(designJpg);
+      };
+
+      fetchDesignJpg();
+    }
+  }, [designJpgUrl]);
 
   useEffect(() => {
     const fetchOverwrites = async () => {
@@ -105,36 +112,6 @@ export const DesignContainer = ({
     fetchOverwrites();
     generateDesign(template, source);
   }, []);
-
-  const fromAndToString = () => {
-    const currDateTime = new Date();
-
-    // Default to daily view
-    let fromAndTo: { from: Date; to?: Date } = {
-      from: startOfDay(currDateTime),
-    };
-    switch (template.source_data_view) {
-      case SourceDataView.THIS_WEEK:
-        fromAndTo = {
-          from: startOfWeek(currDateTime),
-          to: endOfWeek(currDateTime),
-        };
-        break;
-      case SourceDataView.THIS_MONTH:
-        fromAndTo = {
-          from: startOfMonth(currDateTime),
-          to: endOfMonth(currDateTime),
-        };
-        break;
-      default:
-    }
-
-    if (!fromAndTo.to) {
-      return format(fromAndTo.from, "MMM d");
-    }
-    return `${format(fromAndTo.from, "MMM d")} - 
-    ${format(fromAndTo.to, "MMM d")}`;
-  };
 
   const uploadFileExport = async (fileExport: FileExport) => {
     if (!fileExport["psd"] || !fileExport["jpg"]) {
@@ -220,43 +197,19 @@ export const DesignContainer = ({
           This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
-      <Card className="w-[320px]">
-        <CardHeader className="py-2 pl-4 pr-2">
-          <div className="flex">
-            <div className="flex h-20 flex-1 flex-col gap-0.5">
-              <Header2 className="line-clamp-1" title={template.name || "Untitled"}></Header2>
-              <p className="text-sm text-muted-foreground">
-                {template.source_data_view} ({fromAndToString()})
-              </p>
-              {designOverwrite && (
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 py-0.5 text-xs">
-                      Overwritten
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="w-[300px]">
-                    This design was edited and overwrites the automatically generated design.
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-            <div className="flex gap-x-0.5">
-              <PencilSquareIcon
-                onClick={() => {
-                  onEditTemplate();
-                }}
-                className="h-9 w-9 cursor-pointer rounded-full p-2 text-secondary-foreground hover:bg-secondary"
-              />
-              <TrashIcon
-                onClick={() => {
-                  onDeleteTemplate();
-                }}
-                className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary"
-              />
-            </div>
+      <Card className="w-[320px] rounded-none border-t-0">
+        {designOverwrite && (
+          <div className="border-none bg-secondary pb-1 pl-2">
+            <Tooltip>
+              <TooltipTrigger>
+                <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Overwritten</div>
+              </TooltipTrigger>
+              <TooltipContent className="w-[300px]">
+                This design was edited and overwrites the automatically generated design.
+              </TooltipContent>
+            </Tooltip>
           </div>
-        </CardHeader>
+        )}
         <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {renderDesignContent()}
           <ImageViewer
@@ -344,6 +297,7 @@ export const DesignContainer = ({
                       {
                         onSaveConfirmationTitle: "This will overwrite the current design",
                         onSave: uploadFileExport,
+                        isMetadataEditable: false,
                       },
                     );
                   }

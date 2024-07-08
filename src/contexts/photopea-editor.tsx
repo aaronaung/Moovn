@@ -11,6 +11,7 @@ export type PhotopeaEditorMetadata = {
 type PhotopeaEditorOptions = {
   onSave?: (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => Promise<void>;
   onSaveConfirmationTitle?: string;
+  isMetadataEditable?: boolean;
 };
 type PhotopeaEditorContextValue = {
   initialize: (args: { ref: RefObject<HTMLIFrameElement> }) => void;
@@ -44,7 +45,9 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     source_data_view: SourceDataView.TODAY,
   });
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [options, setOptions] = useState<PhotopeaEditorOptions>({});
+  const [options, setOptions] = useState<PhotopeaEditorOptions>({
+    isMetadataEditable: true,
+  });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const open = (
@@ -57,7 +60,10 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
       ref.current.contentWindow.postMessage(arrayBuffer, "*");
     }
     setIsOpen(true);
-    setOptions(options || {});
+    setOptions((prev) => ({
+      ...prev,
+      ...options,
+    }));
   };
 
   const save = async (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => {

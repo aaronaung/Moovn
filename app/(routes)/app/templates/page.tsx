@@ -138,6 +138,7 @@ export default function TemplatesPage() {
               new ArrayBuffer(0),
               {
                 onSave: handleTemplateCreate,
+                isMetadataEditable: true,
               },
             );
           }}

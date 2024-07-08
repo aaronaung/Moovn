@@ -66,12 +66,12 @@ export const deleteTemplate = async (
   return resp;
 };
 
-export const getTemplatesForContent = async (postId: string, { client }: SupabaseOptions) => {
+export const getTemplatesForContent = async (contentId: string, { client }: SupabaseOptions) => {
   const templates = await throwOrData(
     client
       .from("content_templates")
       .select("template:templates(*)")
-      .eq("content_id", postId)
+      .eq("content_id", contentId)
       .order("position", { ascending: true }),
   );
 

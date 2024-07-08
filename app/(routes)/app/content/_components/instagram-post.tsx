@@ -15,18 +15,16 @@ import { getInstagramMedia } from "@/src/data/destinations-facebook";
 import { publishContent } from "@/src/data/content";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { getTemplatesForContent } from "@/src/data/templates";
-import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
-import { db } from "@/src/libs/indexeddb/indexeddb";
 import { renderCaption } from "@/src/libs/content";
-import { signUploadUrl, signUrl } from "@/src/libs/storage";
+import { signUploadUrl } from "@/src/libs/storage";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { CloudArrowUpIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { DesignContainer } from "./design-container";
 
 export default function InstagramPost({
   post,
@@ -129,7 +127,7 @@ export default function InstagramPost({
   }
   return (
     <div className="w-fit rounded-md bg-secondary" key={post.id}>
-      <div className="flex items-center gap-x-1 p-2.5">
+      <div className="flex items-center gap-x-1 px-3 pt-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>
             <TooltipTrigger>
@@ -170,7 +168,7 @@ export default function InstagramPost({
       </div>
       {/** mb for carousel dots when there are more than one design */}
       <div className={cn("flex flex-col items-center", (templates || []).length > 1 && "mb-6")}>
-        <Carousel className="h-[300px] w-[300px]">
+        <Carousel className="w-[300px]">
           <CarouselContent>
             {(templates || []).map((template) => (
               <CarosuelImageItem
@@ -207,75 +205,21 @@ const CarosuelImageItem = ({
   post: Tables<"content">;
   onDesignLoaded: (jpg: ArrayBuffer) => void;
 }) => {
-  const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
-  const [isLoadingOverwrites, setIsLoadingOverwrites] = useState(false);
-
-  const designFromIndexedDb = useLiveQuery(async () => {
-    const design = await db.designs.get(template.id);
-    if (!design) {
-      return undefined;
-    }
-    return {
-      jpg: design.jpg,
-    };
-  });
-  const [designOverwrite, setDesignOverwrite] = useState<{ jpg: ArrayBuffer }>();
-  const designJpg = designOverwrite?.jpg || designFromIndexedDb?.jpg;
-
-  useEffect(() => {
-    if (designJpg) {
-      onDesignLoaded(designJpg);
-    }
-  }, [designJpg]);
-
-  useEffect(() => {
-    const fetchOverwrites = async () => {
-      try {
-        setIsLoadingOverwrites(true);
-        const signedUrl = await signUrl({
-          bucket: BUCKETS.designs,
-          objectPath: `${template.owner_id}/${template.id}.jpeg`,
-          client: supaClientComponentClient,
-        });
-
-        const jpgData = await (await fetch(signedUrl)).arrayBuffer();
-        setDesignOverwrite((prev) => ({
-          ...prev,
-          jpg: jpgData,
-        }));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoadingOverwrites(false);
-      }
-    };
-    fetchOverwrites();
-    generateDesign(template, {
-      id: post.source_id,
-      view: post.source_data_view as SourceDataView,
-    });
-  }, []);
-
   return (
     <CarouselItem
       key={template.id}
       className={cn(
-        "flex max-h-full min-h-[250px] max-w-full items-center justify-center hover:bg-secondary",
+        "flex max-h-full min-h-[250px] max-w-full cursor-pointer items-center justify-center hover:bg-secondary",
       )}
     >
-      {isLoading || isLoadingOverwrites ? (
-        <Spinner />
-      ) : isScheduleEmpty ? (
-        <p className="text-xs text-destructive">No schedule data found for the design</p>
-      ) : (
-        designJpg && (
-          <img
-            src={URL.createObjectURL(new Blob([designJpg]))}
-            className="h-full w-full"
-            alt={template.name}
-          />
-        )
-      )}
+      <DesignContainer
+        source={{
+          id: post.source_id,
+          view: post.source_data_view as SourceDataView,
+        }}
+        template={template}
+        onDesignLoaded={onDesignLoaded}
+      />
     </CarouselItem>
   );
 };
