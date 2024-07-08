@@ -78,9 +78,6 @@ export default function PhotopeaEditor() {
           if (fileExport && fileExport["psd"] && fileExport["jpg"]) {
             setIsExporting(false);
             await save(fileExport, { title, source_data_view: sourceDataView });
-            setTitle(metadata.title);
-            setSourceDataView(metadata.source_data_view);
-            setIsEditingTitle(false);
           }
         },
       });

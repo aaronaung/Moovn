@@ -18,7 +18,7 @@ import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-import { DownloadCloudIcon } from "lucide-react";
+import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { signUrl, upsertObjectAtPath } from "@/src/libs/storage";
@@ -39,15 +39,16 @@ export const TemplateContainer = ({
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const {
     generateTemplateJpg,
-    templateJpg,
+    templateJpg: generatedTemplateJpg,
     isLoading: isGeneratingTemplateJpg,
   } = useGenerateTemplateJpg();
   const [isLoadingTemplateSignedUrl, setIsLoadingTemplateSignedUrl] = useState(false);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+
   const [templateData, setTemplateData] = useState<{
     psd?: ArrayBuffer;
     jpg?: ArrayBuffer;
   }>();
-  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const jpgBlobUrl = templateData?.jpg
     ? URL.createObjectURL(new Blob([templateData.jpg]))
@@ -57,30 +58,41 @@ export const TemplateContainer = ({
     : undefined;
 
   useEffect(() => {
-    if (templateJpg) {
+    if (generatedTemplateJpg) {
       setTemplateData((prev) => ({
         ...prev,
-        jpg: templateJpg,
+        jpg: generatedTemplateJpg,
       }));
+      db.templates.update(template.id, { jpg: generatedTemplateJpg, lastUpdated: new Date() });
     }
-  }, [templateJpg]);
+  }, [generatedTemplateJpg]);
 
   useEffect(() => {
     const fetchTemplateSignedUrl = async () => {
       try {
         setIsLoadingTemplateSignedUrl(true);
-        const psdSignedUrl = await signUrl({
-          bucket: BUCKETS.templates,
-          objectPath: `${template.owner_id}/${template.id}.psd`,
-          client: supaClientComponentClient,
-        });
-        generateTemplateJpg(template, psdSignedUrl);
 
-        const psd = await (await fetch(psdSignedUrl)).arrayBuffer();
-        setTemplateData((prev) => ({
-          ...prev,
-          psd,
-        }));
+        const templateFromIndexedDb = await db.templates.get(template.id);
+        if (templateFromIndexedDb) {
+          setTemplateData({
+            jpg: templateFromIndexedDb.jpg,
+            psd: templateFromIndexedDb.psd,
+          });
+        } else {
+          const psdSignedUrl = await signUrl({
+            bucket: BUCKETS.templates,
+            objectPath: `${template.owner_id}/${template.id}.psd`,
+            client: supaClientComponentClient,
+          });
+          generateTemplateJpg(template, psdSignedUrl);
+
+          const psd = await (await fetch(psdSignedUrl)).arrayBuffer();
+          setTemplateData((prev) => ({
+            ...prev,
+            psd,
+          }));
+          db.templates.update(template.id, { psd, lastUpdated: new Date() });
+        }
       } catch (err) {
         console.error("Failed to get signed URL for template:", err);
         toast({
@@ -99,8 +111,8 @@ export const TemplateContainer = ({
     fileExport: FileExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
-    if (!fileExport["psd"]) {
-      console.error("missing psd file in export:", {
+    if (!fileExport["psd"] || !fileExport["jpg"]) {
+      console.error("missing psd or jpg file in export:", {
         fileExport,
       });
       toast({
@@ -109,15 +121,25 @@ export const TemplateContainer = ({
       });
       return;
     }
-    await upsertObjectAtPath({
-      bucket: BUCKETS.templates,
-      objectPath: `${template.owner_id}/${template.id}.psd`,
-      client: supaClientComponentClient,
-      content: fileExport["psd"],
-      contentType: "image/vnd.adobe.photoshop",
-    });
-    await db.designs.delete(template.id); // Bust design cache since the template has changed, so we can regenerate the design.
-    if (metadataChanges?.title) {
+
+    await Promise.all([
+      upsertObjectAtPath({
+        bucket: BUCKETS.templates,
+        objectPath: `${template.owner_id}/${template.id}.psd`,
+        client: supaClientComponentClient,
+        content: fileExport["psd"],
+        contentType: "image/vnd.adobe.photoshop",
+      }),
+      db.designs.delete(template.id), // Bust design cache since the template has changed, so we can regenerate the design.
+      db.templates.put({
+        templateId: template.id,
+        jpg: fileExport["jpg"],
+        psd: fileExport["psd"],
+        lastUpdated: new Date(),
+      }),
+    ]);
+
+    if (metadataChanges.title !== template.name) {
       await supaClientComponentClient
         .from("templates")
         .update({
@@ -247,6 +269,21 @@ export const TemplateContainer = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="secondary"
+              className="group"
+              disabled={isLoadingTemplateSignedUrl || isGeneratingTemplateJpg}
+              onClick={async () => {
+                generateTemplateJpg(template);
+              }}
+            >
+              <RefreshCwIcon width={18} className="group-hover:text-primary" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Refresh</TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger>
             <Button

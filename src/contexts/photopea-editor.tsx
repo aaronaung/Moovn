@@ -70,7 +70,6 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsSaving(true);
       await options.onSave?.(fileExport, metadata);
-      // close();
     } catch (err) {
       console.error("failed to save editor changes", err);
     } finally {
@@ -82,10 +81,6 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     if (ref?.current?.contentWindow) {
       ref.current.contentWindow.postMessage("app.activeDocument.close()", "*");
     }
-    setMetadata({
-      title: "Untitled",
-      source_data_view: SourceDataView.TODAY,
-    });
     setOptions({});
     setIsOpen(false);
   };

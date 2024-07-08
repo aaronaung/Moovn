@@ -16,6 +16,7 @@ import { BUCKETS } from "@/src/consts/storage";
 import { useAuthUser } from "@/src/contexts/auth";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SourceDataView } from "@/src/consts/sources";
+import { db } from "@/src/libs/indexeddb/indexeddb";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -52,8 +53,8 @@ export default function TemplatesPage() {
     fileExport: FileExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
-    if (!fileExport["psd"]) {
-      console.error("missing psd file in export:", {
+    if (!fileExport["psd"] || !fileExport["jpg"]) {
+      console.error("missing psd or jpg file in export:", {
         fileExport,
       });
       toast({
@@ -64,18 +65,27 @@ export default function TemplatesPage() {
     }
 
     try {
-      const saved: Tables<"templates"> = await _saveTemplate({
+      const saved = await _saveTemplate({
         name: metadataChanges.title,
         source_data_view: metadataChanges.source_data_view,
         owner_id: user.id,
       });
-      await upsertObjectAtPath({
-        bucket: BUCKETS.templates,
-        objectPath: `${user.id}/${saved.id}.psd`,
-        client: supaClientComponentClient,
-        content: fileExport["psd"],
-        contentType: "image/vnd.adobe.photoshop",
-      });
+
+      await Promise.all([
+        db.templates.put({
+          templateId: saved.id,
+          jpg: fileExport["jpg"],
+          psd: fileExport["psd"],
+          lastUpdated: new Date(),
+        }),
+        upsertObjectAtPath({
+          bucket: BUCKETS.templates,
+          objectPath: `${user.id}/${saved.id}.psd`,
+          client: supaClientComponentClient,
+          content: fileExport["psd"],
+          contentType: "image/vnd.adobe.photoshop",
+        }),
+      ]);
     } catch (err) {
       console.error(err);
       toast({
@@ -123,8 +133,8 @@ export default function TemplatesPage() {
         <div className="flex-1">
           <Header2 title="Design templates" />
           <p className="text-sm text-muted-foreground">
-            Design templates translate your schedule data into designs ready to be published to a
-            destination.
+            {`Design templates translate your schedule data into designs ready to be published to a
+            destination. If the template doesn't load correctly, try refreshing the template.`}
           </p>
         </div>
         <Button
