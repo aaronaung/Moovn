@@ -2,6 +2,7 @@ import { env } from "@/env.mjs";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import { Checkbox } from "@/src/components/ui/checkbox";
+import { FacebookIcon } from "@/src/components/ui/icons/facebook";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import Image from "@/src/components/ui/image";
 import {
@@ -34,7 +35,9 @@ const scopes = [
   "pages_read_engagement",
 ];
 
-const generateFacebookLoginUrl = (destinationId: string) => `https://www.facebook.com/v20.0/dialog/oauth
+const generateFacebookLoginUrl = (
+  destinationId: string,
+) => `https://www.facebook.com/v20.0/dialog/oauth
 ?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
 &display=page
 &extras={setup: { channel: "IG_API_ONBOARDING" } }
@@ -53,8 +56,14 @@ export default function DestinationSelectItem({
   isRefreshingDestinations: boolean;
   isSelected: boolean;
   setSelectedDestination: (destination: Tables<"destinations">) => void;
-  setDestinationDialogState: (state: { isOpen: boolean; destination?: Tables<"destinations"> }) => void;
-  setDeleteConfirmationDialogState: (state: { isOpen: boolean; destination?: Tables<"destinations"> }) => void;
+  setDestinationDialogState: (state: {
+    isOpen: boolean;
+    destination?: Tables<"destinations">;
+  }) => void;
+  setDeleteConfirmationDialogState: (state: {
+    isOpen: boolean;
+    destination?: Tables<"destinations">;
+  }) => void;
   destination: Tables<"destinations">;
 }) {
   const { data: igAccounts, isLoading: isLoadingIgAccounts } = useSupaQuery(getInstagramAccounts, {
@@ -100,8 +109,12 @@ export default function DestinationSelectItem({
     // For now this will be ig centric.
     if (!destination.long_lived_token) {
       return (
-        <Button className="h-[80px]" variant={"outline"} onClick={handleConnectDestination}>
-          Connect destination
+        <Button
+          className="hover: h-[80px] rounded-md bg-[#1877F2] text-white hover:bg-[#3B5998]"
+          onClick={handleConnectDestination}
+        >
+          <FacebookIcon className="mr-2 h-7 w-7 text-white" />
+          Login with Facebook
         </Button>
       );
     }
@@ -161,11 +174,17 @@ export default function DestinationSelectItem({
         setSelectedDestination(destination);
       }}
     >
-      <div className="flex items-center ">
-        <Checkbox id={destination.id} className="mr-2" checked={isSelected} />
-        <label htmlFor={destination.id} id="destination-checkbox" className="line-clamp-1 max-w-[200px] flex-1 text-sm">
-          {destination.name}
-        </label>
+      <div className="flex items-center justify-end ">
+        <div className="flex flex-1 items-center">
+          <Checkbox id={destination.id} className="mr-2" checked={isSelected} />
+          <label
+            htmlFor={destination.id}
+            id="destination-checkbox"
+            className="line-clamp-1 max-w-[200px] flex-1 text-sm"
+          >
+            {destination.name}
+          </label>
+        </div>
         <div className="mb-1 flex gap-x-0.5">
           <PencilSquareIcon
             onClick={() => {
@@ -185,17 +204,19 @@ export default function DestinationSelectItem({
             }}
             className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground hover:text-secondary"
           />
-          <Tooltip>
-            <TooltipTrigger>
-              <ArrowPathIcon
-                onClick={() => {
-                  handleConnectDestination();
-                }}
-                className="ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary"
-              />
-            </TooltipTrigger>
-            <TooltipContent>Reconnect destination</TooltipContent>
-          </Tooltip>
+          {destination.long_lived_token && (
+            <Tooltip>
+              <TooltipTrigger>
+                <ArrowPathIcon
+                  onClick={() => {
+                    handleConnectDestination();
+                  }}
+                  className="ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary"
+                />
+              </TooltipTrigger>
+              <TooltipContent>Reconnect destination</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
       <div className="flex h-full w-full items-center justify-center rounded-md bg-secondary-foreground p-8">
