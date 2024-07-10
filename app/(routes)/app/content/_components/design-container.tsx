@@ -198,8 +198,8 @@ export const DesignContainer = ({
         />
       )}
       <Card className="w-[320px] rounded-none border-t-0">
-        {designOverwrite && (
-          <div className="border-none bg-secondary pb-1 pl-2">
+        <div className="h-[28px] border-none bg-secondary pb-1 pl-2">
+          {designOverwrite && (
             <Tooltip>
               <TooltipTrigger>
                 <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Overwritten</div>
@@ -208,8 +208,9 @@ export const DesignContainer = ({
                 This design was edited and overwrites the automatically generated design.
               </TooltipContent>
             </Tooltip>
-          </div>
-        )}
+          )}
+        </div>
+
         <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {renderDesignContent()}
           <ImageViewer

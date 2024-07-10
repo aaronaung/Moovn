@@ -75,5 +75,5 @@ export const getTemplatesForContent = async (contentId: string, { client }: Supa
       .order("position", { ascending: true }),
   );
 
-  return templates.map((t) => t.template).filter((t) => t !== null);
+  return templates.map((t) => t.template).filter((t) => t !== null) as Tables<"templates">[];
 };

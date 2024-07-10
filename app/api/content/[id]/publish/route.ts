@@ -4,50 +4,51 @@ import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getContentById } from "@/src/data/content";
 import { getScheduleDataForSource } from "@/src/data/sources";
-import { getTemplatesForPost } from "@/src/data/templates";
+
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
 import { renderCaption } from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
+import { getTemplatesForContent } from "@/src/data/templates";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const post = await getContentById(params.id, {
+  const content = await getContentById(params.id, {
     client: supaServerClient(),
   });
 
-  if (!post) {
-    return Response.json({ message: "Post not found" }, { status: 404 });
+  if (!content) {
+    return Response.json({ message: "Content not found" }, { status: 404 });
   }
-  if (!post.destination) {
-    return Response.json({ message: "Post does not have a destination" }, { status: 400 });
+  if (!content.destination) {
+    return Response.json({ message: "Content does not have a destination" }, { status: 400 });
   }
 
   // These templates are ordered by position in ascending order. This ensures that
-  // the carousel posts are in the correct order.
-  const templates = await getTemplatesForPost(post.id, {
+  // the carousel contents are in the correct order.
+  const templates = await getTemplatesForContent(content.id, {
     client: supaServerClient(),
   });
   if (templates.length === 0) {
     return Response.json(
-      { message: "Post does not contain any designs to publish" },
+      { message: "Content does not contain any designs to publish" },
       { status: 400 },
     );
   }
 
   const scheduleData = await getScheduleDataForSource({
-    id: post.source_id,
-    view: post.source_data_view as SourceDataView,
+    id: content.source_id,
+    view: content.source_data_view as SourceDataView,
   });
 
-  switch (post.destination.type) {
+  switch (content.destination.type) {
     case DestinationTypes.INSTAGRAM:
-      if (!post.destination.linked_ig_user_id) {
+      if (!content.destination.linked_ig_user_id) {
         return Response.json(
           { message: "Destination not connected: missing linked IG user ID" },
           { status: 400 },
         );
       }
-      if (!post.destination.long_lived_token) {
+      if (!content.destination.long_lived_token) {
         return Response.json(
           { message: "Destination not connected: missing access token" },
           { status: 400 },
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
 
       const fbClient = new FacebookGraphAPIClient({
-        accessToken: post.destination.long_lived_token,
-        lastRefreshedAt: new Date(post.destination.token_last_refreshed_at ?? 0),
+        accessToken: content.destination.long_lived_token,
+        lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? 0),
       });
 
       try {
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           templates.map((template) => {
             return signUrl({
               bucket: BUCKETS.content,
-              objectPath: `${post.owner_id}/${template.id}.jpeg`,
+              objectPath: `${content.owner_id}/${template.id}.jpeg`,
               client: supaServerClient(),
               expiresIn: 24 * 3600,
             });
@@ -75,13 +76,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         let publishedMedia: Awaited<
-          | ReturnType<FacebookGraphAPIClient["postSingle"]>
-          | ReturnType<FacebookGraphAPIClient["postCarousel"]>
+          | ReturnType<FacebookGraphAPIClient["publishSingle"]>
+          | ReturnType<FacebookGraphAPIClient["publishCarousel"]>
         >;
-        const caption = post.caption ? renderCaption(post.caption, scheduleData as any) : undefined;
+        const caption = content.caption
+          ? renderCaption(content.caption, scheduleData as any)
+          : undefined;
         if (signedLatestDesignUrls.length > 1) {
-          publishedMedia = await fbClient.postCarousel(
-            post.destination.linked_ig_user_id,
+          publishedMedia = await fbClient.publishCarousel(
+            content.destination.linked_ig_user_id,
             signedLatestDesignUrls.map((url) => ({
               imageUrl: url,
             })),
@@ -90,29 +93,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             },
           );
         } else {
-          publishedMedia = await fbClient.postSingle(post.destination.linked_ig_user_id, {
+          publishedMedia = await fbClient.publishSingle(content.destination.linked_ig_user_id, {
             imageUrl: signedLatestDesignUrls[0],
             caption,
           });
         }
         console.log("Published media", publishedMedia);
         await supaServerClient()
-          .from("posts")
+          .from("content")
           .update({
             last_published_at: new Date().toISOString(),
             published_ig_media_id: publishedMedia.id,
           })
-          .eq("id", post.id);
-        return Response.json({ id: post.id });
+          .eq("id", content.id);
+        return Response.json({ id: content.id });
       } catch (err: any) {
         return Response.json(
-          { message: `Failed to publish post: ${err.message}` },
+          { message: `Failed to publish content: ${err.message}` },
           { status: 500 },
         );
       }
     default:
       return Response.json(
-        { message: `Destination type ${post.destination.type} not supported` },
+        { message: `Destination type ${content.destination.type} not supported` },
         { status: 400 },
       );
   }

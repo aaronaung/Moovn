@@ -141,7 +141,7 @@ export default function DestinationsPage() {
         <div className="flex-1">
           <Header2 title="Destinations" />
           <p className="text-sm text-muted-foreground">
-            Destination represents the platform where posts are published.
+            Destination represents the platform where your content is published.
           </p>
         </div>
         <Button

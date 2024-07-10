@@ -142,9 +142,7 @@ export default function InstagramPost({
         )}
         <div className="flex-1"></div>
 
-        {isPublishingPost || Object.keys(designMap).length !== (templates || []).length ? (
-          <Spinner className="h-9 w-9" />
-        ) : (
+        {!isPublishingPost && Object.keys(designMap).length === (templates || []).length && (
           <>
             <PencilSquareIcon
               onClick={onEditPost}
@@ -155,13 +153,20 @@ export default function InstagramPost({
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground hover:text-secondary"
             />
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger disabled={!post.destination?.linked_ig_user_id}>
                 <CloudArrowUpIcon
                   onClick={handlePublishContent}
-                  className="ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary"
+                  className={cn(
+                    "ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary",
+                    !post.destination?.linked_ig_user_id && "opacity-50",
+                  )}
                 />
               </TooltipTrigger>
-              <TooltipContent>Publish post</TooltipContent>
+              <TooltipContent className="max-w-[300px]">
+                {!post.destination?.linked_ig_user_id
+                  ? "The Destination isn't connected. Please visit the destinations page to make changes."
+                  : "Publish post"}{" "}
+              </TooltipContent>
             </Tooltip>
           </>
         )}
@@ -170,7 +175,8 @@ export default function InstagramPost({
       <div className={cn("flex flex-col items-center", (templates || []).length > 1 && "mb-6")}>
         <Carousel className="w-[300px]">
           <CarouselContent>
-            {(templates || []).map((template) => (
+            {/** @eslint-ignore  */}
+            {(templates ?? []).map((template) => (
               <CarosuelImageItem
                 onDesignLoaded={(design) => {
                   setDesignMap((prev) => ({

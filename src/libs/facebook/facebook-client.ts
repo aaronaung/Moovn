@@ -73,7 +73,9 @@ export class FacebookGraphAPIClient {
     const result = await this.request(
       "GET",
       "/me/accounts",
-      new URLSearchParams("fields=id,name,instagram_business_account{id, username, profile_picture_url}"),
+      new URLSearchParams(
+        "fields=id,name,instagram_business_account{id, username, profile_picture_url}",
+      ),
     );
     return result.data
       .filter((account: any) => account.instagram_business_account)
@@ -90,7 +92,7 @@ export class FacebookGraphAPIClient {
     return this.request("GET", `/${mediaId}`, new URLSearchParams("fields=id,permalink"));
   }
 
-  async postSingle(
+  async publishSingle(
     accountId: string,
     input: Omit<CreateMediaContainerInput, "isCarouselItem">,
   ): Promise<{ id: string }> {
@@ -100,7 +102,7 @@ export class FacebookGraphAPIClient {
     return this.publishMediaContainer(accountId, mediaContainer.id);
   }
 
-  async postCarousel(
+  async publishCarousel(
     accountId: string,
     mediaInput: Omit<CreateMediaContainerInput, "isCarouselItem" | "caption">[],
     carouselInput: Omit<CreateCarouselContainerInput, "children">,

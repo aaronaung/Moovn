@@ -157,25 +157,23 @@ export default function SaveContentForm({
       );
     }
     return templates.map((template) => (
-      <>
-        <DesignSelectItem
-          key={template.id}
-          index={templateIds.indexOf(template.id)}
-          sourceId={sourceId}
-          template={template}
-          isSelected={templateIds.includes(template.id)}
-          onSelect={() => {
-            const newSet = new Set(templateIds);
-            if (newSet.has(template.id)) {
-              newSet.delete(template.id);
-            } else {
-              newSet.add(template.id);
-            }
-            setValue("template_ids", Array.from(newSet));
-            trigger("template_ids");
-          }}
-        />
-      </>
+      <DesignSelectItem
+        key={template.id}
+        index={templateIds.indexOf(template.id)}
+        sourceId={sourceId}
+        template={template}
+        isSelected={templateIds.includes(template.id)}
+        onSelect={() => {
+          const newSet = new Set(templateIds);
+          if (newSet.has(template.id)) {
+            newSet.delete(template.id);
+          } else {
+            newSet.add(template.id);
+          }
+          setValue("template_ids", Array.from(newSet));
+          trigger("template_ids");
+        }}
+      />
     ));
   };
 
@@ -264,9 +262,15 @@ export default function SaveContentForm({
         {scheduleData && (
           <div className="col-span-1">
             <Label className="leading-4">Preview</Label>
-            <p className="mt-1 overflow-scroll whitespace-pre-wrap rounded-md bg-secondary p-3">
-              {renderCaption(caption, scheduleData as any)}
-            </p>
+            {!caption ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                {`<-- Add caption to see the preview`}{" "}
+              </p>
+            ) : (
+              <p className="mt-1  overflow-scroll whitespace-pre-wrap rounded-md bg-secondary p-3">
+                {renderCaption(caption, scheduleData as any)}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -310,6 +314,8 @@ const DesignSelectItem = ({
   const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl?: string; psdUrl?: string }>();
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
+
+  console.log("designJpgUrl", designJpgUrl);
 
   useEffect(() => {
     const fetchOverwrites = async () => {
@@ -360,7 +366,7 @@ const DesignSelectItem = ({
         onSelect();
       }}
     >
-      {isLoading || isLoadingOverwrites ? (
+      {isLoading || isLoadingOverwrites || !designJpgUrl ? (
         <Spinner />
       ) : (
         <div>
