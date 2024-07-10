@@ -13,14 +13,14 @@ export const appSidebarNavigation = [
     href: "/app/templates",
   },
   {
-    name: "Content",
-    icon: PhotoIcon,
-    href: "/app/content",
-  },
-  {
     name: "Destinations",
     icon: RocketLaunchIcon,
     href: "/app/destinations",
+  },
+  {
+    name: "Content",
+    icon: PhotoIcon,
+    href: "/app/content",
   },
 ];
 

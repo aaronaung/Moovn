@@ -17,6 +17,7 @@ import { useAuthUser } from "@/src/contexts/auth";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SourceDataView } from "@/src/consts/sources";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { getAuthUser } from "@/src/data/users";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -45,7 +46,8 @@ export default function TemplatesPage() {
     isOpen: false,
   });
 
-  if (isLoadingTemplates || !user) {
+  console.log("auth user", user);
+  if (isLoadingTemplates) {
     return <Spinner />;
   }
 
@@ -57,6 +59,18 @@ export default function TemplatesPage() {
       console.error("missing psd or jpg file in export:", {
         fileExport,
       });
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support.",
+      });
+      return;
+    }
+
+    const user = await getAuthUser({
+      client: supaClientComponentClient,
+    });
+    if (!user) {
+      console.error("no user found");
       toast({
         variant: "destructive",
         title: "Failed to save template. Please try again or contact support.",
@@ -121,7 +135,9 @@ export default function TemplatesPage() {
             await _deleteTemplate(deleteConfirmationDialogState.template);
             await supaClientComponentClient.storage
               .from(BUCKETS.templates)
-              .remove([`${user.id}/${deleteConfirmationDialogState.template.id}.psd`]);
+              .remove([
+                `${deleteConfirmationDialogState.template.owner_id}/${deleteConfirmationDialogState.template.id}.psd`,
+              ]);
           }
           setDeleteConfirmationDialogState({
             isOpen: false,
