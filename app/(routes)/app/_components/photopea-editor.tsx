@@ -111,7 +111,7 @@ export default function PhotopeaEditor() {
                 }}
               />
               <CheckIcon
-                className="h-8 w-8 cursor-pointer rounded-full p-2 text-green-600 hover:bg-secondary-foreground"
+                className="h-9 w-9 cursor-pointer rounded-full p-2 text-green-600 hover:bg-gray-600"
                 onClick={() => {
                   setTitle(pendingTitle);
                   setIsEditingTitle(false);
@@ -119,7 +119,7 @@ export default function PhotopeaEditor() {
               />
 
               <XMarkIcon
-                className="h-8 w-8 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground"
+                className="h-9 w-9 cursor-pointer rounded-full p-2 text-red-500 hover:bg-gray-600"
                 onClick={() => {
                   setTitle(title);
                   setIsEditingTitle(false);
@@ -129,11 +129,11 @@ export default function PhotopeaEditor() {
               </XMarkIcon>
             </div>
           ) : (
-            <p className="mr-2 text-xl font-semibold text-secondary">{title}</p>
+            <p className="mr-2 text-xl font-semibold text-white">{title}</p>
           )}
           {!isEditingTitle && options?.isMetadataEditable && (
             <PencilIcon
-              className="h-8 w-8 cursor-pointer rounded-full p-2 text-secondary hover:bg-secondary-foreground"
+              className="h-8 w-8 cursor-pointer rounded-full p-2  text-white hover:bg-gray-600"
               onClick={() => {
                 setIsEditingTitle(true);
               }}
@@ -143,7 +143,7 @@ export default function PhotopeaEditor() {
         <div className="ml-12 flex flex-col justify-start gap-2">
           {options?.isMetadataEditable && (
             <>
-              <p className="text-xs text-secondary">
+              <p className="text-xs text-white">
                 What schedule range does this template work with?
               </p>
               <InputSelect
