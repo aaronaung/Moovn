@@ -90,12 +90,14 @@ export default function InstagramPost({
       await supaClientComponentClient.storage
         .from(BUCKETS.content)
         .remove(
-          Object.entries(designMap).map(([templateId, _]) => `${post.owner_id}/${templateId}.jpeg`),
+          Object.entries(designMap).map(
+            ([templateId, _]) => `${post.owner_id}/${post.id}/${templateId}.jpeg`,
+          ),
         );
 
       await Promise.all(
         Object.entries(designMap).map(async ([templateId, design]) => {
-          const objectPath = `${post.owner_id}/${templateId}.jpeg`;
+          const objectPath = `${post.owner_id}/${post.id}/${templateId}.jpeg`;
           const { token } = await signUploadUrl({
             bucket: BUCKETS.content,
             objectPath,

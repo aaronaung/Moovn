@@ -77,7 +77,7 @@ export class FacebookGraphAPIClient {
         "fields=id,name,instagram_business_account{id, username, profile_picture_url}",
       ),
     );
-    return result.data
+    return (result.data || [])
       .filter((account: any) => account.instagram_business_account)
       .map((account: any) => ({
         id: account.instagram_business_account.id,

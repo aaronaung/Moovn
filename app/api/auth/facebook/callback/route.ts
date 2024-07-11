@@ -4,9 +4,15 @@ import { Tables } from "@/types/db";
 
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const accessToken = requestUrl.searchParams.get("access_token");
+  const destinationId = requestUrl.searchParams.get("destination_id");
+
+  if (!destinationId) {
+    console.error("[FacebookAuthCallback] Destination ID is required");
+    return Response.json({ message: "Destination ID is required" }, { status: 400 });
+  }
 
   if (accessToken) {
     await supaServerClient()
@@ -14,20 +20,21 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .update({
         long_lived_token: accessToken,
       })
-      .eq("id", params.id);
+      .eq("id", destinationId);
   }
 
   const error = requestUrl.searchParams.get("error");
   if (error) {
-    console.error("Facebook auth error:", error);
+    console.error("[FacebookAuthCallback] Auth error:", error);
   }
 
   const code = requestUrl.searchParams.get("code");
   if (code) {
     const result = await FacebookGraphAPIClient.exchangeCodeForAccessToken(
       code,
-      `http://localhost:3000/api/destinations/${params.id}/facebook/auth/callback`,
+      `${requestUrl.origin}/api/auth/facebook/callback?destination_id=${destinationId}`,
     );
+    console.log("Token exchange result", result);
 
     const igAccounts = await new FacebookGraphAPIClient({
       accessToken: result.access_token,
@@ -43,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         linked_ig_user_id: igAccounts[0].id,
       };
     }
-    await supaServerClient().from("destinations").update(updatePayload).eq("id", params.id);
+    await supaServerClient().from("destinations").update(updatePayload).eq("id", destinationId);
   }
 
   return NextResponse.redirect(requestUrl.origin.concat("/app/destinations"));

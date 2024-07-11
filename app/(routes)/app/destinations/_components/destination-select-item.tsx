@@ -41,7 +41,7 @@ const generateFacebookLoginUrl = (
 ?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
 &display=page
 &extras={setup: { channel: "IG_API_ONBOARDING" } }
-&redirect_uri=http://localhost:3000/api/destinations/${destinationId}/facebook/auth/callback
+&redirect_uri=${window.location.origin}/api/auth/facebook/callback?destination_id=${destinationId}
 &response_type=code
 &scope=${scopes.join(",")}`;
 

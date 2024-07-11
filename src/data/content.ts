@@ -74,7 +74,7 @@ export const getContentById = async (id: string, { client }: SupabaseOptions) =>
 export const publishContent = async (id: string) => {
   return (
     await fetch(`/api/content/${id}/publish`, {
-      method: "CONTENT",
+      method: "POST",
     })
   ).json();
 };
