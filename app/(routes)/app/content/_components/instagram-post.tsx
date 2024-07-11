@@ -84,11 +84,14 @@ export default function InstagramPost({
   });
 
   const handlePublishContent = async () => {
+    if (!post.destination) {
+      return;
+    }
+
     try {
       setIsPublishingPost(true);
-
       await supaClientComponentClient.storage
-        .from(BUCKETS.content)
+        .from(BUCKETS.stagingAreaForContentPublishing)
         .remove(
           Object.entries(designMap).map(
             ([templateId, _]) => `${post.owner_id}/${post.id}/${templateId}.jpeg`,
@@ -99,12 +102,12 @@ export default function InstagramPost({
         Object.entries(designMap).map(async ([templateId, design]) => {
           const objectPath = `${post.owner_id}/${post.id}/${templateId}.jpeg`;
           const { token } = await signUploadUrl({
-            bucket: BUCKETS.content,
+            bucket: BUCKETS.stagingAreaForContentPublishing,
             objectPath,
             client: supaClientComponentClient,
           });
           return supaClientComponentClient.storage
-            .from(BUCKETS.content)
+            .from(BUCKETS.stagingAreaForContentPublishing)
             .uploadToSignedUrl(objectPath, token, design, {
               contentType: "image/jpeg",
             });

@@ -5,8 +5,6 @@ create table "public"."content" (
   "caption" text,
   "source_id" uuid not null references "public"."sources" ("id"),
   "source_data_view" text not null,
-  "last_published_at" timestamp with time zone,
-  "published_ig_media_id" text,
   "created_at" timestamp with time zone default now(),
   "updated_at" timestamp with time zone default now()
 );
@@ -72,47 +70,47 @@ $$ LANGUAGE plpgsql;
 insert into storage.buckets
   (id, name)
 values
-  ('content', 'content')
+  ('staging_area_for_content_publishing', 'staging_area_for_content_publishing')
 on conflict (id) do nothing;
 
-create policy "Enable read to owner of the content"
+create policy "Enable read to owner of the staging_area_for_content_publishing"
 on storage.objects
 as permissive
 for select
 to authenticated
 using (
-    bucket_id = 'content' and
+    bucket_id = 'staging_area_for_content_publishing' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable delete to owner of the content"
+create policy "Enable delete to owner of the staging_area_for_content_publishing"
 on storage.objects
 as permissive
 for delete
 to authenticated
 using (
-    bucket_id = 'content' and
+    bucket_id = 'staging_area_for_content_publishing' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable update to owner of the content"
+create policy "Enable update to owner of the staging_area_for_content_publishing"
 on storage.objects
 as permissive
 for update
 to authenticated
 using (
-    bucket_id = 'content' and
+    bucket_id = 'staging_area_for_content_publishing' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 )
 with check(
-    bucket_id = 'content' and
+    bucket_id = 'staging_area_for_content_publishing' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
-create policy "Enable insert to owner of the content"
+create policy "Enable insert to owner of the staging_area_for_content_publishing"
 on storage.objects
 as permissive
 for insert
 to authenticated
 with check (
-    bucket_id = 'content' and
+    bucket_id = 'staging_area_for_content_publishing' and
     auth.uid() = (select id from users where id = (storage.foldername(name))[1]::uuid) 
 );
 

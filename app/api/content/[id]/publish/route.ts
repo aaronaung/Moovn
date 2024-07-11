@@ -3,13 +3,13 @@ import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getContentById } from "@/src/data/content";
-import { getScheduleDataForSource } from "@/src/data/sources";
 
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
 import { renderCaption } from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
+import { getSourceSchedule } from "@/app/api/sources/[id]/schedules/route";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const content = await getContentById(params.id, {
@@ -35,10 +35,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
-  const scheduleData = await getScheduleDataForSource({
-    id: content.source_id,
-    view: content.source_data_view as SourceDataView,
-  });
+  const scheduleData = await getSourceSchedule(
+    content.source_id,
+    content.source_data_view as SourceDataView,
+  );
+  if (!scheduleData) {
+    return Response.json(
+      { message: `Failed to fetch schedule data for source ${content.source_id}` },
+      { status: 500 },
+    );
+  }
 
   switch (content.destination.type) {
     case DestinationTypes.INSTAGRAM:
@@ -64,8 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const signedLatestDesignUrls = await Promise.all(
           templates.map((template) => {
             return signUrl({
-              bucket: BUCKETS.content,
-              objectPath: `${content.owner_id}/${template.id}.jpeg`,
+              bucket: BUCKETS.stagingAreaForContentPublishing,
+              objectPath: `${content.owner_id}/${content.id}/${template.id}.jpeg`,
               client: supaServerClient(),
               expiresIn: 24 * 3600,
             });
@@ -99,13 +105,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           });
         }
         console.log("Published media", publishedMedia);
-        await supaServerClient()
-          .from("content")
-          .update({
-            last_published_at: new Date().toISOString(),
-            published_ig_media_id: publishedMedia.id,
-          })
-          .eq("id", content.id);
+        await supaServerClient().from("published_content").insert({
+          destination_id: content.destination.id,
+          owner_id: content.owner_id,
+          content_id: content.id,
+          ig_media_id: publishedMedia.id,
+          published_at: new Date().toISOString(),
+        });
         return Response.json({ id: content.id });
       } catch (err: any) {
         return Response.json(

@@ -150,6 +150,45 @@ export type Database = {
           },
         ]
       }
+      published_content: {
+        Row: {
+          content_id: string | null
+          id: string
+          ig_media_id: string | null
+          owner_id: string
+          published_at: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          id?: string
+          ig_media_id?: string | null
+          owner_id: string
+          published_at?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          id?: string
+          ig_media_id?: string | null
+          owner_id?: string
+          published_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_content_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_content_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sources: {
         Row: {
           created_at: string | null

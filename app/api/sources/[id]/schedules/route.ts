@@ -6,33 +6,41 @@ import { Pike13Client, Pike13SourceSettings } from "@/src/libs/sources/pike13";
 import { transformScheduleV2 } from "@/src/libs/sources/utils";
 import { NextRequest } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const view = (req.nextUrl.searchParams.get("view") as SourceDataView) ?? SourceDataView.TODAY;
-
-  const source = await getSourceById(params.id, {
+export const getSourceSchedule = async (sourceId: string, view: SourceDataView) => {
+  const source = await getSourceById(sourceId, {
     client: supaServerClient(),
   });
   if (!source) {
-    return new Response(`Source with id ${params.id} not found`, {
-      status: 404,
-    });
+    return null;
   }
 
   switch (source.type) {
     case SourceTypes.PIKE13:
       const sourceSettings = source.settings as Pike13SourceSettings;
       if (!sourceSettings?.url) {
-        return new Response(`Can't process request. Source with id ${params.id} is missing settings.`, { status: 422 });
+        return null;
       }
       const pike13Client = new Pike13Client({
         clientId: env.PIKE13_CLIENT_ID,
         businessUrl: sourceSettings.url,
       });
 
-      return Response.json(transformScheduleV2(await pike13Client.getScheduleDataForView(view)));
+      return transformScheduleV2(await pike13Client.getScheduleDataForView(view));
     default:
-      return new Response(`Source with id ${params.id} has type ${source.type} which is not supported.`, {
-        status: 422,
-      });
+      return null;
   }
+};
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const view = (req.nextUrl.searchParams.get("view") as SourceDataView) ?? SourceDataView.TODAY;
+
+  const schedule = await getSourceSchedule(params.id, view);
+  if (!schedule) {
+    return Response.json(
+      { message: `Failed to find schedule for source '${params.id}' and view '${view}'` },
+      { status: 404 },
+    );
+  }
+
+  return Response.json(schedule);
 }
