@@ -41,9 +41,10 @@ const generateFacebookLoginUrl = (
 ?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
 &display=page
 &extras={setup: { channel: "IG_API_ONBOARDING" } }
-&redirect_uri=${window.location.origin}/api/auth/facebook/callback?destination_id=${destinationId}
+&redirect_uri=${window.location.origin}/api/auth/facebook/callback
 &response_type=code
-&scope=${scopes.join(",")}`;
+&scope=${scopes.join(",")}
+&state=${destinationId}`;
 
 export default function DestinationSelectItem({
   isRefreshingDestinations,

@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const accessToken = requestUrl.searchParams.get("access_token");
-  const destinationId = requestUrl.searchParams.get("destination_id");
+  const destinationId = requestUrl.searchParams.get("state");
 
   if (!destinationId) {
     console.error("[FacebookAuthCallback] Destination ID is required");
@@ -32,9 +32,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     const result = await FacebookGraphAPIClient.exchangeCodeForAccessToken(
       code,
-      `${requestUrl.origin}/api/auth/facebook/callback?destination_id=${destinationId}`,
+      `${requestUrl.origin}/api/auth/facebook/callback`,
     );
-    console.log("Token exchange result", result);
 
     const igAccounts = await new FacebookGraphAPIClient({
       accessToken: result.access_token,
