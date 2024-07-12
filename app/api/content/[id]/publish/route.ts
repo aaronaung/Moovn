@@ -9,7 +9,7 @@ import { renderCaption } from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
-import { getSourceSchedule } from "@/app/api/sources/[id]/schedules/route";
+import { getSourceSchedule } from "@/src/libs/sources/common";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const content = await getContentById(params.id, {

@@ -5,7 +5,10 @@ import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
 import { ScheduleData } from "../libs/sources/common";
 
-export const saveSource = async (source: Partial<Tables<"sources">>, { client }: SupabaseOptions) => {
+export const saveSource = async (
+  source: Partial<Tables<"sources">>,
+  { client }: SupabaseOptions,
+) => {
   return throwOrData(
     client
       .from("sources")
@@ -25,7 +28,11 @@ export const getSourcesForAuthUser = async ({ client }: SupabaseOptions) => {
     return [];
   }
   return throwOrData(
-    client.from("sources").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }),
+    client
+      .from("sources")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false }),
   );
 };
 

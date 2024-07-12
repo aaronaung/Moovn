@@ -1,6 +1,15 @@
 import { SourceDataView } from "@/src/consts/sources";
 import { ScheduleData } from "./common";
-import { compareAsc, endOfDay, endOfMonth, endOfWeek, parseISO, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import {
+  compareAsc,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -26,7 +35,10 @@ export class Pike13Client {
   }
 
   async getRawEventOcurrences(from: Date, to: Date) {
-    const resp = await this.get(`/api/v2/front/event_occurrences`, `from=${from.toISOString()}&to=${to.toISOString()}`);
+    const resp = await this.get(
+      `/api/v2/front/event_occurrences`,
+      `from=${from.toISOString()}&to=${to.toISOString()}`,
+    );
     return resp.event_occurrences || [];
   }
   async getRawStaffMembers() {
