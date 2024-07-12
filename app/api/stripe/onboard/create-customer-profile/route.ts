@@ -3,9 +3,7 @@ import { CreateCustomerProfileRequestSchema } from "../dto/create-customer-profi
 import { stripeClient } from "../..";
 
 export async function POST(req: NextRequest) {
-  const { email, name } = CreateCustomerProfileRequestSchema.parse(
-    await req.json(),
-  );
+  const { email, name } = CreateCustomerProfileRequestSchema.parse(await req.json());
   const customerCreateResp = await stripeClient.customers.create({
     name,
     email,

@@ -146,7 +146,7 @@ export default function InstagramPost({
           </Tooltip>
         )}
         <div className="flex-1"></div>
-
+        {isPublishingPost && <Spinner />}
         {!isPublishingPost && Object.keys(designMap).length === (templates || []).length && (
           <>
             <PencilSquareIcon

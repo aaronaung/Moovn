@@ -2,16 +2,16 @@ import Dexie, { EntityTable } from "dexie";
 
 export type Design = {
   templateId: string;
-  psd?: ArrayBuffer;
-  jpg?: ArrayBuffer;
+  psd: ArrayBuffer;
+  jpg: ArrayBuffer;
   hash: string;
   lastUpdated: Date;
 };
 
 export type Template = {
   templateId: string;
-  psd?: ArrayBuffer;
-  jpg?: ArrayBuffer;
+  psd: ArrayBuffer;
+  jpg: ArrayBuffer;
   lastUpdated: Date;
 };
 

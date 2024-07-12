@@ -136,7 +136,7 @@ export default function TemplatesPage() {
           <Header2 title="Design templates" />
           <p className="text-sm text-muted-foreground">
             {`Design templates translate your schedule data into designs ready to be published to a
-            destination. If the template doesn't load correctly, try refreshing the template.`}
+            destination.`}
           </p>
         </div>
         <Button

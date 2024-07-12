@@ -18,7 +18,7 @@ import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
+import { DownloadCloudIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { signUrl, upsertObjectAtPath } from "@/src/libs/storage";
@@ -91,7 +91,12 @@ export const TemplateContainer = ({
             ...prev,
             psd,
           }));
-          db.templates.put({ templateId: template.id, psd, lastUpdated: new Date() });
+          db.templates.put({
+            templateId: template.id,
+            jpg: new ArrayBuffer(0), // We don't have the jpg yet, so just store an empty array buffer.
+            psd,
+            lastUpdated: new Date(),
+          });
         }
       } catch (err) {
         console.error("Failed to get signed URL for template:", err);
@@ -269,23 +274,7 @@ export const TemplateContainer = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              variant="secondary"
-              className="group"
-              disabled={isLoadingTemplateSignedUrl || isGeneratingTemplateJpg}
-              onClick={async () => {
-                if (templateData?.psd) {
-                  generateTemplateJpg(template, templateData.psd);
-                }
-              }}
-            >
-              <RefreshCwIcon width={18} className="group-hover:text-primary" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Refresh</TooltipContent>
-        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger>
             <Button
