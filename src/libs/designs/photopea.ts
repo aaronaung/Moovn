@@ -2,12 +2,9 @@ import { PSDActions, PSDActionType } from "./photoshop-v2";
 
 export const getLayerCountCmd = (namespace: string) => `
 var doc = app.activeDocument;
-if (doc) {
-    var layers = doc.artLayers;
-    if (layers && layers.length > 0) {
-        app.echoToOE("layer_count:${namespace}:" + layers.length);
-        app.echoToOE("loaded:${namespace}")
-    }
+var layers = doc.artLayers;
+if (layers && layers.length > 0) {
+    app.echoToOE("layer_count:${namespace}:" + layers.length);
 }
 `;
 

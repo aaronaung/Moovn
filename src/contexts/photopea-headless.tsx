@@ -6,15 +6,20 @@ import { getLayerCountCmd } from "../libs/designs/photopea";
 export type FileExport = { [key: string]: ArrayBuffer | null }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
 
 type PhotopeaHeadlessContextValue = {
-  sendRawPhotopeaCmd: (namespace: string, photopea: HTMLIFrameElement, cmd: string) => void;
+  sendRawPhotopeaCmd: (
+    namespace: string,
+    photopea: HTMLIFrameElement,
+    cmd: string | ArrayBuffer,
+  ) => void;
   initialize: (
     namespace: string,
     options: {
+      initialData?: ArrayBuffer;
       photopeaEl: HTMLIFrameElement;
-      onReady?: () => void;
+      onInitialDataLoaded?: () => void;
       onLayerCountChange?: (count: number) => void;
       onFileExport?: (args: FileExport | null) => void;
-      onDone?: () => void;
+      onIdleTimeout?: () => void;
     },
   ) => void;
   clear: (namespace: string) => void;
@@ -30,7 +35,8 @@ function usePhotopeaHeadless() {
   return context;
 }
 
-const LAYER_COUNT_POLL_INTERVAL = 10; // Gives more resolution.
+const LAYER_COUNT_POLL_INTERVAL = 100; // Gives more resolution.
+const IDLE_TIMEOUT = 5000;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
@@ -38,17 +44,17 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Internally managed
   const [pollIntervalMap, setPollIntervalMap] = useState<{ [key: string]: NodeJS.Timeout }>({});
   const [exportQueue, setExportQueue] = useState<ArrayBuffer[]>([]);
-  const [exportMetadataQueue, setExportMetadataQueue] = useState<{ namespace: string; format: string }[]>([]);
+  const [exportMetadataQueue, setExportMetadataQueue] = useState<
+    { namespace: string; format: string }[]
+  >([]);
   const [lastLayerCountChange, setLastLayerCountChange] = useState<{ [key: string]: number }>({});
-  const [isInitialized, setIsInitialized] = useState<{ [key: string]: boolean }>({});
-  const [isLoadedMap, setIsLoadedMap] = useState<{ [key: string]: boolean }>({});
-  const [isProcessedMap, setIsProcessedMap] = useState<{ [key: string]: boolean }>({});
-  const [onReadyMap, setOnReadyMap] = useState<{ [key: string]: () => void }>({});
   const [layerCountMap, setLayerCountMap] = useState<{ [key: string]: number }>({});
 
   // Exposed to caller
-  const [onDoneMap, setOnDoneMap] = useState<{ [key: string]: () => void }>({});
-  const [onLayerCountChangeMap, setOnLayerCountChangeMap] = useState<{ [key: string]: (count: number) => void }>({});
+  const [onIdleTimeoutMap, setOnIdleTimeoutMap] = useState<{ [key: string]: () => void }>({});
+  const [onLayerCountChangeMap, setOnLayerCountChangeMap] = useState<{
+    [key: string]: (count: number) => void;
+  }>({});
   const [onFileExportMap, setOnFileExportMap] = useState<{
     [key: string]: (args: FileExport | null) => void;
   }>({});
@@ -56,31 +62,20 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const processEventFromPhotopea = useCallback(
     async (e: MessageEvent) => {
       if (_.isString(e.data)) {
-        if (e.data.startsWith("loaded")) {
-          // loaded:namespace-123
-          const [_loaded, namespace] = e.data.split(":");
-          if (isLoadedMap[namespace]) {
-            return;
-          }
-          setIsLoadedMap((prev) => ({ ...prev, [namespace]: true }));
-          onReadyMap[namespace]?.();
-        }
         if (e.data.startsWith("layer_count")) {
           // layer_count:namespace-123:3
+
           const [_layerCount, namespace, layerCount] = e.data.split(":");
           const layerCountInt = parseInt(layerCount);
 
-          // If the layer count has changed, update the
           const now = new Date().getTime();
           if (
             lastLayerCountChange[namespace] &&
-            now - lastLayerCountChange[namespace] >= 5000 &&
-            !isProcessedMap[namespace]
+            now - lastLayerCountChange[namespace] >= IDLE_TIMEOUT
           ) {
-            console.log("layer count has not changed in 5 seconds, clearing", namespace);
+            console.log("[Idle Timeout] Clearing ", namespace);
             clear(namespace);
-            setIsProcessedMap((prev) => ({ ...prev, [namespace]: true }));
-            onDoneMap[namespace]?.();
+            onIdleTimeoutMap[namespace]?.();
           }
 
           if (layerCountMap[namespace] !== layerCountInt) {
@@ -91,6 +86,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         }
         if (e.data.startsWith("export_file")) {
           // export_file:namespace-123:jpg
+
           const [_exportFile, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
 
@@ -104,7 +100,14 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         setExportQueue((prev) => [...prev, e.data]);
       }
     },
-    [isInitialized, layerCountMap, exportMetadataQueue, exportQueue, onFileExportMap], // We need this to be a dependency, because we need all callbacks to be set.
+    [
+      layerCountMap,
+      exportMetadataQueue,
+      exportQueue,
+      onLayerCountChangeMap,
+      onIdleTimeoutMap,
+      onFileExportMap,
+    ], // We need this to be a dependency, because we need all callbacks to be set.
   );
 
   useEffect(() => {
@@ -114,15 +117,15 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     };
   }, [processEventFromPhotopea]);
 
-  const sendRawPhotopeaCmd = async (namespace: string, photopea: HTMLIFrameElement, cmd: string) => {
+  const sendRawPhotopeaCmd = async (
+    namespace: string,
+    photopea: HTMLIFrameElement,
+    cmd: string | ArrayBuffer,
+  ) => {
     const ppWindow = photopea.contentWindow;
     if (!ppWindow) {
       console.log("photopea command rejected because window is not ready", namespace, cmd);
       return;
-    }
-    if (!isLoadedMap[namespace]) {
-      // if the iframe is not loaded, we wait for a second before sending the command.
-      // await sleep(1200);
     }
     ppWindow.postMessage(cmd, "*");
   };
@@ -147,7 +150,10 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       }));
     }
   };
-  const attachFileExportListener = (namespace: string, callback?: (args: FileExport | null) => void) => {
+  const attachFileExportListener = (
+    namespace: string,
+    callback?: (args: FileExport | null) => void,
+  ) => {
     if (callback) {
       setOnFileExportMap((prev) => ({
         ...prev,
@@ -155,17 +161,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       }));
     }
   };
-  const attachOnReadyListener = (namespace: string, callback?: () => void) => {
+  const attachOnIdleTimeoutListener = (namespace: string, callback?: () => void) => {
     if (callback) {
-      setOnReadyMap((prev) => ({
-        ...prev,
-        [namespace]: _.debounce(callback, 100),
-      }));
-    }
-  };
-  const attachOnDoneListener = (namespace: string, callback?: () => void) => {
-    if (callback) {
-      setOnDoneMap((prev) => ({
+      setOnIdleTimeoutMap((prev) => ({
         ...prev,
         [namespace]: _.debounce(callback, 100),
       }));
@@ -176,9 +174,15 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     let mostRecentJpgIndex = -1;
     let mostRecentPsdIndex = -1;
     for (let i = 0; i < exportMetadataQueue.length; i++) {
-      if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "jpg") {
+      if (
+        exportMetadataQueue[i].namespace === namespace &&
+        exportMetadataQueue[i].format === "jpg"
+      ) {
         mostRecentJpgIndex = i;
-      } else if (exportMetadataQueue[i].namespace === namespace && exportMetadataQueue[i].format === "psd") {
+      } else if (
+        exportMetadataQueue[i].namespace === namespace &&
+        exportMetadataQueue[i].format === "psd"
+      ) {
         mostRecentPsdIndex = i;
       }
     }
@@ -198,12 +202,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const clear = (namespace: string) => {
     setLayerCountMap(deleteNamespace(namespace));
     setOnFileExportMap(deleteNamespace(namespace));
-    setOnReadyMap(deleteNamespace(namespace));
     setOnLayerCountChangeMap(deleteNamespace(namespace));
-    setIsInitialized(deleteNamespace(namespace));
-    setOnDoneMap(deleteNamespace(namespace));
-    setIsLoadedMap(deleteNamespace(namespace));
-    setIsProcessedMap(deleteNamespace(namespace));
+    setOnIdleTimeoutMap(deleteNamespace(namespace));
     setLastLayerCountChange(deleteNamespace(namespace));
     setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));
     setExportQueue(exportQueue.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace));
@@ -218,30 +218,49 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const initialize = (
     namespace: string,
     {
+      initialData,
       photopeaEl,
-      onReady,
+      onInitialDataLoaded,
       onLayerCountChange,
       onFileExport,
-      onDone,
+      onIdleTimeout,
     }: {
+      initialData?: ArrayBuffer;
       photopeaEl: HTMLIFrameElement;
-      onReady?: () => void;
+      onInitialDataLoaded?: () => void;
       onFileExport?: (args: FileExport | null) => void;
       onLayerCountChange?: (count: number) => void;
-      onDone?: () => void;
+      onIdleTimeout?: () => void;
     },
   ) => {
     // This ensures that we always starts with a clean slate.
     clear(namespace);
 
+    // These listeners need to be attached first, so that they can be called when the events are received.
+    attachFileExportListener(namespace, onFileExport);
+    attachOnIdleTimeoutListener(namespace, onIdleTimeout);
+
+    if (onLayerCountChange && !initialData) {
+      console.error("onLayerCountChange cannot be set without initialData");
+    }
+    if (!onLayerCountChange) {
+      // There's no layer count change listener, so we can simply start ticking the idle timeout.
+      setTimeout(() => {
+        onIdleTimeout?.();
+      }, IDLE_TIMEOUT);
+    }
+
     setTimeout(() => {
-      // We wait for the next tick to ensure the ref is attached before anything is done.
-      attachLayerCountChangeListener(namespace, photopeaEl, onLayerCountChange);
-      attachOnReadyListener(namespace, onReady);
-      attachFileExportListener(namespace, onFileExport);
-      attachOnDoneListener(namespace, onDone);
-      setIsInitialized((prev) => ({ ...prev, [namespace]: true }));
-    }, 100);
+      if (initialData) {
+        sendRawPhotopeaCmd(namespace, photopeaEl, initialData);
+        // Get the initial layer count. This is useful for knowing when the document is loaded.
+        sendRawPhotopeaCmd(namespace, photopeaEl, getLayerCountCmd(namespace));
+        onInitialDataLoaded?.();
+
+        // Layer count change cannot run until the initial data is loaded.
+        attachLayerCountChangeListener(namespace, photopeaEl, onLayerCountChange);
+      }
+    }, 1000); // This ensures the iframe is loaded onto the DOM before anything is done.
   };
 
   return (

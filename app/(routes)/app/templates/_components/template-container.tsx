@@ -73,7 +73,7 @@ export const TemplateContainer = ({
         setIsLoadingTemplateSignedUrl(true);
 
         const templateFromIndexedDb = await db.templates.get(template.id);
-        if (templateFromIndexedDb) {
+        if (templateFromIndexedDb?.jpg && templateFromIndexedDb?.psd) {
           setTemplateData({
             jpg: templateFromIndexedDb.jpg,
             psd: templateFromIndexedDb.psd,
@@ -84,14 +84,14 @@ export const TemplateContainer = ({
             objectPath: `${template.owner_id}/${template.id}.psd`,
             client: supaClientComponentClient,
           });
-          generateTemplateJpg(template, psdSignedUrl);
 
           const psd = await (await fetch(psdSignedUrl)).arrayBuffer();
+          generateTemplateJpg(template, psd);
           setTemplateData((prev) => ({
             ...prev,
             psd,
           }));
-          db.templates.update(template.id, { psd, lastUpdated: new Date() });
+          db.templates.put({ templateId: template.id, psd, lastUpdated: new Date() });
         }
       } catch (err) {
         console.error("Failed to get signed URL for template:", err);
@@ -276,7 +276,9 @@ export const TemplateContainer = ({
               className="group"
               disabled={isLoadingTemplateSignedUrl || isGeneratingTemplateJpg}
               onClick={async () => {
-                generateTemplateJpg(template);
+                if (templateData?.psd) {
+                  generateTemplateJpg(template, templateData.psd);
+                }
               }}
             >
               <RefreshCwIcon width={18} className="group-hover:text-primary" />

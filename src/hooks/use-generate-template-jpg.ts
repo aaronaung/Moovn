@@ -1,8 +1,5 @@
 import { Tables } from "@/types/db";
 import { usePhotopeaHeadless } from "../contexts/photopea-headless";
-import { supaClientComponentClient } from "../data/clients/browser";
-import { signUrl } from "../libs/storage";
-import { BUCKETS } from "../consts/storage";
 import { exportCmd } from "../libs/designs/photopea";
 import { useState } from "react";
 import { sleep } from "../utils";
@@ -13,20 +10,12 @@ export const useGenerateTemplateJpg = () => {
   const { initialize, sendRawPhotopeaCmd } = usePhotopeaHeadless();
   const [templateJpg, setTemplateJpg] = useState<ArrayBuffer | null>(null);
 
-  const generateTemplateJpg = async (template: Tables<"templates">, signedTemplateUrl?: string) => {
+  const generateTemplateJpg = async (template: Tables<"templates">, templateData: ArrayBuffer) => {
     try {
       setIsLoading(true);
 
-      if (!signedTemplateUrl) {
-        signedTemplateUrl = await signUrl({
-          bucket: BUCKETS.templates,
-          objectPath: `${template.owner_id}/${template.id}.psd`,
-          client: supaClientComponentClient,
-        });
-      }
-
       const iframeSrc = `https://www.photopea.com#${JSON.stringify({
-        files: [signedTemplateUrl],
+        files: [],
         environment: {},
       })}`;
       const iframeEle = document.createElement("iframe");
@@ -36,13 +25,8 @@ export const useGenerateTemplateJpg = () => {
 
       initialize(template.id, {
         photopeaEl: iframeEle,
-        onFileExport: async (fileExport) => {
-          if (fileExport?.["jpg"]) {
-            setTemplateJpg(fileExport["jpg"]);
-          }
-        },
-        onLayerCountChange: () => {},
-        onReady: async () => {
+        initialData: templateData,
+        onInitialDataLoaded: async () => {
           const forcedRetryCount = 3;
           let retryCount = 0;
           while (retryCount < forcedRetryCount) {
@@ -52,8 +36,12 @@ export const useGenerateTemplateJpg = () => {
             retryCount++;
           }
         },
-        onDone: () => {
-          console.log("DONE removing iframe");
+        onFileExport: async (fileExport) => {
+          if (fileExport?.["jpg"]) {
+            setTemplateJpg(fileExport["jpg"]);
+          }
+        },
+        onIdleTimeout: () => {
           document.body.removeChild(iframeEle);
         },
       });

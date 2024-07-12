@@ -67,8 +67,8 @@ export const useGenerateDesign = () => {
         }
       }
 
-      const templateFile = await (await fetch(signedTemplateUrl)).blob();
-      const psd = readPsd(await templateFile.arrayBuffer());
+      const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();
+      const psd = readPsd(templateFile);
       const psdActions = determinePSDActions(schedule, psd);
 
       const iframeSrc = `https://www.photopea.com#${JSON.stringify({
@@ -82,6 +82,13 @@ export const useGenerateDesign = () => {
 
       initialize(template.id, {
         photopeaEl: iframeEle,
+        initialData: templateFile,
+        onInitialDataLoaded: () => {
+          sendRawPhotopeaCmd(template.id, iframeEle, updateLayersCmd(psdActions.edits));
+          if (psdActions.translates.length === 0) {
+            sendRawPhotopeaCmd(template.id, iframeEle, exportCmd(template.id));
+          }
+        },
         onLayerCountChange: () => {
           for (const { from, to } of psdActions.translates) {
             sendRawPhotopeaCmd(template.id, iframeEle, moveLayerCmd({ from, to }));
@@ -99,14 +106,7 @@ export const useGenerateDesign = () => {
             });
           }
         },
-        onReady: async () => {
-          sendRawPhotopeaCmd(template.id, iframeEle, updateLayersCmd(psdActions.edits));
-          if (psdActions.translates.length === 0) {
-            sendRawPhotopeaCmd(template.id, iframeEle, exportCmd(template.id));
-          }
-        },
-        onDone: () => {
-          console.log("DONE removing iframe");
+        onIdleTimeout: () => {
           document.body.removeChild(iframeEle);
         },
       });
