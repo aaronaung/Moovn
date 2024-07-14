@@ -3,6 +3,7 @@ import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmatio
 import { Button } from "@/src/components/ui/button";
 import InputSelect from "@/src/components/ui/input/select";
 import InputText from "@/src/components/ui/input/text";
+import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
@@ -38,6 +39,7 @@ export default function PhotopeaEditor() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const [sourceDataView, setSourceDataView] = useState(metadata.source_data_view);
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setTitle(metadata.title);
@@ -51,6 +53,17 @@ export default function PhotopeaEditor() {
       return;
     }
     setIsExporting(true);
+    setSaveTimeout(
+      setTimeout(() => {
+        toast({
+          variant: "destructive",
+          title: "Failed to save design",
+          description:
+            "Make sure the design isn't empty. If this persists, please contact support.",
+        });
+        setIsExporting(false);
+      }, 10000),
+    );
 
     const forcedRetryCount = 3;
     let retryCount = 0;
@@ -77,6 +90,10 @@ export default function PhotopeaEditor() {
           }
           if (fileExport && fileExport["psd"] && fileExport["jpg"]) {
             setIsExporting(false);
+            if (saveTimeout) {
+              clearTimeout(saveTimeout);
+              setSaveTimeout(null);
+            }
             await save(fileExport, { title, source_data_view: sourceDataView });
           }
         },
@@ -106,6 +123,17 @@ export default function PhotopeaEditor() {
               <InputText
                 className="mr-2 w-[300px]"
                 value={pendingTitle}
+                inputProps={{
+                  onKeyUp: (e) => {
+                    if (e.key === "Enter") {
+                      setTitle(pendingTitle);
+                      setIsEditingTitle(false);
+                    } else if (e.key === "Escape") {
+                      setTitle(title);
+                      setIsEditingTitle(false);
+                    }
+                  },
+                }}
                 onChange={(e) => {
                   setPendingTitle(e.target.value);
                 }}
@@ -129,7 +157,14 @@ export default function PhotopeaEditor() {
               </XMarkIcon>
             </div>
           ) : (
-            <p className="mr-2 text-xl font-semibold text-white">{title}</p>
+            <p
+              className="mr-2 cursor-pointer text-xl font-semibold text-white"
+              onDoubleClick={() => {
+                setIsEditingTitle(true);
+              }}
+            >
+              {title}
+            </p>
           )}
           {!isEditingTitle && options?.isMetadataEditable && (
             <PencilIcon
@@ -191,7 +226,12 @@ export default function PhotopeaEditor() {
 
       <iframe
         ref={ref}
-        src={"https://www.photopea.com"}
+        src={`https://www.photopea.com#${JSON.stringify({
+          files: [],
+          environment: {
+            intro: false,
+          },
+        })}`}
         className="h-[calc(100vh-100px)] w-full"
       ></iframe>
     </div>

@@ -25,6 +25,7 @@ import Link from "next/link";
 
 import { useState } from "react";
 import { DesignContainer } from "./design-container";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function InstagramPost({
   post,
@@ -128,11 +129,11 @@ export default function InstagramPost({
   };
 
   if (isLoadingTemplatesForPost || isLoadingScheduleData) {
-    return <Spinner className="my-2" />;
+    return <Skeleton className="h-[600px] w-[300px] rounded-lg" />;
   }
   return (
     <div className="w-fit rounded-md bg-secondary" key={post.id}>
-      <div className="flex items-center gap-x-1 px-3 pt-3">
+      <div className="flex items-center gap-x-1 px-3 py-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>
             <TooltipTrigger>
@@ -146,8 +147,9 @@ export default function InstagramPost({
           </Tooltip>
         )}
         <div className="flex-1"></div>
-        {isPublishingPost && <Spinner />}
-        {!isPublishingPost && Object.keys(designMap).length === (templates || []).length && (
+        {isPublishingPost ? (
+          <Spinner />
+        ) : (
           <>
             <PencilSquareIcon
               onClick={onEditPost}

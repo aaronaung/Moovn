@@ -140,12 +140,15 @@ export default function Playground() {
       try {
         const todaySchedule = await getScheduleDataForSource({
           id: "c3933917-5313-4a4d-a31f-b4234df3d7a3",
-          view: SourceDataView.THIS_WEEK,
+          view: SourceDataView.WEEKLY,
         });
 
         const { data, error } = await supaClientComponentClient.storage
           .from(BUCKETS.templates)
-          .createSignedUrl(`fea29740-ef10-4fc6-98cb-191c9b2f4a74/d12ff16d-3fc4-47e6-b39a-03befbe7be0d.psd`, 26 * 3600);
+          .createSignedUrl(
+            `fea29740-ef10-4fc6-98cb-191c9b2f4a74/d12ff16d-3fc4-47e6-b39a-03befbe7be0d.psd`,
+            26 * 3600,
+          );
         if (error || !data) {
           console.log("fetch signed url error", error);
           return;
@@ -188,28 +191,32 @@ export default function Playground() {
   };
 
   const handleSendEditCmds = async (psdActions: PSDActions) => {
-    const editText = Object.entries(psdActions[PSDActionType.EditText as string]).map(([name, { value }]) => ({
-      name,
-      value,
-    }));
-    const deleteLayer = Object.entries(psdActions[PSDActionType.DeleteLayer as string]).map(([name, { value }]) => ({
-      name,
-      value,
-    }));
-    const replaceSmartObject = Object.entries(psdActions[PSDActionType.LoadSmartObjectFromUrl as string]).map(
-      ([name, { value }], index) => {
-        const valueSplit = value.split("/");
-        // Photoshop always uses the last part of the URL as the layer name.
-        const newlyCreatedLayerName = valueSplit[valueSplit.length - 1];
-
-        return {
-          name,
-          // We attach index to the urls, so that we can identify the layer later. The last part of the url can be the same for different layers.
-          value: `${value}#${index}`,
-          newlyCreatedLayerName: `${newlyCreatedLayerName}#${index}`,
-        };
-      },
+    const editText = Object.entries(psdActions[PSDActionType.EditText as string]).map(
+      ([name, { value }]) => ({
+        name,
+        value,
+      }),
     );
+    const deleteLayer = Object.entries(psdActions[PSDActionType.DeleteLayer as string]).map(
+      ([name, { value }]) => ({
+        name,
+        value,
+      }),
+    );
+    const replaceSmartObject = Object.entries(
+      psdActions[PSDActionType.LoadSmartObjectFromUrl as string],
+    ).map(([name, { value }], index) => {
+      const valueSplit = value.split("/");
+      // Photoshop always uses the last part of the URL as the layer name.
+      const newlyCreatedLayerName = valueSplit[valueSplit.length - 1];
+
+      return {
+        name,
+        // We attach index to the urls, so that we can identify the layer later. The last part of the url can be the same for different layers.
+        value: `${value}#${index}`,
+        newlyCreatedLayerName: `${newlyCreatedLayerName}#${index}`,
+      };
+    });
     setLayersToMove(
       replaceSmartObject.map(({ name, newlyCreatedLayerName }) => ({
         from: newlyCreatedLayerName,
@@ -243,7 +250,13 @@ export default function Playground() {
       {layerCount}
       {/* <p className="text-red-50">{orderedReplacedLayers.join(",")}</p> */}
       {isLoading && <div>Loading...</div>}
-      {ppAnchor && <iframe ref={ppRef} className=" h-screen w-full" src={`https://www.photopea.com#${ppAnchor}`} />}
+      {ppAnchor && (
+        <iframe
+          ref={ppRef}
+          className=" h-screen w-full"
+          src={`https://www.photopea.com#${ppAnchor}`}
+        />
+      )}
       {/* {resultJpg && <img src={resultJpg} alt="test" />} */}
     </div>
   );

@@ -48,10 +48,6 @@ export const useGenerateDesign = () => {
           client: supaClientComponentClient,
         }),
       ]);
-      if (Object.keys(schedule).length === 0) {
-        setIsScheduleEmpty(true);
-        return;
-      }
 
       const designHash = hash({
         templateId: template.id,
@@ -65,6 +61,24 @@ export const useGenerateDesign = () => {
           );
           return;
         }
+      }
+      const designInIndexedDb = await db.designs.get(template.id);
+      console.log({ designInIndexedDb, designHash });
+      if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
+        console.log("Schedule data has changed, delete the overwritten design.");
+        // Schedule data has changed, delete the overwritten design.
+        await db.designs.delete(template.id);
+        await supaClientComponentClient.storage
+          .from(BUCKETS.designs)
+          .remove([
+            `${template.owner_id}/${template.id}.psd`,
+            `${template.owner_id}/${template.id}.jpeg`,
+          ]);
+      }
+
+      if (Object.keys(schedule).length === 0) {
+        setIsScheduleEmpty(true);
+        return;
       }
 
       const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();

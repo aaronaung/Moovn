@@ -366,7 +366,7 @@ const DesignSelectItem = ({
         onSelect();
       }}
     >
-      {isLoading || isLoadingOverwrites || !designJpgUrl ? (
+      {isLoading || isLoadingOverwrites || (!designJpgUrl && !isScheduleEmpty) ? (
         <Spinner />
       ) : (
         <div>

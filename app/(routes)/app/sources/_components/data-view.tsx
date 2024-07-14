@@ -11,14 +11,17 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.TODAY);
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(getScheduleDataForSource, {
-    queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
-    arg: {
-      id: selectedSource?.id,
-      view: selectedView,
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
+    getScheduleDataForSource,
+    {
+      queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
+      arg: {
+        id: selectedSource?.id,
+        view: selectedView,
+      },
+      enabled: !!selectedSource,
     },
-    enabled: !!selectedSource,
-  });
+  );
 
   const handleTabSelect = (tab: SourceDataView) => {
     setSelectedView(tab);

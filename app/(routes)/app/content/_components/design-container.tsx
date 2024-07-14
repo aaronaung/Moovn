@@ -2,7 +2,6 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/src/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -164,7 +163,7 @@ export const DesignContainer = ({
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
-    if (isScheduleEmpty) {
+    if (isScheduleEmpty && !designJpgUrl) {
       return <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>;
     }
     if (isDesignNotReady || !designJpgUrl) {
@@ -197,7 +196,7 @@ export const DesignContainer = ({
           This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
-      <Card className="w-[320px] rounded-none border-t-0">
+      <div className="w-[320px] ">
         <div className="h-[28px] border-none bg-secondary pb-1 pl-2">
           {designOverwrite && (
             <Tooltip>
@@ -211,7 +210,7 @@ export const DesignContainer = ({
           )}
         </div>
 
-        <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
+        <div className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {renderDesignContent()}
           <ImageViewer
             visible={isImageViewerOpen}
@@ -219,18 +218,18 @@ export const DesignContainer = ({
             images={[{ src: designJpgUrl || "", alt: "Design" }]}
             onClose={() => setIsImageViewerOpen(false)}
           />
-        </CardContent>
-        <CardFooter className="flex flex-row-reverse gap-2 p-4">
+        </div>
+        <div className="flex flex-row-reverse justify-center gap-2 p-2">
           <DropdownMenu>
             <DropdownMenuTrigger disabled={!designPsdUrl && !designJpgUrl}>
               <Tooltip>
                 <TooltipTrigger>
                   <Button
-                    className="group"
+                    className="group hover:bg-secondary-foreground hover:text-secondary"
                     variant="secondary"
                     disabled={!designPsdUrl && !designJpgUrl}
                   >
-                    <DownloadCloudIcon width={18} className="group-hover:text-primary" />
+                    <DownloadCloudIcon width={18} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Download</TooltipContent>
@@ -265,7 +264,7 @@ export const DesignContainer = ({
             <TooltipTrigger>
               <Button
                 variant="secondary"
-                className="group"
+                className="group hover:bg-secondary-foreground hover:text-secondary "
                 disabled={isDesignNotReady || (!designJpgUrl && !isScheduleEmpty)}
                 onClick={async () => {
                   if (designOverwrite) {
@@ -275,7 +274,7 @@ export const DesignContainer = ({
                   }
                 }}
               >
-                <RefreshCwIcon width={18} className="group-hover:text-primary" />
+                <RefreshCwIcon width={18} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
@@ -284,8 +283,8 @@ export const DesignContainer = ({
             <TooltipTrigger>
               <Button
                 variant="secondary"
-                className="group"
-                disabled={isDesignNotReady || (!designJpgUrl && !isScheduleEmpty)}
+                className="group hover:bg-secondary-foreground hover:text-secondary"
+                disabled={isDesignNotReady || !designPsdUrl || isScheduleEmpty}
                 onClick={async () => {
                   if (designPsdUrl) {
                     const ab = await (await fetch(designPsdUrl)).arrayBuffer();
@@ -304,13 +303,13 @@ export const DesignContainer = ({
                   }
                 }}
               >
-                <PaintBrushIcon width={18} className="group-hover:text-primary" />
+                <PaintBrushIcon width={18} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit design</TooltipContent>
           </Tooltip>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </>
   );
 };
