@@ -63,16 +63,14 @@ export const useGenerateDesign = () => {
         }
       }
       const designInIndexedDb = await db.designs.get(template.id);
-      console.log({ designInIndexedDb, designHash });
       if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
-        console.log("Schedule data has changed, delete the overwritten design.");
         // Schedule data has changed, delete the overwritten design.
         await db.designs.delete(template.id);
         await supaClientComponentClient.storage
           .from(BUCKETS.designs)
           .remove([
             `${template.owner_id}/${template.id}.psd`,
-            `${template.owner_id}/${template.id}.jpeg`,
+            `${template.owner_id}/${template.id}.jpg`,
           ]);
       }
 

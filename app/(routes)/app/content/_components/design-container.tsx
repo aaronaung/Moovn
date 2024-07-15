@@ -81,7 +81,7 @@ export const DesignContainer = ({
         const result = await supaClientComponentClient.storage
           .from(BUCKETS.designs)
           .createSignedUrls(
-            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`],
+            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpg`],
             24 * 60 * 60,
           );
         if (!result.data) {
@@ -96,7 +96,7 @@ export const DesignContainer = ({
                 ...prev,
                 psdUrl: overwrite.signedUrl,
               }));
-            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpeg`) {
+            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpg`) {
               setDesignOverwrite((prev) => ({
                 ...prev,
                 jpgUrl: overwrite.signedUrl,
@@ -125,7 +125,7 @@ export const DesignContainer = ({
     }
     // upload overwrite content to storage.
     const psdPath = `${template.owner_id}/${template.id}.psd`;
-    const jpgPath = `${template.owner_id}/${template.id}.jpeg`;
+    const jpgPath = `${template.owner_id}/${template.id}.jpg`;
 
     // Unfortunately, we have to remove the existing files before uploading the new ones, because
     // createSignedUploadUrl fails if the file already exists.
@@ -186,7 +186,7 @@ export const DesignContainer = ({
               .from(BUCKETS.designs)
               .remove([
                 `${template.owner_id}/${template.id}.psd`,
-                `${template.owner_id}/${template.id}.jpeg`,
+                `${template.owner_id}/${template.id}.jpg`,
               ]);
             setDesignOverwrite(undefined);
             generateDesign(template, source, true);
@@ -251,7 +251,7 @@ export const DesignContainer = ({
                   className="cursor-pointer"
                   onClick={() => {
                     if (designJpgUrl) {
-                      download(designJpgUrl, `${template.name}.jpeg`);
+                      download(designJpgUrl, `${template.name}.jpg`);
                     }
                   }}
                 >

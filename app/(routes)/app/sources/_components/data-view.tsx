@@ -10,7 +10,7 @@ import { useState } from "react";
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
-  const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.TODAY);
+  const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.DAILY);
   const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
     getScheduleDataForSource,
     {

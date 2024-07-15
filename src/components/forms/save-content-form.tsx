@@ -63,7 +63,7 @@ export default function SaveContentForm({
     defaultValues: {
       source_data_view:
         defaultValues?.source_data_view === undefined
-          ? SourceDataView.TODAY
+          ? SourceDataView.DAILY
           : defaultValues.source_data_view,
       ...defaultValues,
       template_ids: defaultValues?.template_ids || [],
@@ -324,7 +324,7 @@ const DesignSelectItem = ({
         const result = await supaClientComponentClient.storage
           .from(BUCKETS.designs)
           .createSignedUrls(
-            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpeg`],
+            [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpg`],
             24 * 60 * 60,
           );
         if (!result.data) {
@@ -336,7 +336,7 @@ const DesignSelectItem = ({
           if (overwrite.signedUrl) {
             if (overwrite.path === `${template.owner_id}/${template.id}.psd`) {
               setDesignOverwrite((prev) => ({ ...prev, psdUrl: overwrite.signedUrl }));
-            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpeg`) {
+            } else if (overwrite.path === `${template.owner_id}/${template.id}.jpg`) {
               setDesignOverwrite((prev) => ({ ...prev, jpgUrl: overwrite.signedUrl }));
             }
           }

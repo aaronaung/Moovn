@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           templates.map((template) => {
             return signUrl({
               bucket: BUCKETS.stagingAreaForContentPublishing,
-              objectPath: `${content.owner_id}/${content.id}/${template.id}.jpeg`,
+              objectPath: `${content.owner_id}/${content.id}/${template.id}.jpg`,
               client: supaServerClient(),
               expiresIn: 24 * 3600,
             });
@@ -104,7 +104,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             caption,
           });
         }
-        console.log("Published media", publishedMedia);
         await supaServerClient().from("published_content").insert({
           destination_id: content.destination.id,
           owner_id: content.owner_id,

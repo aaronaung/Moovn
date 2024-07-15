@@ -97,11 +97,11 @@ export class Pike13Client {
   async getScheduleDataForView(view?: SourceDataView | null): Promise<ScheduleData> {
     const currDateTime = new Date();
     switch (view) {
-      case SourceDataView.TODAY:
+      case SourceDataView.DAILY:
         return this.getScheduleData(startOfDay(currDateTime), endOfDay(currDateTime));
-      case SourceDataView.THIS_WEEK:
+      case SourceDataView.WEEKLY:
         return this.getScheduleData(startOfWeek(currDateTime), endOfWeek(currDateTime));
-      case SourceDataView.THIS_MONTH:
+      case SourceDataView.MONTHLY:
         return this.getScheduleData(startOfMonth(currDateTime), endOfMonth(currDateTime));
       default:
         return { schedules: [] };

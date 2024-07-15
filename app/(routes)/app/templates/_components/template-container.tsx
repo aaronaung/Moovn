@@ -165,13 +165,13 @@ export const TemplateContainer = ({
       from: startOfDay(currDateTime),
     };
     switch (template.source_data_view) {
-      case SourceDataView.THIS_WEEK:
+      case SourceDataView.WEEKLY:
         fromAndTo = {
           from: startOfWeek(currDateTime),
           to: endOfWeek(currDateTime),
         };
         break;
-      case SourceDataView.THIS_MONTH:
+      case SourceDataView.MONTHLY:
         fromAndTo = {
           from: startOfMonth(currDateTime),
           to: endOfMonth(currDateTime),
@@ -266,7 +266,7 @@ export const TemplateContainer = ({
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
-                  download(jpgBlobUrl, `${template.name}.jpeg`);
+                  download(jpgBlobUrl, `${template.name}.jpg`);
                 }}
               >
                 JPEG

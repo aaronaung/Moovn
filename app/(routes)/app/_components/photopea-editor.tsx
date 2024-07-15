@@ -23,6 +23,7 @@ export default function PhotopeaEditor() {
     options,
     save,
     isSaving,
+    freeDesignTemplates,
   } = usePhotopeaEditor();
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
   const ref = useRef<HTMLIFrameElement>(null);
@@ -116,7 +117,7 @@ export default function PhotopeaEditor() {
           isConfirming={isSaving || isExporting}
         />
       )}
-      <div className="flex h-[100px] items-center gap-x-2 px-8 py-2">
+      <div className="flex h-[70px] items-center gap-x-2 px-8 py-2">
         <div className="flex h-[50px] items-center gap-2">
           {isEditingTitle ? (
             <div className="flex items-center gap-x-1">
@@ -175,28 +176,6 @@ export default function PhotopeaEditor() {
             />
           )}
         </div>
-        <div className="ml-12 flex flex-col justify-start gap-2">
-          {options?.isMetadataEditable && (
-            <>
-              <p className="text-xs text-white">
-                What schedule range does this template work with?
-              </p>
-              <InputSelect
-                value={sourceDataView}
-                className="w-[200px]"
-                options={Object.keys(SourceDataView).map((key) => ({
-                  // @ts-ignore
-                  label: SourceDataView[key],
-                  // @ts-ignore
-                  value: SourceDataView[key],
-                }))}
-                onChange={(value) => {
-                  setSourceDataView(value);
-                }}
-              />
-            </>
-          )}
-        </div>
 
         <div className="flex-1"></div>
 
@@ -224,16 +203,61 @@ export default function PhotopeaEditor() {
         </Button>
       </div>
 
-      <iframe
-        ref={ref}
-        src={`https://www.photopea.com#${JSON.stringify({
-          files: [],
-          environment: {
-            intro: false,
-          },
-        })}`}
-        className="h-[calc(100vh-100px)] w-full"
-      ></iframe>
+      <div className="flex">
+        <div className="h-[calc(100vh-70px)] w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4">
+          <div className="my-4 flex flex-col justify-start gap-2">
+            {options?.isMetadataEditable && (
+              <>
+                <p className="text-sm text-white">Select a schedule range</p>
+                <InputSelect
+                  value={sourceDataView}
+                  className="w-[200px]"
+                  options={Object.keys(SourceDataView).map((key) => ({
+                    // @ts-ignore
+                    label: SourceDataView[key],
+                    // @ts-ignore
+                    value: SourceDataView[key],
+                  }))}
+                  onChange={(value) => {
+                    setSourceDataView(value);
+                  }}
+                />
+              </>
+            )}
+          </div>
+          <p className="mt-8 text-sm text-white">Get started with sample templates</p>
+          <div className="mt-4 flex flex-wrap gap-4">
+            {(freeDesignTemplates[sourceDataView] || []).length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Sample templates for this schedule range coming soon!
+              </p>
+            )}
+            {(freeDesignTemplates[sourceDataView] || []).map((template, index) => (
+              <img
+                key={index}
+                src={`data:image/jpeg;base64,${Buffer.from(template.jpg).toString("base64")}`}
+                className="h-[170px] w-[170px] cursor-pointer rounded-md object-cover hover:border-2 hover:border-white"
+                onClick={() => {
+                  if (ref.current) {
+                    sendRawPhotopeaCmd(photopeaEditorNamespace, ref.current, template.psd);
+                  }
+                }}
+                alt={`Template ${index}`}
+              />
+            ))}
+          </div>
+        </div>
+        <iframe
+          ref={ref}
+          src={`https://www.photopea.com#${JSON.stringify({
+            files: [],
+            environment: {
+              intro: false,
+            },
+          })}`}
+          className="h-[calc(100vh-70px)] w-full"
+        />
+      </div>
     </div>
   );
 }

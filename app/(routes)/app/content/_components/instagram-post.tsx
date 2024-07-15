@@ -95,13 +95,13 @@ export default function InstagramPost({
         .from(BUCKETS.stagingAreaForContentPublishing)
         .remove(
           Object.entries(designMap).map(
-            ([templateId, _]) => `${post.owner_id}/${post.id}/${templateId}.jpeg`,
+            ([templateId, _]) => `${post.owner_id}/${post.id}/${templateId}.jpg`,
           ),
         );
 
       await Promise.all(
         Object.entries(designMap).map(async ([templateId, design]) => {
-          const objectPath = `${post.owner_id}/${post.id}/${templateId}.jpeg`;
+          const objectPath = `${post.owner_id}/${post.id}/${templateId}.jpg`;
           const { token } = await signUploadUrl({
             bucket: BUCKETS.stagingAreaForContentPublishing,
             objectPath,

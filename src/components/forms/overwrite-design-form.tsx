@@ -14,54 +14,44 @@ type OverwriteDesignFormProps = {
   onSubmitted: () => void;
 };
 
-export default function OverwriteDesignForm({
-  designId,
-  onSubmitted,
-}: OverwriteDesignFormProps) {
+export default function OverwriteDesignForm({ designId, onSubmitted }: OverwriteDesignFormProps) {
   const { user, session } = useAuthUser();
   const [psdFile, setPsdFile] = useState<File | null>(null);
   const [jpegFile, setJpegFile] = useState<File | null>(null);
   const asyncUploader = useAsyncFileUpload();
 
-  const onPsdFileDrop = useCallback(
-    async (accepted: File[], rejections: FileRejection[]) => {
-      if (rejections.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "File doesn't meet requirements",
-          description: "Please make sure the file is a PSD file.",
-        });
-        return;
-      }
+  const onPsdFileDrop = useCallback(async (accepted: File[], rejections: FileRejection[]) => {
+    if (rejections.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "File doesn't meet requirements",
+        description: "Please make sure the file is a PSD file.",
+      });
+      return;
+    }
 
-      setPsdFile(accepted[0]);
-    },
-    [],
-  );
+    setPsdFile(accepted[0]);
+  }, []);
 
-  const onJpegFileDrop = useCallback(
-    async (accepted: File[], rejections: FileRejection[]) => {
-      if (rejections.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "File doesn't meet requirements",
-          description: "Please make sure the file is a JPEG file.",
-        });
-        return;
-      }
+  const onJpegFileDrop = useCallback(async (accepted: File[], rejections: FileRejection[]) => {
+    if (rejections.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "File doesn't meet requirements",
+        description: "Please make sure the file is a JPEG file.",
+      });
+      return;
+    }
 
-      setJpegFile(accepted[0]);
-    },
-    [],
-  );
+    setJpegFile(accepted[0]);
+  }, []);
 
   const handleSubmit = async () => {
     if (!psdFile || !jpegFile) {
       toast({
         variant: "destructive",
         title: "Missing file(s)",
-        description:
-          "Both psd and jpeg files are required to overwrite a design.",
+        description: "Both psd and jpeg files are required to overwrite a design.",
       });
       return;
     }
@@ -88,7 +78,7 @@ export default function OverwriteDesignForm({
             file: jpegFile,
             bucketName: BUCKETS.designs,
             contentType: `image/jpeg`,
-            objectPath: `${user.id}/${designId}.jpeg`,
+            objectPath: `${user.id}/${designId}.jpg`,
           },
         ],
       },
@@ -128,7 +118,7 @@ export default function OverwriteDesignForm({
         <FileDropzone
           onDrop={onJpegFileDrop}
           options={{
-            accept: { "image/jpeg": [".jpeg"] },
+            accept: { "image/jpeg": [".jpg"] },
             multiple: false,
           }}
         />
@@ -138,11 +128,7 @@ export default function OverwriteDesignForm({
         onClick={handleSubmit}
         disabled={asyncUploader.hasTaskInProgress}
       >
-        {asyncUploader.hasTaskInProgress ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          "Save"
-        )}
+        {asyncUploader.hasTaskInProgress ? <Loader2 className="animate-spin" /> : "Save"}
       </Button>
     </div>
   );
