@@ -166,7 +166,9 @@ export default function ManageContent({
         <div className="flex-1">
           <Header2 title="Content" />
           <p className="text-sm text-muted-foreground">
-            Content is auto-generated from a template and can be published to a destination.
+            Content is auto-generated from a template and can be published to a destination. If you
+            think an auto-generated design is incorrect, you can refresh the design or edit to
+            overwrite it.
           </p>
         </div>
         <Button

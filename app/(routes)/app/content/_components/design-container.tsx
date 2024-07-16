@@ -197,20 +197,20 @@ export const DesignContainer = ({
         />
       )}
       <div className="w-[320px] ">
-        <div className="h-[28px] border-none bg-secondary pb-1 pl-2">
+        <div className="relative flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {designOverwrite && (
-            <Tooltip>
-              <TooltipTrigger>
-                <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Overwritten</div>
-              </TooltipTrigger>
-              <TooltipContent className="w-[300px]">
-                This design was edited and overwrites the automatically generated design.
-              </TooltipContent>
-            </Tooltip>
+            <div className="absolute left-2 top-2">
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Edited</div>
+                </TooltipTrigger>
+                <TooltipContent className="w-[300px]">
+                  This design was edited which overwrites the automatically generated design.
+                  Refresh to generate a new one.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           )}
-        </div>
-
-        <div className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {renderDesignContent()}
           <ImageViewer
             visible={isImageViewerOpen}

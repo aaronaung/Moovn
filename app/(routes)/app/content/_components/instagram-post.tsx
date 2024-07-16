@@ -26,6 +26,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { DesignContainer } from "./design-container";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import _ from "lodash";
 
 export default function InstagramPost({
   post,
@@ -64,6 +65,7 @@ export default function InstagramPost({
       queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
     },
   );
+  console.log({ scheduleData });
 
   const [isPublishingPost, setIsPublishingPost] = useState(false);
   const { mutateAsync: _publishContent } = useSupaMutation(publishContent, {
@@ -160,20 +162,27 @@ export default function InstagramPost({
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground hover:text-secondary"
             />
             <Tooltip>
-              <TooltipTrigger disabled={!post.destination?.linked_ig_user_id}>
+              <TooltipTrigger
+                disabled={!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData)}
+              >
                 <CloudArrowUpIcon
                   onClick={handlePublishContent}
                   className={cn(
-                    "ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary",
-                    !post.destination?.linked_ig_user_id && "opacity-50",
+                    "ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary ",
+                    (!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData)) &&
+                      "opacity-50",
                   )}
                 />
               </TooltipTrigger>
-              <TooltipContent className="max-w-[300px]">
-                {!post.destination?.linked_ig_user_id
-                  ? "The Destination isn't connected. Please visit the destinations page to make changes."
-                  : "Publish post"}{" "}
-              </TooltipContent>
+              {!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData) ? (
+                <></>
+              ) : (
+                <TooltipContent className="max-w-[300px]">
+                  {!post.destination?.linked_ig_user_id
+                    ? "The Destination isn't connected. Please visit the destinations page to make changes."
+                    : "Publish post"}{" "}
+                </TooltipContent>
+              )}
             </Tooltip>
           </>
         )}

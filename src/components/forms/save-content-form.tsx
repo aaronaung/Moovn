@@ -25,6 +25,10 @@ import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { BUCKETS } from "@/src/consts/storage";
+import { EyeIcon } from "@heroicons/react/24/outline";
+import dynamic from "next/dynamic";
+
+const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
@@ -43,6 +47,7 @@ type SaveContentFormProps = {
   availableDestinations: Tables<"destinations">[];
   defaultValues?: SaveContentFormSchemaType;
   onSubmitted: () => void;
+  onImageViewerOpen: (imageUrl: string) => void;
 };
 
 export default function SaveContentForm({
@@ -50,6 +55,7 @@ export default function SaveContentForm({
   availableDestinations,
   defaultValues,
   onSubmitted,
+  onImageViewerOpen,
 }: SaveContentFormProps) {
   const {
     register,
@@ -61,10 +67,23 @@ export default function SaveContentForm({
     formState: { errors },
   } = useForm<SaveContentFormSchemaType>({
     defaultValues: {
-      source_data_view:
-        defaultValues?.source_data_view === undefined
-          ? SourceDataView.DAILY
-          : defaultValues.source_data_view,
+      ...(availableSources.length > 0
+        ? {
+            source_id: !defaultValues?.source_id
+              ? availableSources[0]?.id
+              : defaultValues.source_id,
+          }
+        : {}),
+      ...(availableDestinations.length > 0
+        ? {
+            destination_id: !defaultValues?.destination_id
+              ? availableDestinations[0]?.id
+              : defaultValues.destination_id,
+          }
+        : {}),
+      source_data_view: !defaultValues?.source_data_view
+        ? SourceDataView.DAILY
+        : defaultValues.source_data_view,
       ...defaultValues,
       template_ids: defaultValues?.template_ids || [],
     },
@@ -156,25 +175,30 @@ export default function SaveContentForm({
         <p className="text-sm text-muted-foreground">{`No designs found for ${sourceDataView.toLowerCase()}'s schedule. Please select a different schedule`}</p>
       );
     }
-    return templates.map((template) => (
-      <DesignSelectItem
-        key={template.id}
-        index={templateIds.indexOf(template.id)}
-        sourceId={sourceId}
-        template={template}
-        isSelected={templateIds.includes(template.id)}
-        onSelect={() => {
-          const newSet = new Set(templateIds);
-          if (newSet.has(template.id)) {
-            newSet.delete(template.id);
-          } else {
-            newSet.add(template.id);
-          }
-          setValue("template_ids", Array.from(newSet));
-          trigger("template_ids");
-        }}
-      />
-    ));
+    return (
+      <>
+        {templates.map((template) => (
+          <DesignSelectItem
+            key={template.id}
+            index={templateIds.indexOf(template.id)}
+            sourceId={sourceId}
+            template={template}
+            isSelected={templateIds.includes(template.id)}
+            onViewDesign={onImageViewerOpen}
+            onSelect={() => {
+              const newSet = new Set(templateIds);
+              if (newSet.has(template.id)) {
+                newSet.delete(template.id);
+              } else {
+                newSet.add(template.id);
+              }
+              setValue("template_ids", Array.from(newSet));
+              trigger("template_ids");
+            }}
+          />
+        ))}
+      </>
+    );
   };
 
   const hasTemplates = templates && templates.length > 0;
@@ -292,12 +316,14 @@ const DesignSelectItem = ({
   template,
   isSelected,
   onSelect,
+  onViewDesign,
 }: {
   index: number;
   sourceId: string;
   template: Tables<"templates">;
   isSelected: boolean;
   onSelect: () => void;
+  onViewDesign: (designUrl: string) => void;
 }) => {
   const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
   const designFromIndexedDb = useLiveQuery(async () => {
@@ -314,8 +340,6 @@ const DesignSelectItem = ({
   const [designOverwrite, setDesignOverwrite] = useState<{ jpgUrl?: string; psdUrl?: string }>();
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
-
-  console.log("designJpgUrl", designJpgUrl);
 
   useEffect(() => {
     const fetchOverwrites = async () => {
@@ -356,7 +380,7 @@ const DesignSelectItem = ({
     <div
       key={template.id}
       className={cn(
-        "flex h-fit min-h-[225px] w-[200px] shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
+        "group flex h-fit min-h-[225px] w-[200px] shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-md px-3 pb-3 pt-1 hover:bg-secondary",
         (isSelected || isLoading) && "bg-secondary",
       )}
       onClick={() => {
@@ -369,7 +393,7 @@ const DesignSelectItem = ({
       {isLoading || isLoadingOverwrites || (!designJpgUrl && !isScheduleEmpty) ? (
         <Spinner />
       ) : (
-        <div>
+        <div className="relative">
           <div className="flex h-8 items-center">
             <p className="flex-1 text-xs text-muted-foreground">{template.name}</p>
             <div>
@@ -387,6 +411,19 @@ const DesignSelectItem = ({
           ) : (
             <img src={designJpgUrl} className="max-h-full max-w-full" alt={template.name} />
           )}
+          <Button
+            className="absolute bottom-2 right-2 bg-secondary-foreground p-3 hover:bg-neutral-700"
+            variant={"secondary"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (designJpgUrl) {
+                onViewDesign(designJpgUrl);
+              }
+            }}
+          >
+            <EyeIcon className="h-4 w-4 text-white group-hover:bg-none" />
+          </Button>
         </div>
       )}
     </div>
