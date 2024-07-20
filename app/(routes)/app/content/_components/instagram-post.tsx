@@ -27,6 +27,7 @@ import { useState } from "react";
 import { DesignContainer } from "./design-container";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import _ from "lodash";
+import { db } from "@/src/libs/indexeddb/indexeddb";
 
 export default function InstagramPost({
   post,
