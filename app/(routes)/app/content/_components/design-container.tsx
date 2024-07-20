@@ -31,14 +31,12 @@ const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 export const DesignContainer = ({
   template,
   source,
-  onDesignLoaded,
 }: {
   template: Tables<"templates">;
   source: {
     id: string;
     view: SourceDataView;
   };
-  onDesignLoaded: (jpg: ArrayBuffer) => void;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateDesign, isLoading: isGeneratingDesign, isScheduleEmpty } = useGenerateDesign();
@@ -62,17 +60,6 @@ export const DesignContainer = ({
   });
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
-
-  useEffect(() => {
-    if (designJpgUrl) {
-      const fetchDesignJpg = async () => {
-        const designJpg = await (await fetch(designJpgUrl)).arrayBuffer();
-        onDesignLoaded(designJpg);
-      };
-
-      fetchDesignJpg();
-    }
-  }, [designJpgUrl]);
 
   useEffect(() => {
     const fetchOverwrites = async () => {

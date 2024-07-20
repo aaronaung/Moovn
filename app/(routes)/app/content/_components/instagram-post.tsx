@@ -44,7 +44,6 @@ export default function InstagramPost({
       arg: post.id,
     },
   );
-  const [designMap, setDesignMap] = useState<{ [templateId: string]: ArrayBuffer }>({});
 
   const { data: igMedia } = useSupaQuery(getInstagramMedia, {
     enabled: !!post.destination?.id && !!post.published_ig_media_id,
@@ -65,7 +64,6 @@ export default function InstagramPost({
       queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
     },
   );
-  console.log({ scheduleData });
 
   const [isPublishingPost, setIsPublishingPost] = useState(false);
   const { mutateAsync: _publishContent } = useSupaMutation(publishContent, {
@@ -91,6 +89,10 @@ export default function InstagramPost({
       return;
     }
 
+    const designMap: { [key: string]: ArrayBuffer } = {};
+    db.designs.each((design) => {
+      designMap[design.templateId] = design.jpg;
+    });
     try {
       setIsPublishingPost(true);
       await supaClientComponentClient.storage
@@ -193,17 +195,7 @@ export default function InstagramPost({
           <CarouselContent>
             {/** @eslint-ignore  */}
             {(templates ?? []).map((template) => (
-              <CarosuelImageItem
-                onDesignLoaded={(design) => {
-                  setDesignMap((prev) => ({
-                    ...prev,
-                    [template.id]: design,
-                  }));
-                }}
-                key={template.id}
-                template={template}
-                post={post}
-              />
+              <CarosuelImageItem key={template.id} template={template} post={post} />
             ))}
           </CarouselContent>
           <CarouselDots className="mt-4" />
@@ -221,11 +213,9 @@ export default function InstagramPost({
 const CarosuelImageItem = ({
   template,
   post,
-  onDesignLoaded,
 }: {
   template: Tables<"templates">;
   post: Tables<"content">;
-  onDesignLoaded: (jpg: ArrayBuffer) => void;
 }) => {
   return (
     <CarouselItem
@@ -240,7 +230,6 @@ const CarosuelImageItem = ({
           view: post.source_data_view as SourceDataView,
         }}
         template={template}
-        onDesignLoaded={onDesignLoaded}
       />
     </CarouselItem>
   );

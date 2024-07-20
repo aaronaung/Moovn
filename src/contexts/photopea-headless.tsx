@@ -36,7 +36,7 @@ function usePhotopeaHeadless() {
 }
 
 const LAYER_COUNT_POLL_INTERVAL = 100; // Gives more resolution.
-const IDLE_TIMEOUT = 5000;
+const IDLE_TIMEOUT = 15_000;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
@@ -101,6 +101,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [
+      lastLayerCountChange,
       layerCountMap,
       exportMetadataQueue,
       exportQueue,
@@ -157,7 +158,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     if (callback) {
       setOnFileExportMap((prev) => ({
         ...prev,
-        [namespace]: _.debounce(callback, 100),
+        [namespace]: callback,
       }));
     }
   };

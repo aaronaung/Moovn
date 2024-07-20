@@ -85,7 +85,10 @@ export const useGenerateDesign = () => {
 
       const iframeSrc = `https://www.photopea.com#${JSON.stringify({
         files: [signedTemplateUrl],
-        environment: {},
+        environment: {
+          vmode: 2,
+          intro: false,
+        },
       })}`;
       const iframeEle = document.createElement("iframe");
       iframeEle.src = iframeSrc;
@@ -109,7 +112,7 @@ export const useGenerateDesign = () => {
         },
         onFileExport: async (fileExport) => {
           if (fileExport?.["psd"] && fileExport?.["jpg"]) {
-            db.designs.put({
+            await db.designs.put({
               templateId: template.id,
               jpg: fileExport["jpg"],
               psd: fileExport["psd"],
