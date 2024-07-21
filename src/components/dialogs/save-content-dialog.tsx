@@ -10,13 +10,13 @@ const ImageViewer = dynamic(() => import("react-viewer"), {
 
 export function SaveContentDialog({
   initFormValues,
-  availableDestinations,
+  destination,
   availableSources,
   onClose,
   isOpen,
 }: {
   initFormValues?: SaveContentFormSchemaType;
-  availableDestinations: Tables<"destinations">[];
+  destination: Tables<"destinations">;
   availableSources: Tables<"sources">[];
   onClose: () => void;
   isOpen: boolean;
@@ -46,10 +46,10 @@ export function SaveContentDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{initFormValues ? "Update" : "Create"} post</DialogTitle>
+          <DialogTitle>{initFormValues?.id ? "Update" : "Create"} content</DialogTitle>
         </DialogHeader>
         <SaveContentForm
-          availableDestinations={availableDestinations}
+          destination={destination}
           availableSources={availableSources}
           defaultValues={initFormValues}
           onSubmitted={onClose}

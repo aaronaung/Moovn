@@ -91,7 +91,7 @@ export const TemplateContainer = ({
             ...prev,
             psd,
           }));
-          db.templates.put({
+          await db.templates.put({
             templateId: template.id,
             jpg: new ArrayBuffer(0), // We don't have the jpg yet, so just store an empty array buffer.
             psd,

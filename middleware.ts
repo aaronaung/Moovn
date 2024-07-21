@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { match } from "path-to-regexp";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-const excludedPaths = [
-  "/api/stripe/webhook",
-  "/api/facebook/auth/callback",
-  "/api/auth/callback",
-  "/api/designs/generate", //TODO: remove this when done testing
-  "/api/designs/templates/:id", //TODO: remove this when done testing
-];
+const excludedPaths = ["/api/stripe/webhook", "/api/facebook/auth/callback", "/api/auth/callback"];
 
 export async function middleware(req: NextRequest) {
   try {
@@ -92,9 +86,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.next();
     }
     return NextResponse.redirect(
-      requestUrl.origin.concat(
-        `/sign-in?return_path=${returnPath || requestUrl.pathname}`,
-      ),
+      requestUrl.origin.concat(`/sign-in?return_path=${returnPath || requestUrl.pathname}`),
     );
   }
 

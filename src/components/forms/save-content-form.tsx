@@ -34,7 +34,6 @@ const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
   source_id: z.string().min(1, { message: "Source is required." }),
   source_data_view: z.string().min(1, { message: "Schedule is required." }),
-  destination_id: z.string().min(1, { message: "Destination is required." }),
   template_ids: z.array(z.string()).min(1, { message: "At least one design is required." }),
 });
 
@@ -44,7 +43,7 @@ export type SaveContentFormSchemaType = z.infer<typeof formSchema> & {
 
 type SaveContentFormProps = {
   availableSources: Tables<"sources">[];
-  availableDestinations: Tables<"destinations">[];
+  destination: Tables<"destinations">;
   defaultValues?: SaveContentFormSchemaType;
   onSubmitted: () => void;
   onImageViewerOpen: (imageUrl: string) => void;
@@ -52,7 +51,7 @@ type SaveContentFormProps = {
 
 export default function SaveContentForm({
   availableSources,
-  availableDestinations,
+  destination,
   defaultValues,
   onSubmitted,
   onImageViewerOpen,
@@ -72,13 +71,6 @@ export default function SaveContentForm({
             source_id: !defaultValues?.source_id
               ? availableSources[0]?.id
               : defaultValues.source_id,
-          }
-        : {}),
-      ...(availableDestinations.length > 0
-        ? {
-            destination_id: !defaultValues?.destination_id
-              ? availableDestinations[0]?.id
-              : defaultValues.destination_id,
           }
         : {}),
       source_data_view: !defaultValues?.source_data_view
@@ -155,6 +147,7 @@ export default function SaveContentForm({
       _saveContent({
         content: {
           owner_id: user.id,
+          destination_id: destination.id,
           ...(defaultValues?.id ? { id: defaultValues.id } : {}),
           ..._.omit(formValues, "template_ids"),
         },
@@ -207,6 +200,10 @@ export default function SaveContentForm({
       className="flex flex-col gap-y-3 overflow-hidden p-1"
       onSubmit={handleSubmit(handleOnFormSuccess)}
     >
+      <div className="flex items-center gap-2">
+        <Label className="leading-4">Destination: </Label>
+        <p className="text-sm text-muted-foreground"> {destination.name}</p>
+      </div>
       {availableSources.length > 0 && (
         <InputSelect
           rhfKey="source_id"
@@ -237,21 +234,7 @@ export default function SaveContentForm({
           placeholder: "Select a schedule range",
         }}
       />
-      {availableDestinations.length > 0 && (
-        <InputSelect
-          rhfKey="destination_id"
-          options={(availableDestinations || []).map((d) => ({
-            label: `${d.name} (${d.type})`,
-            value: d.id,
-          }))}
-          control={control}
-          error={errors.destination_id?.message}
-          label="Destination"
-          inputProps={{
-            placeholder: "Select a destination to publish to",
-          }}
-        />
-      )}
+
       <div className="mt-2">
         <div className="flex items-center">
           <Label className="flex-1 leading-4">Pick designs to include in the post</Label>

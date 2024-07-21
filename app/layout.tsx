@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/src/providers/theme-provider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { PhotopeaHeadlessProvider } from "@/src/contexts/photopea-headless";
 import { PhotopeaEditorProvider } from "@/src/contexts/photopea-editor";
+import { EmailEditorProvider } from "@/src/contexts/email-editor";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -61,11 +62,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ReactQueryDevtools initialIsOpen={false} />
             <PhotopeaHeadlessProvider>
               <PhotopeaEditorProvider>
-                <ReactDnDProvider>
-                  <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                    <TooltipProvider>{children}</TooltipProvider>
-                  </ThemeProvider>
-                </ReactDnDProvider>
+                <EmailEditorProvider>
+                  <ReactDnDProvider>
+                    <ThemeProvider
+                      attribute="class"
+                      defaultTheme="system"
+                      enableSystem
+                      disableTransitionOnChange
+                    >
+                      <TooltipProvider>{children}</TooltipProvider>
+                    </ThemeProvider>
+                  </ReactDnDProvider>
+                </EmailEditorProvider>
               </PhotopeaEditorProvider>
             </PhotopeaHeadlessProvider>
           </ReactQueryProvider>

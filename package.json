@@ -92,6 +92,7 @@
     "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^18",
     "react-dropzone": "^14.2.3",
+    "react-email-editor": "^1.7.11",
     "react-google-autocomplete": "^2.7.3",
     "react-helmet": "^6.1.0",
     "react-hook-form": "^7.47.0",

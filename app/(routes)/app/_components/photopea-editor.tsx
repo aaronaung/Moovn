@@ -1,16 +1,13 @@
-import { Spinner } from "@/src/components/common/loading-spinner";
 import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
-import { Button } from "@/src/components/ui/button";
 import InputSelect from "@/src/components/ui/input/select";
-import InputText from "@/src/components/ui/input/text";
 import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
 import { exportCmd } from "@/src/libs/designs/photopea";
 import { cn } from "@/src/utils";
-import { CheckIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
+import EditorHeader, { EDITOR_HEADER_HEIGHT } from "./editor-header";
 
 const photopeaEditorNamespace = "global-editor";
 
@@ -117,94 +114,24 @@ export default function PhotopeaEditor() {
           isConfirming={isSaving || isExporting}
         />
       )}
-      <div className="flex h-[70px] items-center gap-x-2 px-8 py-2">
-        <div className="flex h-[50px] items-center gap-2">
-          {isEditingTitle ? (
-            <div className="flex items-center gap-x-1">
-              <InputText
-                className="mr-2 w-[300px]"
-                value={pendingTitle}
-                inputProps={{
-                  onKeyUp: (e) => {
-                    if (e.key === "Enter") {
-                      setTitle(pendingTitle);
-                      setIsEditingTitle(false);
-                    } else if (e.key === "Escape") {
-                      setTitle(title);
-                      setIsEditingTitle(false);
-                    }
-                  },
-                }}
-                onChange={(e) => {
-                  setPendingTitle(e.target.value);
-                }}
-              />
-              <CheckIcon
-                className="h-9 w-9 cursor-pointer rounded-full p-2 text-green-600 hover:bg-gray-600"
-                onClick={() => {
-                  setTitle(pendingTitle);
-                  setIsEditingTitle(false);
-                }}
-              />
 
-              <XMarkIcon
-                className="h-9 w-9 cursor-pointer rounded-full p-2 text-red-500 hover:bg-gray-600"
-                onClick={() => {
-                  setTitle(title);
-                  setIsEditingTitle(false);
-                }}
-              >
-                Cancel
-              </XMarkIcon>
-            </div>
-          ) : (
-            <p
-              className="mr-2 cursor-pointer text-xl font-semibold text-white"
-              onDoubleClick={() => {
-                setIsEditingTitle(true);
-              }}
-            >
-              {title}
-            </p>
-          )}
-          {!isEditingTitle && options?.isMetadataEditable && (
-            <PencilIcon
-              className="h-8 w-8 cursor-pointer rounded-full p-2  text-white hover:bg-gray-600"
-              onClick={() => {
-                setIsEditingTitle(true);
-              }}
-            />
-          )}
-        </div>
-
-        <div className="flex-1"></div>
-
-        <Button
-          className="w-[80px]"
-          disabled={isSaving || isExporting}
-          onClick={async () => {
-            if (options?.onSaveConfirmationTitle) {
-              setIsConfirmationDialogOpen(true);
-            } else {
-              handleSave();
-            }
-          }}
-        >
-          {isSaving || isExporting ? <Spinner className="text-secondary" /> : "Save"}
-        </Button>
-        <Button
-          className="w-[80px]"
-          variant="secondary"
-          onClick={() => {
-            closeEditor();
-          }}
-        >
-          Exit
-        </Button>
-      </div>
+      <EditorHeader
+        onClose={closeEditor}
+        onSave={() => {
+          if (options?.onSaveConfirmationTitle) {
+            setIsConfirmationDialogOpen(true);
+          } else {
+            handleSave();
+          }
+        }}
+        isSaving={isSaving || isExporting}
+        initialTitle={metadata.title}
+      />
 
       <div className="flex">
-        <div className="h-[calc(100vh-70px)] w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4">
+        <div
+          className={`h-[calc(100vh-${EDITOR_HEADER_HEIGHT}px)] w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4`}
+        >
           <div className="my-4 flex flex-col justify-start gap-2">
             {options?.isMetadataEditable && (
               <>
@@ -255,7 +182,7 @@ export default function PhotopeaEditor() {
               intro: false,
             },
           })}`}
-          className="h-[calc(100vh-70px)] w-full"
+          className={`h-[calc(100vh-${EDITOR_HEADER_HEIGHT}px)] w-full`}
         />
       </div>
     </div>

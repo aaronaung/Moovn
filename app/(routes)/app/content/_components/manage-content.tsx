@@ -1,7 +1,6 @@
 import EmptyState from "@/src/components/common/empty-state";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
-import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
 import { DestinationTypes } from "@/src/consts/destinations";
 import { deleteContent, getContentForAuthUser } from "@/src/data/content";
@@ -12,15 +11,30 @@ import InstagramPost from "./instagram-post";
 import { Header2 } from "@/src/components/common/header";
 import { getSourcesForAuthUser } from "@/src/data/sources";
 import { SaveContentDialog } from "@/src/components/dialogs/save-content-dialog";
+import { Button } from "@/src/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
+import { InstagramIcon } from "@/src/components/ui/icons/instagram";
+import { EnvelopeIcon } from "@heroicons/react/24/solid";
+import { useEmailEditor } from "@/src/contexts/email-editor";
 
 export default function ManageContent({
   destinations,
 }: {
   destinations: Tables<"destinations">[];
 }) {
+  const { open: openEmailEditor } = useEmailEditor();
   const [contentDialogState, setContentDialogState] = useState<{
     isOpen: boolean;
     content?: Tables<"content"> & { destination: Tables<"destinations"> | null };
+    selectedDestination?: Tables<"destinations">;
   }>({
     isOpen: false,
   });
@@ -67,11 +81,75 @@ export default function ManageContent({
     return <></>;
   }
 
+  const handleCreateContentButtonClick = (destination: Tables<"destinations">) => {
+    switch (destination.type) {
+      case DestinationTypes.INSTAGRAM:
+        setContentDialogState((prev) => ({
+          ...prev,
+          isOpen: true,
+          selectedDestination: destination,
+        }));
+        break;
+      case DestinationTypes.EMAIL:
+        openEmailEditor(
+          {
+            title: "Untitled",
+            initialJson: "{}",
+          },
+          {},
+        );
+
+      default:
+        break;
+    }
+  };
+
+  const createContentButton = () => {
+    const destinationIcon = (destination: Tables<"destinations">) => {
+      switch (destination.type) {
+        case DestinationTypes.INSTAGRAM:
+          return <InstagramIcon className="h-4 w-4" />;
+        case DestinationTypes.EMAIL:
+          return <EnvelopeIcon className="h-4 w-4" />;
+        default:
+          return <></>;
+      }
+    };
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button>Create content</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="p-2" align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Which destination is the content for?</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {destinations.map((destination) => (
+              <DropdownMenuItem
+                className="cursor-pointer p-2"
+                key={destination.id}
+                onClick={() => {
+                  handleCreateContentButtonClick(destination);
+                }}
+              >
+                <div className="flex items-center gap-x-2 ">
+                  {destinationIcon(destination)}
+                  <p className="line-clamp-1 text-sm">{destination.name}</p>
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   if (!content || content.length === 0) {
     return (
       <>
         <SaveContentDialog
-          availableDestinations={destinations}
+          destination={contentDialogState.selectedDestination || destinations[0]}
           availableSources={sources}
           isOpen={contentDialogState.isOpen}
           onClose={() => {
@@ -83,17 +161,7 @@ export default function ManageContent({
         <EmptyState
           title={`No content to publish`}
           description={`Create a content to publish to a destination.`}
-          actionButtonOverride={
-            <Button
-              onClick={() => {
-                setContentDialogState({
-                  isOpen: true,
-                });
-              }}
-            >
-              Create content
-            </Button>
-          }
+          actionButtonOverride={createContentButton()}
         />
       </>
     );
@@ -134,7 +202,7 @@ export default function ManageContent({
   return (
     <div>
       <SaveContentDialog
-        availableDestinations={destinations}
+        destination={contentDialogState.selectedDestination || destinations[0]}
         availableSources={sources}
         isOpen={contentDialogState.isOpen}
         initFormValues={contentDialogState.content as any}
@@ -171,17 +239,9 @@ export default function ManageContent({
             overwrite it.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setContentDialogState({
-              isOpen: true,
-            });
-          }}
-        >
-          Create content
-        </Button>
+        {createContentButton()}
       </div>
-      <div className="flex gap-x-2  overflow-scroll">
+      <div className="flex flex-wrap gap-3 overflow-scroll">
         {content?.map((content) => renderContent(content))}
       </div>
     </div>

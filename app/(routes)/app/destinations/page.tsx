@@ -11,6 +11,9 @@ import { useEffect, useState } from "react";
 import DestinationSelectItem from "./_components/destination-select-item";
 import { deleteDestination, getDestinationsForAuthUser } from "@/src/data/destinations";
 import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination-dialog";
+import { DestinationTypes } from "@/src/consts/destinations";
+import InstagramDestinationView from "./_components/destination-view-instagram";
+import EmailDestinationView from "./_components/destination-view-email";
 
 export default function DestinationsPage() {
   const [destinationDialogState, setDestinationDialogState] = useState<{
@@ -96,15 +99,13 @@ export default function DestinationsPage() {
   }
 
   const renderDestinationView = () => {
-    if (!selectedDestination) {
-      return <p className="text-sm text-muted-foreground">Select a destination</p>;
-    } else if (!selectedDestination.long_lived_token) {
-      // For now, this is for Instagram only
-      return (
-        <p className="mb-2 text-sm text-muted-foreground">
-          This destination is not connected. Please connect it to start publishing.
-        </p>
-      );
+    switch (selectedDestination?.type) {
+      case DestinationTypes.INSTAGRAM:
+        return <InstagramDestinationView destination={selectedDestination} />;
+      case DestinationTypes.EMAIL:
+        return <EmailDestinationView destination={selectedDestination} />;
+      default:
+        return <></>;
     }
   };
 

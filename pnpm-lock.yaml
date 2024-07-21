@@ -254,6 +254,9 @@ dependencies:
   react-dropzone:
     specifier: ^14.2.3
     version: 14.2.3(react@18.2.0)
+  react-email-editor:
+    specifier: ^1.7.11
+    version: 1.7.11(react@18.2.0)
   react-google-autocomplete:
     specifier: ^2.7.3
     version: 2.7.3(react@18.2.0)
@@ -7799,6 +7802,16 @@ packages:
       react: 18.2.0
     dev: false
 
+  /react-email-editor@1.7.11(react@18.2.0):
+    resolution: {integrity: sha512-AyoKKtMEPhKdqUxFX1hyJMvEO+E5fzk88uNVGHhK1ymhLpcghYLkz1+pXKLcByjR6LHkfEbrCmoYFG8zyripug==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=15'
+    dependencies:
+      react: 18.2.0
+      unlayer-types: 1.52.0
+    dev: false
+
   /react-fast-compare@3.2.2:
     resolution: {integrity: sha512-nsO+KSNgo1SbJqJEYRE9ERzo7YtYbou/OqjSQKxV7jcKox7+usiUVZOAC+XnDOABXggQTno0Y1CpVnuWEc1boQ==}
     dev: false
@@ -8926,6 +8939,10 @@ packages:
     engines: {node: '>=14.0'}
     dependencies:
       '@fastify/busboy': 2.1.1
+    dev: false
+
+  /unlayer-types@1.52.0:
+    resolution: {integrity: sha512-+1tRK9z9Ydj+4rIaFgbiViTZVHN1TGyCGQR32lSgfuUNJLnb8hASxRkjcYmxyaYYfJo/wR9hIgd3k1kTo1DtXw==}
     dev: false
 
   /update-browserslist-db@1.0.13(browserslist@4.22.1):
