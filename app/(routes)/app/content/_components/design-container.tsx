@@ -66,7 +66,7 @@ export const DesignContainer = ({
       try {
         setIsLoadingOverwrites(true);
         const result = await supaClientComponentClient.storage
-          .from(BUCKETS.designs)
+          .from(BUCKETS.designOverwrites)
           .createSignedUrls(
             [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpg`],
             24 * 60 * 60,
@@ -116,10 +116,16 @@ export const DesignContainer = ({
 
     // Unfortunately, we have to remove the existing files before uploading the new ones, because
     // createSignedUploadUrl fails if the file already exists.
-    await supaClientComponentClient.storage.from(BUCKETS.designs).remove([psdPath, jpgPath]);
+    await supaClientComponentClient.storage
+      .from(BUCKETS.designOverwrites)
+      .remove([psdPath, jpgPath]);
     const [psd, jpg] = await Promise.all([
-      supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(psdPath),
-      supaClientComponentClient.storage.from(BUCKETS.designs).createSignedUploadUrl(jpgPath),
+      supaClientComponentClient.storage
+        .from(BUCKETS.designOverwrites)
+        .createSignedUploadUrl(psdPath),
+      supaClientComponentClient.storage
+        .from(BUCKETS.designOverwrites)
+        .createSignedUploadUrl(jpgPath),
     ]);
 
     if (!psd.data?.token || !jpg.data?.token) {
@@ -131,12 +137,12 @@ export const DesignContainer = ({
     }
     await Promise.all([
       supaClientComponentClient.storage
-        .from(BUCKETS.designs)
+        .from(BUCKETS.designOverwrites)
         .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {
           contentType: "image/vnd.adobe.photoshop",
         }),
       supaClientComponentClient.storage
-        .from(BUCKETS.designs)
+        .from(BUCKETS.designOverwrites)
         .uploadToSignedUrl(jpgPath, jpg.data?.token, fileExport["jpg"], {
           contentType: "image/jpeg",
         }),
@@ -170,7 +176,7 @@ export const DesignContainer = ({
           }}
           onConfirm={async () => {
             await supaClientComponentClient.storage
-              .from(BUCKETS.designs)
+              .from(BUCKETS.designOverwrites)
               .remove([
                 `${template.owner_id}/${template.id}.psd`,
                 `${template.owner_id}/${template.id}.jpg`,

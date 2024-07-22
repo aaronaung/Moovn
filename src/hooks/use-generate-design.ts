@@ -43,7 +43,7 @@ export const useGenerateDesign = () => {
           view: source.view as SourceDataView,
         }),
         signUrl({
-          bucket: BUCKETS.templates,
+          bucket: BUCKETS.designTemplates,
           objectPath: `${template.owner_id}/${template.id}.psd`,
           client: supaClientComponentClient,
         }),
@@ -67,7 +67,7 @@ export const useGenerateDesign = () => {
         // Schedule data has changed, delete the overwritten design.
         await db.designs.delete(template.id);
         await supaClientComponentClient.storage
-          .from(BUCKETS.designs)
+          .from(BUCKETS.designOverwrites)
           .remove([
             `${template.owner_id}/${template.id}.psd`,
             `${template.owner_id}/${template.id}.jpg`,

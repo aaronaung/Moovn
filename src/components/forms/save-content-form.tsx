@@ -329,7 +329,7 @@ const DesignSelectItem = ({
       try {
         setIsLoadingOverwrites(true);
         const result = await supaClientComponentClient.storage
-          .from(BUCKETS.designs)
+          .from(BUCKETS.designOverwrites)
           .createSignedUrls(
             [`${template.owner_id}/${template.id}.psd`, `${template.owner_id}/${template.id}.jpg`],
             24 * 60 * 60,

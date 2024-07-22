@@ -61,7 +61,9 @@ export const deleteTemplate = async (
   { client }: SupabaseOptions,
 ) => {
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
-  await client.storage.from(BUCKETS.templates).remove([`${template.owner_id}/${template.id}.psd`]);
+  await client.storage
+    .from(BUCKETS.designTemplates)
+    .remove([`${template.owner_id}/${template.id}.psd`]);
 
   return resp;
 };

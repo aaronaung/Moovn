@@ -79,7 +79,7 @@ export default function TemplatesPage() {
           lastUpdated: new Date(),
         }),
         upsertObjectAtPath({
-          bucket: BUCKETS.templates,
+          bucket: BUCKETS.designTemplates,
           objectPath: `${user.id}/${saved.id}.psd`,
           client: supaClientComponentClient,
           content: fileExport["psd"],
@@ -120,7 +120,7 @@ export default function TemplatesPage() {
           if (deleteConfirmationDialogState.template) {
             await _deleteTemplate(deleteConfirmationDialogState.template);
             await supaClientComponentClient.storage
-              .from(BUCKETS.templates)
+              .from(BUCKETS.designTemplates)
               .remove([
                 `${deleteConfirmationDialogState.template.owner_id}/${deleteConfirmationDialogState.template.id}.psd`,
               ]);

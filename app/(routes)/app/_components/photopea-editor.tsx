@@ -33,15 +33,11 @@ export default function PhotopeaEditor() {
   } = usePhotopeaHeadless();
 
   const [title, setTitle] = useState(metadata.title);
-  const [pendingTitle, setPendingTitle] = useState(metadata.title);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const [sourceDataView, setSourceDataView] = useState(metadata.source_data_view);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    setTitle(metadata.title);
-    setPendingTitle(metadata.title);
     setSourceDataView(metadata.source_data_view);
   }, [metadata.title, metadata.source_data_view]);
 
@@ -117,15 +113,17 @@ export default function PhotopeaEditor() {
 
       <EditorHeader
         onClose={closeEditor}
-        onSave={() => {
+        onSave={(title: string) => {
           if (options?.onSaveConfirmationTitle) {
             setIsConfirmationDialogOpen(true);
           } else {
+            setTitle(title);
             handleSave();
           }
         }}
         isSaving={isSaving || isExporting}
         initialTitle={metadata.title}
+        isTitleEditable={options?.isMetadataEditable}
       />
 
       <div className="flex">

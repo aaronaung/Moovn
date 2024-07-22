@@ -70,13 +70,13 @@ export default function OverwriteDesignForm({ designId, onSubmitted }: Overwrite
         targets: [
           {
             file: psdFile,
-            bucketName: BUCKETS.designs,
+            bucketName: BUCKETS.designOverwrites,
             contentType: `image/vnd.adobe.photoshop`,
             objectPath: `${user.id}/${designId}.psd`,
           },
           {
             file: jpegFile,
-            bucketName: BUCKETS.designs,
+            bucketName: BUCKETS.designOverwrites,
             contentType: `image/jpeg`,
             objectPath: `${user.id}/${designId}.jpg`,
           },

@@ -80,7 +80,7 @@ export const TemplateContainer = ({
           });
         } else {
           const psdSignedUrl = await signUrl({
-            bucket: BUCKETS.templates,
+            bucket: BUCKETS.designTemplates,
             objectPath: `${template.owner_id}/${template.id}.psd`,
             client: supaClientComponentClient,
           });
@@ -129,7 +129,7 @@ export const TemplateContainer = ({
 
     await Promise.all([
       upsertObjectAtPath({
-        bucket: BUCKETS.templates,
+        bucket: BUCKETS.designTemplates,
         objectPath: `${template.owner_id}/${template.id}.psd`,
         client: supaClientComponentClient,
         content: fileExport["psd"],

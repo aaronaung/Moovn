@@ -1,8 +1,9 @@
 import { SourceDataView } from "./sources";
 
 export const BUCKETS = {
-  templates: "templates",
-  designs: "designs",
+  designTemplates: "templates",
+  designOverwrites: "designs",
+  emailAssets: "email_assets",
   stagingAreaForContentPublishing: "staging_area_for_content_publishing",
   freeDesignTemplates: "free_design_templates",
 };

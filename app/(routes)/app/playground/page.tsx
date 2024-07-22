@@ -144,7 +144,7 @@ export default function Playground() {
         });
 
         const { data, error } = await supaClientComponentClient.storage
-          .from(BUCKETS.templates)
+          .from(BUCKETS.designTemplates)
           .createSignedUrl(
             `fea29740-ef10-4fc6-98cb-191c9b2f4a74/d12ff16d-3fc4-47e6-b39a-03befbe7be0d.psd`,
             26 * 3600,

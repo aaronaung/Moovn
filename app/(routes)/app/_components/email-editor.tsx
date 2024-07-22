@@ -26,6 +26,11 @@ export default function EmailEditor() {
     // unlayer.loadDesign(callback) or unlayer.exportHtml(callback)
     // const templateJson = { DESIGN JSON GOES HERE };
     // unlayer.loadDesign(templateJson);
+    unlayer.registerCallback("selectImage", async function (data: any, done: Function) {
+      // Open your image library
+      // Once a user picks an image, call the done function with URL
+      // done({ url: "IMAGE URL GOES HERE" });
+    });
   };
 
   return (
@@ -46,6 +51,7 @@ export default function EmailEditor() {
           appearance: {
             theme: theme === "dark" ? "dark" : "light",
           },
+          mergeTags: {},
         }}
       />
     </div>

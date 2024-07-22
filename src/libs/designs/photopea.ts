@@ -8,6 +8,48 @@ if (layers && layers.length > 0) {
 }
 `;
 
+export const checkDesignCompleteCmd = (namespace: string, actions: PSDActions) => `
+var doc = app.activeDocument;
+var layers = ${JSON.stringify(actions)};
+
+function checkDesignComplete() {
+    for (var i = 0; i < layers.${PSDActionType.EditText}.length; i++) {
+        var layer = layers.${PSDActionType.EditText}[i];
+        var targetLayer = doc.artLayers.getByName(layer.name);
+
+        if (targetLayer.kind == LayerKind.TEXT) {
+            if (targetLayer.textItem.contents != layer.value) {
+                app.echoToOE("check_design_complete:${namespace}:false");
+                return;
+            }
+        }
+    }
+
+    // Ensure delete layers
+    for (var i = 0; i < layers.${PSDActionType.DeleteLayer}.length; i++) {
+        var layer = layers.${PSDActionType.DeleteLayer}[i];
+        var targetLayer = doc.artLayers.getByName(layer.name);
+        if (targetLayer) {
+            app.echoToOE("check_design_complete:${namespace}:false");
+            return;
+        }   
+    }
+
+    // Ensure load smart objects
+    for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) {
+        var layer = layers.${PSDActionType.LoadSmartObjectFromUrl}[i];
+        var targetLayer = doc.artLayers.getByName(layer.newLayerName);
+        if (!targetLayer) {
+            app.echoToOE("check_design_complete:${namespace}:false");
+            return;
+        }
+    }
+    app.echoToOE("check_design_complete:${namespace}:true");
+}
+
+checkDesignComplete();
+`;
+
 export const updateLayersCmd = (updateActions: PSDActions) => `
 // Get the active document
 var doc = app.activeDocument;

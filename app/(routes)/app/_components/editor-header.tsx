@@ -11,14 +11,16 @@ export default function EditorHeader({
   isSaving,
   onSave,
   onClose,
+  isTitleEditable,
 }: {
   initialTitle: string;
   isSaving: boolean;
-  onSave: () => void;
+  onSave: (title: string) => void;
   onClose: () => void;
+  isTitleEditable?: boolean;
 }) {
-  const [title, setTitle] = useState(initialTitle);
-  const [pendingTitle, setPendingTitle] = useState(initialTitle);
+  const [title, setTitle] = useState();
+  const [pendingTitle, setPendingTitle] = useState();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   return (
@@ -28,7 +30,7 @@ export default function EditorHeader({
           <div className="flex items-center gap-x-1">
             <InputText
               className="mr-2 w-[300px]"
-              value={pendingTitle}
+              value={pendingTitle || initialTitle}
               inputProps={{
                 onKeyUp: (e) => {
                   if (e.key === "Enter") {
@@ -66,13 +68,15 @@ export default function EditorHeader({
           <p
             className="mr-2 cursor-pointer text-xl font-semibold text-secondary-foreground dark:text-white"
             onDoubleClick={() => {
-              setIsEditingTitle(true);
+              if (isTitleEditable) {
+                setIsEditingTitle(true);
+              }
             }}
           >
-            {title}
+            {title || initialTitle}
           </p>
         )}
-        {!isEditingTitle && (
+        {!isEditingTitle && isTitleEditable && (
           <PencilIcon
             className="h-8 w-8 cursor-pointer rounded-full p-2  text-secondary-foreground hover:bg-secondary dark:text-white dark:hover:bg-gray-600"
             onClick={() => {
@@ -88,7 +92,9 @@ export default function EditorHeader({
         className="w-[80px]"
         disabled={isSaving}
         onClick={async () => {
-          onSave();
+          if (pendingTitle) {
+            onSave(pendingTitle);
+          }
         }}
       >
         {isSaving ? <Spinner className="text-secondary" /> : "Save"}
