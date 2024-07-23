@@ -145,7 +145,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     if (callback) {
       setOnFileExportMap((prev) => ({
         ...prev,
-        [namespace]: callback,
+        [namespace]: _.debounce(callback, 100),
       }));
     }
   };

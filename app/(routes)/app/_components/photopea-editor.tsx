@@ -33,11 +33,11 @@ export default function PhotopeaEditor() {
   } = usePhotopeaHeadless();
 
   const [title, setTitle] = useState(metadata.title);
-
   const [sourceDataView, setSourceDataView] = useState(metadata.source_data_view);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    setTitle(metadata.title);
     setSourceDataView(metadata.source_data_view);
   }, [metadata.title, metadata.source_data_view]);
 
@@ -71,11 +71,13 @@ export default function PhotopeaEditor() {
 
       initHeadless(photopeaEditorNamespace, ref.current, {
         onFileExport: async (fileExport) => {
-          console.log("Heloo", isExporting, fileExport);
           if (!isExporting) {
             return;
           }
           if (fileExport && fileExport["psd"] && fileExport["jpg"]) {
+            console.log("creating design", {
+              isExporting,
+            });
             setIsExporting(false);
             if (saveTimeout) {
               clearTimeout(saveTimeout);
@@ -90,7 +92,7 @@ export default function PhotopeaEditor() {
     return () => {
       clearHeadless(photopeaEditorNamespace);
     };
-  }, [ref.current, save, isExporting, title, metadata.title]);
+  }, [ref.current, save, isExporting, setIsExporting, title, metadata.title]);
 
   return (
     <div className={cn("flex flex-col  bg-neutral-800", !isOpen && "hidden")}>
@@ -107,7 +109,6 @@ export default function PhotopeaEditor() {
       <EditorHeader
         onClose={closeEditor}
         onSave={(title: string) => {
-          console.log("onSave", title, options?.onSaveConfirmationTitle);
           if (options?.onSaveConfirmationTitle) {
             setIsConfirmationDialogOpen(true);
           } else {
@@ -116,7 +117,7 @@ export default function PhotopeaEditor() {
           }
         }}
         isSaving={isSaving || isExporting}
-        initialTitle={metadata.title}
+        initialTitle={title}
         isTitleEditable={options?.isMetadataEditable}
       />
 

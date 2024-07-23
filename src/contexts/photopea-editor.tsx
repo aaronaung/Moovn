@@ -5,6 +5,7 @@ import { SourceDataView } from "../consts/sources";
 import { signUrl } from "../libs/storage";
 import { BUCKETS, FREE_DESIGN_TEMPLATES } from "../consts/storage";
 import { supaClientComponentClient } from "../data/clients/browser";
+import { flushSync } from "react-dom";
 
 export type PhotopeaEditorMetadata = {
   title: string;
@@ -116,7 +117,9 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     arrayBuffer: ArrayBuffer,
     options?: PhotopeaEditorOptions,
   ) => {
-    setMetadata(metadata);
+    flushSync(() => {
+      setMetadata(metadata);
+    });
     if (ref?.current?.contentWindow) {
       ref.current.contentWindow.postMessage(arrayBuffer, "*");
     }

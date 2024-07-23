@@ -53,6 +53,7 @@ export default function TemplatesPage() {
     fileExport: FileExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
+    console.log("template create!");
     if (!fileExport["psd"] || !fileExport["jpg"]) {
       console.error("missing psd or jpg file in export:", {
         fileExport,

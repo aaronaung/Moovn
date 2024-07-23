@@ -2,7 +2,7 @@ import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import InputText from "@/src/components/ui/input/text";
 import { CheckIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const EDITOR_HEADER_HEIGHT = 70;
 
@@ -19,9 +19,14 @@ export default function EditorHeader({
   onClose: () => void;
   isTitleEditable?: boolean;
 }) {
-  const [title, setTitle] = useState();
-  const [pendingTitle, setPendingTitle] = useState();
+  const [title, setTitle] = useState<string>();
+  const [pendingTitle, setPendingTitle] = useState<string>();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+  useEffect(() => {
+    setTitle(initialTitle);
+    setPendingTitle(initialTitle);
+  }, [initialTitle]);
 
   return (
     <div className={`flex h-[${EDITOR_HEADER_HEIGHT}px] items-center gap-x-2 px-8 py-2`}>
@@ -30,7 +35,7 @@ export default function EditorHeader({
           <div className="flex items-center gap-x-1">
             <InputText
               className="mr-2 w-[300px]"
-              value={pendingTitle || initialTitle}
+              value={pendingTitle}
               inputProps={{
                 onKeyUp: (e) => {
                   if (e.key === "Enter") {
@@ -73,7 +78,7 @@ export default function EditorHeader({
               }
             }}
           >
-            {title || initialTitle}
+            {title}
           </p>
         )}
         {!isEditingTitle && isTitleEditable && (
