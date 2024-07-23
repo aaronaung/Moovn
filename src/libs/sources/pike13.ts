@@ -5,6 +5,7 @@ import {
   endOfDay,
   endOfMonth,
   endOfWeek,
+  format,
   parseISO,
   startOfDay,
   startOfMonth,
@@ -35,10 +36,16 @@ export class Pike13Client {
   }
 
   async getRawEventOcurrences(from: Date, to: Date) {
-    const resp = await this.get(
-      `/api/v2/front/event_occurrences`,
-      `from=${from.toISOString()}&to=${to.toISOString()}`,
-    );
+    const urlParams = new URLSearchParams();
+    const fromStr = format(from, "yyyy-MM-dd");
+    const toStr = format(to, "yyyy-MM-dd");
+    if (fromStr === toStr) {
+      urlParams.set("from", fromStr);
+    } else {
+      urlParams.set("from", fromStr);
+      urlParams.set("to", toStr);
+    }
+    const resp = await this.get(`/api/v2/front/event_occurrences`, urlParams.toString());
     return resp.event_occurrences || [];
   }
   async getRawStaffMembers() {
