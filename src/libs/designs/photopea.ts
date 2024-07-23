@@ -51,7 +51,6 @@ for (var i = 0; i < layers.${LayerUpdateType.LoadSmartObjectFromUrl}.length; i++
 }
 
 if (editTextValid && deleteLayerValid && loadSmartObjectValid) {
-    console.log("echoing layer_updates_complete:${namespace}")
     app.echoToOE("layer_updates_complete:${namespace}");
 }
 `;

@@ -133,6 +133,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     const ppWindow = photopeaEl.contentWindow;
     if (!ppWindow) {
       console.log("photopea command rejected because window is not ready", namespace, cmd);
+      // This usually happens when an interval is still running after the iframe has been removed.
+      clearInterval(pollIntervalMap[namespace]);
       return;
     }
     ppWindow.postMessage(cmd, "*");
