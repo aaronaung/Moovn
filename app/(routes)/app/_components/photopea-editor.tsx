@@ -44,7 +44,6 @@ export default function PhotopeaEditor() {
   const handleSave = async () => {
     // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onFileExport callback.
     if (!ref.current) {
-      console.log("no ref");
       return;
     }
     setIsExporting(true);
@@ -75,9 +74,6 @@ export default function PhotopeaEditor() {
             return;
           }
           if (fileExport && fileExport["psd"] && fileExport["jpg"]) {
-            console.log("creating design", {
-              isExporting,
-            });
             setIsExporting(false);
             if (saveTimeout) {
               clearTimeout(saveTimeout);
