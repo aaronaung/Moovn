@@ -2,35 +2,39 @@ import { Psd } from "ag-psd";
 
 import { format } from "date-fns";
 
-export enum PSDActionType {
+export enum LayerUpdateType {
   EditText = "editText",
   LoadSmartObjectFromUrl = "loadSmartObjectFromUrl",
   DeleteLayer = "deleteLayer",
 }
 
-export type PSDActions = {
+export type LayerUpdates = {
+  // LayerUpdateType is the key
   [key: string]: {
     value: any;
     name: string;
     newLayerName?: string; // Only used for LoadSmartObjectFromUrl
   }[];
 };
+export type LayerTranslates = { from: string; to: string }[];
 
-export const determinePSDActions = (
-  schedules: any,
-  psd: Psd,
-): { edits: PSDActions; translates: { from: string; to: string }[] } => {
+export type DesignGenSteps = {
+  layerUpdates: LayerUpdates;
+  layerTranslates: LayerTranslates;
+};
+
+export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenSteps => {
   if (!psd.children) {
     return {
-      edits: {},
-      translates: [],
+      layerUpdates: {},
+      layerTranslates: [],
     };
   }
 
-  const psdActions: PSDActions = {
-    [PSDActionType.EditText]: [],
-    [PSDActionType.LoadSmartObjectFromUrl]: [],
-    [PSDActionType.DeleteLayer]: [],
+  const layerUpdates: LayerUpdates = {
+    [LayerUpdateType.EditText]: [],
+    [LayerUpdateType.LoadSmartObjectFromUrl]: [],
+    [LayerUpdateType.DeleteLayer]: [],
   };
 
   for (const layer of psd.children) {
@@ -48,8 +52,8 @@ export const determinePSDActions = (
       continue;
     }
     if (!value) {
-      psdActions[PSDActionType.DeleteLayer] = [
-        ...psdActions[PSDActionType.DeleteLayer],
+      layerUpdates[LayerUpdateType.DeleteLayer] = [
+        ...layerUpdates[LayerUpdateType.DeleteLayer],
         {
           name: ogLayerName,
           value: ogLayerName, // value is the layer name
@@ -58,8 +62,8 @@ export const determinePSDActions = (
       continue;
     }
     if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
-      psdActions[PSDActionType.EditText] = [
-        ...psdActions[PSDActionType.EditText],
+      layerUpdates[LayerUpdateType.EditText] = [
+        ...layerUpdates[LayerUpdateType.EditText],
         {
           name: ogLayerName,
           value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
@@ -69,10 +73,10 @@ export const determinePSDActions = (
       const valueSplit = value.split("/");
       // Photoshop always uses the last part of the URL as the layer name.
       const newLayerName = valueSplit[valueSplit.length - 1];
-      const index = psdActions[PSDActionType.LoadSmartObjectFromUrl].length;
+      const index = layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl].length;
 
-      psdActions[PSDActionType.LoadSmartObjectFromUrl] = [
-        ...psdActions[PSDActionType.LoadSmartObjectFromUrl],
+      layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl] = [
+        ...layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl],
         {
           name: ogLayerName,
 
@@ -82,8 +86,8 @@ export const determinePSDActions = (
         },
       ];
     } else if (layer.text) {
-      psdActions[PSDActionType.EditText] = [
-        ...psdActions[PSDActionType.EditText],
+      layerUpdates[LayerUpdateType.EditText] = [
+        ...layerUpdates[LayerUpdateType.EditText],
         {
           name: ogLayerName,
           value, // value is the text content
@@ -93,10 +97,12 @@ export const determinePSDActions = (
   }
 
   return {
-    edits: psdActions,
-    translates: psdActions[PSDActionType.LoadSmartObjectFromUrl as string].map(({ name, newLayerName }) => ({
-      from: newLayerName || name,
-      to: name,
-    })),
+    layerUpdates: layerUpdates,
+    layerTranslates: layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl as string].map(
+      ({ name, newLayerName }) => ({
+        from: newLayerName || name,
+        to: name,
+      }),
+    ),
   };
 };

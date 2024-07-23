@@ -92,9 +92,7 @@ export default function EditorHeader({
         className="w-[80px]"
         disabled={isSaving}
         onClick={async () => {
-          if (pendingTitle) {
-            onSave(pendingTitle);
-          }
+          onSave(pendingTitle || initialTitle);
         }}
       >
         {isSaving ? <Spinner className="text-secondary" /> : "Save"}

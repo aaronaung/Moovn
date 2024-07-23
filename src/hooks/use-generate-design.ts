@@ -6,17 +6,17 @@ import { supaClientComponentClient } from "../data/clients/browser";
 import { signUrl } from "../libs/storage";
 import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
-import { determinePSDActions } from "../libs/designs/photoshop-v2";
-import { exportCmd, moveLayerCmd, updateLayersCmd } from "../libs/designs/photopea";
+import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { db } from "../libs/indexeddb/indexeddb";
 import { MD5 as hash } from "object-hash";
 import { useState } from "react";
+import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
 
 export const useGenerateDesign = () => {
   const [isScheduleEmpty, setIsScheduleEmpty] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
-  const { initialize, sendRawPhotopeaCmd } = usePhotopeaHeadless();
+  const { initialize } = usePhotopeaHeadless();
 
   /**
    *
@@ -81,35 +81,12 @@ export const useGenerateDesign = () => {
 
       const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();
       const psd = readPsd(templateFile);
-      const psdActions = determinePSDActions(schedule, psd);
+      const designGenSteps = determineDesignGenSteps(schedule, psd);
 
-      const iframeSrc = `https://www.photopea.com#${JSON.stringify({
-        files: [signedTemplateUrl],
-        environment: {
-          vmode: 2,
-          intro: false,
-        },
-      })}`;
-      const iframeEle = document.createElement("iframe");
-      iframeEle.src = iframeSrc;
-      iframeEle.className = "hidden";
-      document.body.appendChild(iframeEle);
-
-      initialize(template.id, {
-        photopeaEl: iframeEle,
+      const photopeaEl = addHeadlessPhotopeaToDom();
+      initialize(template.id, photopeaEl, {
         initialData: templateFile,
-        onInitialDataLoaded: () => {
-          sendRawPhotopeaCmd(template.id, iframeEle, updateLayersCmd(psdActions.edits));
-          if (psdActions.translates.length === 0) {
-            sendRawPhotopeaCmd(template.id, iframeEle, exportCmd(template.id));
-          }
-        },
-        onLayerCountChange: () => {
-          for (const { from, to } of psdActions.translates) {
-            sendRawPhotopeaCmd(template.id, iframeEle, moveLayerCmd({ from, to }));
-          }
-          sendRawPhotopeaCmd(template.id, iframeEle, exportCmd(template.id));
-        },
+        designGenSteps,
         onFileExport: async (fileExport) => {
           if (fileExport?.["psd"] && fileExport?.["jpg"]) {
             await db.designs.put({
@@ -119,10 +96,10 @@ export const useGenerateDesign = () => {
               hash: designHash,
               lastUpdated: new Date(),
             });
+            if (document.body.contains(photopeaEl)) {
+              document.body.removeChild(photopeaEl);
+            }
           }
-        },
-        onIdleTimeout: () => {
-          document.body.removeChild(iframeEle);
         },
       });
     } catch (err) {

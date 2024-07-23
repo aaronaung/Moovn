@@ -1,4 +1,4 @@
-import { PSDActions, PSDActionType } from "./photoshop-v2";
+import { DesignGenSteps, LayerTranslates, LayerUpdates, LayerUpdateType } from "./photoshop-v2";
 
 export const getLayerCountCmd = (namespace: string) => `
 var doc = app.activeDocument;
@@ -8,57 +8,63 @@ if (layers && layers.length > 0) {
 }
 `;
 
-export const checkDesignCompleteCmd = (namespace: string, actions: PSDActions) => `
+export const checkLayerUpdatesComplete = (namespace: string, designGenSteps: DesignGenSteps) => `
 var doc = app.activeDocument;
-var layers = ${JSON.stringify(actions)};
+var layers = ${JSON.stringify(designGenSteps.layerUpdates)};
 
-function checkDesignComplete() {
-    for (var i = 0; i < layers.${PSDActionType.EditText}.length; i++) {
-        var layer = layers.${PSDActionType.EditText}[i];
-        var targetLayer = doc.artLayers.getByName(layer.name);
+var editTextValid = true;
+var deleteLayerValid = true;
+var loadSmartObjectValid = true;
+for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
+    var layer = layers.${LayerUpdateType.EditText}[i];
+    var targetLayer = doc.artLayers.getByName(layer.name);
 
-        if (targetLayer.kind == LayerKind.TEXT) {
-            if (targetLayer.textItem.contents != layer.value) {
-                app.echoToOE("check_design_complete:${namespace}:false");
-                return;
-            }
+    if (targetLayer.kind == LayerKind.TEXT) {
+        if (targetLayer.textItem.contents != layer.value) {
+            console.log("failed: EditText ${namespace}")
+            editTextValid = false;
         }
     }
-
-    // Ensure delete layers
-    for (var i = 0; i < layers.${PSDActionType.DeleteLayer}.length; i++) {
-        var layer = layers.${PSDActionType.DeleteLayer}[i];
-        var targetLayer = doc.artLayers.getByName(layer.name);
-        if (targetLayer) {
-            app.echoToOE("check_design_complete:${namespace}:false");
-            return;
-        }   
-    }
-
-    // Ensure load smart objects
-    for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) {
-        var layer = layers.${PSDActionType.LoadSmartObjectFromUrl}[i];
-        var targetLayer = doc.artLayers.getByName(layer.newLayerName);
-        if (!targetLayer) {
-            app.echoToOE("check_design_complete:${namespace}:false");
-            return;
-        }
-    }
-    app.echoToOE("check_design_complete:${namespace}:true");
 }
 
-checkDesignComplete();
+// Ensure delete layers
+for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
+    var layer = layers.${LayerUpdateType.DeleteLayer}[i];
+    try {
+        var targetLayer = doc.artLayers.getByName(layer.name);
+        if (targetLayer != null) {
+            deleteLayerValid = false;
+        }
+    } catch (e) {
+      
+    }
+}
+
+// Ensure load smart objects
+for (var i = 0; i < layers.${LayerUpdateType.LoadSmartObjectFromUrl}.length; i++) {
+    var layer = layers.${LayerUpdateType.LoadSmartObjectFromUrl}[i];
+    var targetLayer = doc.artLayers.getByName(layer.newLayerName);
+    if (!targetLayer) {
+        console.log("failed: LoadSmartObject ${namespace}")
+        loadSmartObjectValid = false;
+    }
+}
+
+if (editTextValid && deleteLayerValid && loadSmartObjectValid) {
+    console.log("echoing layer_updates_complete:${namespace}")
+    app.echoToOE("layer_updates_complete:${namespace}");
+}
 `;
 
-export const updateLayersCmd = (updateActions: PSDActions) => `
+export const updateLayersCmd = (updateActions: LayerUpdates) => `
 // Get the active document
 var doc = app.activeDocument;
 
 var layers = ${JSON.stringify(updateActions)}
 
 // Edit text layers
-for (var i = 0; i < layers.${PSDActionType.EditText}.length; i++) {
-    var layer = layers.${PSDActionType.EditText}[i];
+for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
+    var layer = layers.${LayerUpdateType.EditText}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
 
     if (targetLayer.kind == LayerKind.TEXT) {
@@ -69,15 +75,15 @@ for (var i = 0; i < layers.${PSDActionType.EditText}.length; i++) {
 }
 
 // Delete layers
-for (var i = 0; i < layers.${PSDActionType.DeleteLayer}.length; i++) {
-    var layer = layers.${PSDActionType.DeleteLayer}[i];
+for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
+    var layer = layers.${LayerUpdateType.DeleteLayer}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
     targetLayer.remove();
 }
 
 // Replace smart objects
-for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) {
-    var layer = layers.${PSDActionType.LoadSmartObjectFromUrl}[i];
+for (var i = 0; i < layers.${LayerUpdateType.LoadSmartObjectFromUrl}.length; i++) {
+    var layer = layers.${LayerUpdateType.LoadSmartObjectFromUrl}[i];
     if (layer.value == ""){
         continue;
     }
@@ -85,41 +91,90 @@ for (var i = 0; i < layers.${PSDActionType.LoadSmartObjectFromUrl}.length; i++) 
 }
 `;
 
-export const moveLayerCmd = ({ from, to }: { from: string; to: string }) => `
+export const checkTranslateLayersComplete = (
+  namespace: string,
+  layerTranslates: LayerTranslates,
+) => `
 var doc = app.activeDocument;
-var fromName = '${from}';
-var toName = '${to}';
+var layers = ${JSON.stringify(layerTranslates)};
 
-var from = doc.artLayers.getByName(fromName);
-var to = doc.artLayers.getByName(toName);
+function checkTranslateLayersComplete() {
+    for (var i = 0; i < layers.length; i++) {
+        var fromName = layers[i].from;
+        var toName = layers[i].to;
 
-if (from && to) {
-    // Calculate the center of the 'to' layer
-    var toLeft = to.bounds[0].value;
-    var toTop = to.bounds[1].value;
-    var toRight = to.bounds[2].value;
-    var toBottom = to.bounds[3].value;
-    var toCenterX = (toLeft + toRight) / 2;
-    var toCenterY = (toTop + toBottom) / 2;
+        var from = doc.artLayers.getByName(fromName);
+        var to = doc.artLayers.getByName(toName);
 
-    // Calculate the center of the 'from' layer
-    var fromLeft = from.bounds[0].value;
-    var fromTop = from.bounds[1].value;
-    var fromRight = from.bounds[2].value;
-    var fromBottom = from.bounds[3].value;
-    var fromCenterX = (fromLeft + fromRight) / 2;
-    var fromCenterY = (fromTop + fromBottom) / 2;
+        if (from && to) {
+            // Calculate the center of the 'to' layer
+            var toLeft = to.bounds[0].value;
+            var toTop = to.bounds[1].value;
+            var toRight = to.bounds[2].value;
+            var toBottom = to.bounds[3].value;
+            var toCenterX = (toLeft + toRight) / 2;
+            var toCenterY = (toTop + toBottom) / 2;
 
-    // Calculate the translation distances
-    var translateX = toCenterX - fromCenterX;
-    var translateY = toCenterY - fromCenterY;
+            // Calculate the center of the 'from' layer
+            var fromLeft = from.bounds[0].value;
+            var fromTop = from.bounds[1].value;
+            var fromRight = from.bounds[2].value;
+            var fromBottom = from.bounds[3].value;
+            var fromCenterX = (fromLeft + fromRight) / 2;
+            var fromCenterY = (fromTop + fromBottom) / 2;
 
-    // Move and translate the 'from' layer
-    from.move(to, ElementPlacement.PLACEBEFORE);
-    from.translate(translateX, translateY);
+            // Check if the current position of 'from' matches the 'to' position
+            if (fromCenterX !== toCenterX || fromCenterY !== toCenterY) {
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+    app.echoToOE("translate_layers_complete:${namespace}:true");
+}
 
-    // Remove the 'to' layer
-    to.remove();
+checkTranslateLayersComplete();
+`;
+
+export const translateLayersCmd = (layerTranslates: LayerTranslates) => `
+var doc = app.activeDocument;
+var layers = ${JSON.stringify(layerTranslates)};
+for (var i = 0; i < layers.length; i++) {
+    var fromName = layers[i].from;
+    var toName = layers[i].to;
+
+    var from = doc.artLayers.getByName(fromName);
+    var to = doc.artLayers.getByName(toName);
+
+    if (from && to) {
+        // Calculate the center of the 'to' layer
+        var toLeft = to.bounds[0].value;
+        var toTop = to.bounds[1].value;
+        var toRight = to.bounds[2].value;
+        var toBottom = to.bounds[3].value;
+        var toCenterX = (toLeft + toRight) / 2;
+        var toCenterY = (toTop + toBottom) / 2;
+
+        // Calculate the center of the 'from' layer
+        var fromLeft = from.bounds[0].value;
+        var fromTop = from.bounds[1].value;
+        var fromRight = from.bounds[2].value;
+        var fromBottom = from.bounds[3].value;
+        var fromCenterX = (fromLeft + fromRight) / 2;
+        var fromCenterY = (fromTop + fromBottom) / 2;
+
+        // Calculate the translation distances
+        var translateX = toCenterX - fromCenterX;
+        var translateY = toCenterY - fromCenterY;
+
+        // Move and translate the 'from' layer
+        from.move(to, ElementPlacement.PLACEBEFORE);
+        from.translate(translateX, translateY);
+
+        // Remove the 'to' layer
+        to.remove();
+    }
 }
 `;
 
@@ -130,3 +185,17 @@ app.echoToOE("export_file:${namespace}:jpg");
 app.activeDocument.saveToOE("psd");
 app.echoToOE("export_file:${namespace}:psd");
 `;
+
+export const addHeadlessPhotopeaToDom = () => {
+  const iframeSrc = `https://www.photopea.com#${JSON.stringify({
+    environment: {
+      vmode: 2,
+      intro: false,
+    },
+  })}`;
+  const photopeaEl = document.createElement("iframe");
+  photopeaEl.src = iframeSrc;
+  photopeaEl.className = "hidden";
+  document.body.appendChild(photopeaEl);
+  return photopeaEl;
+};

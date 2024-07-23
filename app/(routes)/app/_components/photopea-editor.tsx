@@ -44,6 +44,7 @@ export default function PhotopeaEditor() {
   const handleSave = async () => {
     // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onFileExport callback.
     if (!ref.current) {
+      console.log("no ref");
       return;
     }
     setIsExporting(true);
@@ -58,15 +59,7 @@ export default function PhotopeaEditor() {
         setIsExporting(false);
       }, 10000),
     );
-
-    const forcedRetryCount = 3;
-    let retryCount = 0;
-    while (retryCount < forcedRetryCount) {
-      // We have to retry because the export command sometimes doesn't work on the first try. This is a hack.
-      sendRawPhotopeaCmd(photopeaEditorNamespace, ref.current, exportCmd(photopeaEditorNamespace));
-      retryCount++;
-    }
-
+    sendRawPhotopeaCmd(photopeaEditorNamespace, ref.current, exportCmd(photopeaEditorNamespace));
     setIsConfirmationDialogOpen(false);
   };
 
@@ -76,9 +69,9 @@ export default function PhotopeaEditor() {
         ref,
       });
 
-      initHeadless(photopeaEditorNamespace, {
-        photopeaEl: ref.current,
+      initHeadless(photopeaEditorNamespace, ref.current, {
         onFileExport: async (fileExport) => {
+          console.log("Heloo", isExporting, fileExport);
           if (!isExporting) {
             return;
           }
@@ -114,6 +107,7 @@ export default function PhotopeaEditor() {
       <EditorHeader
         onClose={closeEditor}
         onSave={(title: string) => {
+          console.log("onSave", title, options?.onSaveConfirmationTitle);
           if (options?.onSaveConfirmationTitle) {
             setIsConfirmationDialogOpen(true);
           } else {
