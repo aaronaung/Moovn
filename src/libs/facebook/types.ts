@@ -21,7 +21,7 @@ export type CreateMediaContainerInput = {
   caption?: string;
   locationId?: string;
   userTags?: {
-    userId: string;
+    username: string;
     x: number;
     y: number;
   }[];

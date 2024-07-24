@@ -13,10 +13,11 @@ export type LayerUpdates = {
   [key: string]: {
     value: any;
     name: string;
+    instagramTag?: string;
     newLayerName?: string; // Only used for LoadSmartObjectFromUrl
   }[];
 };
-export type LayerTranslates = { from: string; to: string }[];
+export type LayerTranslates = { from: string; to: string; instagramTag?: string }[];
 
 export type DesignGenSteps = {
   layerUpdates: LayerUpdates;
@@ -75,14 +76,21 @@ export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenStep
       const newLayerName = valueSplit[valueSplit.length - 1];
       const index = layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl].length;
 
+      let instagramTag;
+      if (layerName.indexOf("staff") !== -1) {
+        const split = layerName.split(".");
+        split.pop();
+        instagramTag = schedules[`${split.join(".")}.instagramHandle`];
+      }
+
       layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl] = [
         ...layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl],
         {
           name: ogLayerName,
-
           // value is the URL of the image with the index as an anchor. e.g. "https://example.com/image.jpg#0". We do this to uniquely identify the layer.
           value: `${value}#${index}`,
           newLayerName: `${newLayerName}#${index}`,
+          ...(instagramTag ? { instagramTag } : {}),
         },
       ];
     } else if (layer.text) {
@@ -99,9 +107,10 @@ export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenStep
   return {
     layerUpdates: layerUpdates,
     layerTranslates: layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl as string].map(
-      ({ name, newLayerName }) => ({
+      ({ name, instagramTag, newLayerName }) => ({
         from: newLayerName || name,
         to: name,
+        instagramTag,
       }),
     ),
   };

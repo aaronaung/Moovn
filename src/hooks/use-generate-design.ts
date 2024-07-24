@@ -87,13 +87,14 @@ export const useGenerateDesign = () => {
       initialize(template.id, photopeaEl, {
         initialData: templateFile,
         designGenSteps,
-        onFileExport: async (fileExport) => {
-          if (fileExport?.["psd"] && fileExport?.["jpg"]) {
+        onDesignExport: async (designExport) => {
+          if (designExport?.["psd"] && designExport?.["jpg"]) {
             await db.designs.put({
               templateId: template.id,
-              jpg: fileExport["jpg"],
-              psd: fileExport["psd"],
+              jpg: designExport["jpg"],
+              psd: designExport["psd"],
               hash: designHash,
+              instagramTagPositions: designExport.instagramTagPositions,
               lastUpdated: new Date(),
             });
             if (document.body.contains(photopeaEl)) {

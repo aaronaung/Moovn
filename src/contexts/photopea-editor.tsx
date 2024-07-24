@@ -1,6 +1,6 @@
 "use client";
 import { createContext, RefObject, useContext, useEffect, useState } from "react";
-import { FileExport } from "./photopea-headless";
+import { DesignExport } from "./photopea-headless";
 import { SourceDataView } from "../consts/sources";
 import { signUrl } from "../libs/storage";
 import { BUCKETS, FREE_DESIGN_TEMPLATES } from "../consts/storage";
@@ -13,7 +13,7 @@ export type PhotopeaEditorMetadata = {
 };
 
 type PhotopeaEditorOptions = {
-  onSave?: (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => Promise<void>;
+  onSave?: (designExport: DesignExport, metadata: Partial<PhotopeaEditorMetadata>) => Promise<void>;
   onSaveConfirmationTitle?: string;
   isMetadataEditable?: boolean;
 };
@@ -21,7 +21,7 @@ type PhotopeaEditorContextValue = {
   initialize: (args: { ref: RefObject<HTMLIFrameElement> }) => void;
   isOpen: boolean;
   close: () => void;
-  save: (fileExport: FileExport, metadata: PhotopeaEditorMetadata) => Promise<void>;
+  save: (designExport: DesignExport, metadata: PhotopeaEditorMetadata) => Promise<void>;
   isSaving: boolean;
   open: (
     metadata: PhotopeaEditorMetadata,
@@ -130,10 +130,10 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const save = async (fileExport: FileExport, metadata: Partial<PhotopeaEditorMetadata>) => {
+  const save = async (designExport: DesignExport, metadata: Partial<PhotopeaEditorMetadata>) => {
     try {
       setIsSaving(true);
-      await options.onSave?.(fileExport, metadata);
+      await options.onSave?.(designExport, metadata);
     } catch (err) {
       console.error("failed to save editor changes", err);
     } finally {

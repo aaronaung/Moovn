@@ -42,7 +42,7 @@ export default function PhotopeaEditor() {
   }, [metadata.title, metadata.source_data_view]);
 
   const handleSave = async () => {
-    // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onFileExport callback.
+    // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onDesignExport callback.
     if (!ref.current) {
       return;
     }
@@ -69,17 +69,17 @@ export default function PhotopeaEditor() {
       });
 
       initHeadless(photopeaEditorNamespace, ref.current, {
-        onFileExport: async (fileExport) => {
+        onDesignExport: async (designExport) => {
           if (!isExporting) {
             return;
           }
-          if (fileExport && fileExport["psd"] && fileExport["jpg"]) {
+          if (designExport && designExport["psd"] && designExport["jpg"]) {
             setIsExporting(false);
             if (saveTimeout) {
               clearTimeout(saveTimeout);
               setSaveTimeout(null);
             }
-            await save(fileExport, { title, source_data_view: sourceDataView });
+            await save(designExport, { title, source_data_view: sourceDataView });
           }
         },
       });
@@ -117,9 +117,12 @@ export default function PhotopeaEditor() {
         isTitleEditable={options?.isMetadataEditable}
       />
 
-      <div className="flex">
+      <div className={`flex`}>
         <div
-          className={`h-[calc(100vh-${EDITOR_HEADER_HEIGHT}px)] w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4`}
+          className={`w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4`}
+          style={{
+            height: `calc(100vh - ${EDITOR_HEADER_HEIGHT}px)`,
+          }}
         >
           <div className="my-4 flex flex-col justify-start gap-2">
             {options?.isMetadataEditable && (
@@ -171,7 +174,10 @@ export default function PhotopeaEditor() {
               intro: false,
             },
           })}`}
-          className={`h-[calc(100vh-${EDITOR_HEADER_HEIGHT}px)] w-full`}
+          style={{
+            height: `calc(100vh - ${EDITOR_HEADER_HEIGHT}px)`,
+          }}
+          className={`w-full`}
         />
       </div>
     </div>

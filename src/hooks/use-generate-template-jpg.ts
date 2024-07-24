@@ -16,9 +16,9 @@ export const useGenerateTemplateJpg = () => {
       const photopeaEl = addHeadlessPhotopeaToDom();
       initialize(template.id, photopeaEl, {
         initialData: templateData,
-        onFileExport: async (fileExport) => {
-          if (fileExport?.["jpg"]) {
-            setTemplateJpg(fileExport["jpg"]);
+        onDesignExport: async (designExport) => {
+          if (designExport?.["jpg"]) {
+            setTemplateJpg(designExport["jpg"]);
             if (document.body.contains(photopeaEl)) {
               document.body.removeChild(photopeaEl);
             }

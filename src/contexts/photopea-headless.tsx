@@ -4,12 +4,17 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import {
   checkLayerUpdatesComplete,
   exportCmd,
+  InstagramTagPosition,
   translateLayersCmd,
   updateLayersCmd,
 } from "../libs/designs/photopea";
 import { DesignGenSteps } from "../libs/designs/photoshop-v2";
 
-export type FileExport = { [key: string]: ArrayBuffer | null }; // { jpg: ArrayBuffer, psd: ArrayBuffer }
+export type DesignExport = {
+  jpg: ArrayBuffer | null;
+  psd: ArrayBuffer | null;
+  instagramTagPositions: InstagramTagPosition[];
+};
 
 type PhotopeaHeadlessContextValue = {
   sendRawPhotopeaCmd: (
@@ -23,7 +28,7 @@ type PhotopeaHeadlessContextValue = {
     options: {
       initialData?: ArrayBuffer;
       designGenSteps?: DesignGenSteps;
-      onFileExport?: (args: FileExport | null) => void;
+      onDesignExport?: (args: DesignExport | null) => void;
       timeout?: number;
     },
   ) => void;
@@ -54,10 +59,13 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   >([]);
   const [photopeaMap, setPhotopeaMap] = useState<{ [key: string]: HTMLIFrameElement }>({});
   const [designGenStepsMap, setDesignGenStepsMap] = useState<{ [key: string]: DesignGenSteps }>({});
+  const [instagramTagPositionsMap, setInstagramTagPositionsMap] = useState<{
+    [key: string]: InstagramTagPosition[];
+  }>({});
 
   // Exposed to caller
-  const [onFileExportMap, setOnFileExportMap] = useState<{
-    [key: string]: (args: FileExport | null) => void;
+  const [onDesignExportMap, setOnDesignExportMap] = useState<{
+    [key: string]: (args: DesignExport | null) => void;
   }>({});
 
   const processEventFromPhotopea = useCallback(
@@ -70,7 +78,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             sendRawPhotopeaCmd(
               namespace,
               photopeaMap[namespace],
-              translateLayersCmd(designGenStepsMap[namespace].layerTranslates),
+              translateLayersCmd(namespace, designGenStepsMap[namespace].layerTranslates),
             );
             if (pollIntervalMap[namespace]) {
               clearInterval(pollIntervalMap[namespace]);
@@ -86,6 +94,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           const [_, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
         }
+        if (e.data.startsWith("instagram_tag_positions")) {
+          const [_, namespace, b64] = e.data.split(":");
+          const instagramTagPositions: InstagramTagPosition[] = JSON.parse(atob(b64));
+          setInstagramTagPositionsMap((prev) => ({ ...prev, [namespace]: instagramTagPositions }));
+        }
       }
       if (e.data instanceof ArrayBuffer) {
         setExportQueue((prev) => [...prev, e.data]);
@@ -95,7 +108,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     [
       photopeaMap,
       designGenStepsMap,
-      onFileExportMap,
+      onDesignExportMap,
       pollIntervalMap,
       exportQueue,
       exportMetadataQueue,
@@ -116,14 +129,14 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         if (
           mostRecentExport?.jpg &&
           mostRecentExport?.psd &&
-          onFileExportMap[exportMetadata.namespace]
+          onDesignExportMap[exportMetadata.namespace]
         ) {
-          onFileExportMap[exportMetadata.namespace](mostRecentExport);
+          onDesignExportMap[exportMetadata.namespace](mostRecentExport);
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportQueue, exportMetadataQueue, onFileExportMap]);
+  }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
 
   const sendRawPhotopeaCmd = async (
     namespace: string,
@@ -132,7 +145,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const ppWindow = photopeaEl.contentWindow;
     if (!ppWindow) {
-      console.log("photopea command rejected because window is not ready", namespace, cmd);
+      // console.log("photopea command rejected because window is not ready", namespace, cmd);
       // This usually happens when an interval is still running after the iframe has been removed.
       clearInterval(pollIntervalMap[namespace]);
       return;
@@ -140,19 +153,19 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     ppWindow.postMessage(cmd, "*");
   };
 
-  const attachOnFileExportListener = (
+  const attachOnDesignExportListener = (
     namespace: string,
-    callback?: (args: FileExport | null) => void,
+    callback?: (args: DesignExport | null) => void,
   ) => {
     if (callback) {
-      setOnFileExportMap((prev) => ({
+      setOnDesignExportMap((prev) => ({
         ...prev,
         [namespace]: _.debounce(callback, 100),
       }));
     }
   };
 
-  const getMostRecentExport = (namespace: string): FileExport | null => {
+  const getMostRecentExport = (namespace: string): DesignExport | null => {
     let mostRecentJpgIndex = -1;
     let mostRecentPsdIndex = -1;
     for (let i = 0; i < exportMetadataQueue.length; i++) {
@@ -167,6 +180,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     return {
       jpg: mostRecentJpgIndex === -1 ? null : exportQueue[mostRecentJpgIndex],
       psd: mostRecentPsdIndex === -1 ? null : exportQueue[mostRecentPsdIndex],
+      instagramTagPositions: instagramTagPositionsMap[namespace] || [],
     };
   };
 
@@ -179,8 +193,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   };
   const clear = (namespace: string) => {
     setPhotopeaMap(deleteNamespace(namespace));
+    setInstagramTagPositionsMap(deleteNamespace(namespace));
     setDesignGenStepsMap(deleteNamespace(namespace));
-    setOnFileExportMap(deleteNamespace(namespace));
+    setOnDesignExportMap(deleteNamespace(namespace));
     setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));
     setExportQueue(exportQueue.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace));
 
@@ -197,12 +212,12 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     {
       initialData,
       designGenSteps,
-      onFileExport,
+      onDesignExport,
       timeout = DEFAULT_TIMEOUT,
     }: {
       initialData?: ArrayBuffer;
       designGenSteps?: DesignGenSteps;
-      onFileExport?: (args: FileExport | null) => void;
+      onDesignExport?: (args: DesignExport | null) => void;
       timeout?: number;
     },
   ) => {
@@ -213,7 +228,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     if (designGenSteps) {
       setDesignGenStepsMap((prev) => ({ ...prev, [namespace]: designGenSteps }));
     }
-    attachOnFileExportListener(namespace, onFileExport);
+    attachOnDesignExportListener(namespace, onDesignExport);
 
     if (initialData) {
       // Load the initial data.

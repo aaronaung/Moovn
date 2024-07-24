@@ -29,7 +29,7 @@ export default function EditorHeader({
   }, [initialTitle]);
 
   return (
-    <div className={`flex h-[${EDITOR_HEADER_HEIGHT}px] items-center gap-x-2 px-8 py-2`}>
+    <div className={`flex h-[${EDITOR_HEADER_HEIGHT}px] items-center gap-x-2 px-8 py-3`}>
       <div className={`flex h-[${EDITOR_HEADER_HEIGHT - 20}px] items-center gap-2`}>
         {isEditingTitle ? (
           <div className="flex items-center gap-x-1">

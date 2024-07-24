@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 import { toast } from "@/src/components/ui/use-toast";
 import { BUCKETS } from "@/src/consts/storage";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
-import { FileExport } from "@/src/contexts/photopea-headless";
+import { DesignExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -113,12 +113,12 @@ export const TemplateContainer = ({
   }, []);
 
   const handleTemplateSave = async (
-    fileExport: FileExport,
+    designExport: DesignExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
-    if (!fileExport["psd"] || !fileExport["jpg"]) {
+    if (!designExport["psd"] || !designExport["jpg"]) {
       console.error("missing psd or jpg file in export:", {
-        fileExport,
+        designExport,
       });
       toast({
         variant: "destructive",
@@ -132,14 +132,14 @@ export const TemplateContainer = ({
         bucket: BUCKETS.designTemplates,
         objectPath: `${template.owner_id}/${template.id}.psd`,
         client: supaClientComponentClient,
-        content: fileExport["psd"],
+        content: designExport["psd"],
         contentType: "image/vnd.adobe.photoshop",
       }),
       db.designs.delete(template.id), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templates.put({
         templateId: template.id,
-        jpg: fileExport["jpg"],
-        psd: fileExport["psd"],
+        jpg: designExport["jpg"],
+        psd: designExport["psd"],
         lastUpdated: new Date(),
       }),
     ]);

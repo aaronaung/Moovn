@@ -9,7 +9,7 @@ import { Tables } from "@/types/db";
 import { useState } from "react";
 import { TemplateContainer } from "./_components/template-container";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
-import { FileExport } from "@/src/contexts/photopea-headless";
+import { DesignExport } from "@/src/contexts/photopea-headless";
 import { toast } from "@/src/components/ui/use-toast";
 import { upsertObjectAtPath } from "@/src/libs/storage";
 import { BUCKETS } from "@/src/consts/storage";
@@ -50,13 +50,13 @@ export default function TemplatesPage() {
   }
 
   const handleTemplateCreate = async (
-    fileExport: FileExport,
+    designExport: DesignExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
     console.log("template create!");
-    if (!fileExport["psd"] || !fileExport["jpg"]) {
+    if (!designExport["psd"] || !designExport["jpg"]) {
       console.error("missing psd or jpg file in export:", {
-        fileExport,
+        designExport,
       });
       toast({
         variant: "destructive",
@@ -75,15 +75,15 @@ export default function TemplatesPage() {
       await Promise.all([
         db.templates.put({
           templateId: saved.id,
-          jpg: fileExport["jpg"],
-          psd: fileExport["psd"],
+          jpg: designExport["jpg"],
+          psd: designExport["psd"],
           lastUpdated: new Date(),
         }),
         upsertObjectAtPath({
           bucket: BUCKETS.designTemplates,
           objectPath: `${user.id}/${saved.id}.psd`,
           client: supaClientComponentClient,
-          content: fileExport["psd"],
+          content: designExport["psd"],
           contentType: "image/vnd.adobe.photoshop",
         }),
       ]);

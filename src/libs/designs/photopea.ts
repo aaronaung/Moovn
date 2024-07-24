@@ -136,12 +136,15 @@ function checkTranslateLayersComplete() {
 checkTranslateLayersComplete();
 `;
 
-export const translateLayersCmd = (layerTranslates: LayerTranslates) => `
+export const translateLayersCmd = (namespace: string, layerTranslates: LayerTranslates) => `
 var doc = app.activeDocument;
 var layers = ${JSON.stringify(layerTranslates)};
+var instagramTagPositions = [];
+
 for (var i = 0; i < layers.length; i++) {
     var fromName = layers[i].from;
     var toName = layers[i].to;
+    var instagramTag = layers[i].instagramTag;
 
     var from = doc.artLayers.getByName(fromName);
     var to = doc.artLayers.getByName(toName);
@@ -171,11 +174,31 @@ for (var i = 0; i < layers.length; i++) {
         from.move(to, ElementPlacement.PLACEBEFORE);
         from.translate(translateX, translateY);
 
+        // Calculate the relative position of the instagramTag
+        var docWidth = doc.width;
+        var docHeight = doc.height;
+        var instagramTagX = toCenterX / docWidth;
+        var instagramTagY = toCenterY / docHeight;
+
+        // Collect the instagramTag position
+        instagramTagPositions.push({
+            layerName: fromName,
+            instagramTag: instagramTag,
+            position: { x: instagramTagX, y: instagramTagY }
+        });
+
         // Remove the 'to' layer
         to.remove();
     }
 }
+var b64 = btoa(JSON.stringify(instagramTagPositions));
+app.echoToOE("instagram_tag_positions:${namespace}:" + b64);
 `;
+export type InstagramTagPosition = {
+  layerName: string;
+  instagramTag: string;
+  position: { x: number; y: number };
+};
 
 export const exportCmd = (namespace: string) => `
 app.activeDocument.saveToOE("jpg");

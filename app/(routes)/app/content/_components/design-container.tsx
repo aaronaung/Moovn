@@ -13,7 +13,7 @@ import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
-import { FileExport } from "@/src/contexts/photopea-headless";
+import { DesignExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
+import { InstagramTagPosition } from "@/src/libs/designs/photopea";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -56,6 +57,7 @@ export const DesignContainer = ({
     return {
       jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
       psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
+      instagramTagPositions: design.instagramTagPositions,
     };
   });
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
@@ -99,10 +101,10 @@ export const DesignContainer = ({
     generateDesign(template, source);
   }, []);
 
-  const uploadFileExport = async (fileExport: FileExport) => {
-    if (!fileExport["psd"] || !fileExport["jpg"]) {
+  const uploadDesignExport = async (designExport: DesignExport) => {
+    if (!designExport["psd"] || !designExport["jpg"]) {
       console.error("missing either psd or jpg in file export:", {
-        fileExport,
+        designExport,
       });
       toast({
         variant: "destructive",
@@ -138,12 +140,12 @@ export const DesignContainer = ({
     await Promise.all([
       supaClientComponentClient.storage
         .from(BUCKETS.designOverwrites)
-        .uploadToSignedUrl(psdPath, psd.data?.token, fileExport["psd"], {
+        .uploadToSignedUrl(psdPath, psd.data?.token, designExport["psd"], {
           contentType: "image/vnd.adobe.photoshop",
         }),
       supaClientComponentClient.storage
         .from(BUCKETS.designOverwrites)
-        .uploadToSignedUrl(jpgPath, jpg.data?.token, fileExport["jpg"], {
+        .uploadToSignedUrl(jpgPath, jpg.data?.token, designExport["jpg"], {
           contentType: "image/jpeg",
         }),
     ]);
@@ -163,7 +165,13 @@ export const DesignContainer = ({
       return <Spinner />;
     }
 
-    return <DesignImage url={designJpgUrl} onClick={() => setIsImageViewerOpen(true)} />;
+    return (
+      <DesignImage
+        url={designJpgUrl}
+        instagramTagPositions={designFromIndexedDb?.instagramTagPositions || []}
+        onClick={() => setIsImageViewerOpen(true)}
+      />
+    );
   };
 
   return (
@@ -289,7 +297,7 @@ export const DesignContainer = ({
                       ab,
                       {
                         onSaveConfirmationTitle: "This will overwrite the current design",
-                        onSave: uploadFileExport,
+                        onSave: uploadDesignExport,
                         isMetadataEditable: false,
                       },
                     );
@@ -307,9 +315,47 @@ export const DesignContainer = ({
   );
 };
 
-const DesignImage = ({ url, onClick }: { url?: string; onClick: () => void }) => {
+const DesignImage = ({
+  url,
+  instagramTagPositions,
+  onClick,
+}: {
+  url?: string;
+  instagramTagPositions: InstagramTagPosition[];
+  onClick: () => void;
+}) => {
+  const sideLength = 300;
   if (url) {
-    return <img src={url} onClick={onClick} alt="Design" className="h-[300px] w-[300px]" />;
+    return (
+      <div className="relative" onClick={onClick}>
+        <div className={`absolute h-[${sideLength}px] w-[${sideLength}px]`}>
+          {instagramTagPositions.map((itp) => (
+            <span
+              key={itp.instagramTag}
+              className={`absolute`}
+              style={{
+                top: `${itp.position.y * sideLength}px`,
+                left: `${itp.position.x * sideLength}px`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="h-4 w-4"></div>
+                </TooltipTrigger>
+                <TooltipContent>{itp.instagramTag}</TooltipContent>
+              </Tooltip>
+            </span>
+          ))}
+        </div>
+        <img
+          src={url}
+          onClick={onClick}
+          alt="Design"
+          className={`h-[${sideLength}px] w-[${sideLength}px]`}
+        />
+      </div>
+    );
   }
   return <DesignNotFound />;
 };
