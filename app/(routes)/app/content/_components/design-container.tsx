@@ -341,7 +341,7 @@ const DesignImage = ({
             >
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="h-4 w-4"></div>
+                  <div className="h-8 w-8"></div>
                 </TooltipTrigger>
                 <TooltipContent>{itp.instagramTag}</TooltipContent>
               </Tooltip>
