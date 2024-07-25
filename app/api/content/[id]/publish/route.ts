@@ -10,8 +10,17 @@ import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
 import { getSourceSchedule } from "@/src/libs/sources/common";
+import { z } from "zod";
+
+const PublishContentRequestSchema = z.object({
+  instagramTags: z
+    .record(z.string(), z.array(z.object({ x: z.number(), y: z.number(), username: z.string() })))
+    .optional(), // template id -> [{x, y, username}]
+});
+export type PublishContentRequest = z.infer<typeof PublishContentRequestSchema>;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const { instagramTags } = PublishContentRequestSchema.parse(await req.json());
   const content = await getContentById(params.id, {
     client: supaServerClient(),
   });
@@ -65,19 +74,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         accessToken: content.destination.long_lived_token,
         lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? 0),
       });
-
+      console.log("instagramTags", instagramTags);
       try {
-        const signedLatestDesignUrls = await Promise.all(
-          templates.map((template) => {
-            return signUrl({
+        const toPublish = await Promise.all(
+          templates.map(async (template) => {
+            const signedUrl = await signUrl({
               bucket: BUCKETS.stagingAreaForContentPublishing,
               objectPath: `${content.owner_id}/${content.id}/${template.id}.jpg`,
               client: supaServerClient(),
               expiresIn: 24 * 3600,
             });
+
+            return {
+              url: signedUrl,
+              ...(instagramTags?.[template.id]
+                ? { instagramTags: instagramTags[template.id] }
+                : {}),
+            };
           }),
         );
-        if (signedLatestDesignUrls.length === 0) {
+        if (toPublish.length === 0) {
           return Response.json({ message: "Failed to fetch designs" }, { status: 500 });
         }
 
@@ -88,11 +104,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const caption = content.caption
           ? renderCaption(content.caption, scheduleData as any)
           : undefined;
-        if (signedLatestDesignUrls.length > 1) {
+        if (toPublish.length > 1) {
           publishedMedia = await fbClient.publishCarousel(
             content.destination.linked_ig_user_id,
-            signedLatestDesignUrls.map((url) => ({
+            toPublish.map(({ url, instagramTags }) => ({
               imageUrl: url,
+              userTags: instagramTags,
             })),
             {
               caption,
@@ -100,7 +117,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           );
         } else {
           publishedMedia = await fbClient.publishSingle(content.destination.linked_ig_user_id, {
-            imageUrl: signedLatestDesignUrls[0],
+            imageUrl: toPublish[0].url,
+            userTags: toPublish[0].instagramTags,
             caption,
           });
         }

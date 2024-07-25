@@ -28,6 +28,7 @@ import { DesignContainer } from "./design-container";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import _ from "lodash";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 
 export default function InstagramPost({
   post,
@@ -90,10 +91,27 @@ export default function InstagramPost({
       return;
     }
 
-    const designMap: { [key: string]: ArrayBuffer } = {};
-    db.designs.each((design) => {
-      designMap[design.templateId] = design.jpg;
-    });
+    const instagramTags: PublishContentRequest["instagramTags"] = {};
+    const designMap: {
+      [key: string]: {
+        jpg: ArrayBuffer;
+      };
+    } = {};
+    for (const template of templates || []) {
+      const design = await db.designs.get(template.id);
+      if (design) {
+        designMap[template.id] = {
+          jpg: design.jpg,
+        };
+      }
+      if (design && design.instagramTags) {
+        instagramTags[template.id] = design.instagramTags.map((tag) => ({
+          x: tag.position.x,
+          y: tag.position.y,
+          username: tag.instagramTag,
+        }));
+      }
+    }
     try {
       setIsPublishingPost(true);
       await supaClientComponentClient.storage
@@ -114,13 +132,13 @@ export default function InstagramPost({
           });
           return supaClientComponentClient.storage
             .from(BUCKETS.stagingAreaForContentPublishing)
-            .uploadToSignedUrl(objectPath, token, design, {
+            .uploadToSignedUrl(objectPath, token, design.jpg, {
               contentType: "image/jpeg",
             });
         }),
       );
 
-      await _publishContent(post.id);
+      await _publishContent({ id: post.id, body: { instagramTags } });
     } catch (err) {
       console.error(err);
       toast({

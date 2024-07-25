@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
-import { InstagramTagPosition } from "@/src/libs/designs/photopea";
+import { InstagramTag } from "@/src/libs/designs/photopea";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -57,7 +57,7 @@ export const DesignContainer = ({
     return {
       jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
       psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
-      instagramTagPositions: design.instagramTagPositions,
+      instagramTags: design.instagramTags,
     };
   });
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
@@ -168,7 +168,7 @@ export const DesignContainer = ({
     return (
       <DesignImage
         url={designJpgUrl}
-        instagramTagPositions={designFromIndexedDb?.instagramTagPositions || []}
+        instagramTags={designFromIndexedDb?.instagramTags || []}
         onClick={() => setIsImageViewerOpen(true)}
       />
     );
@@ -317,11 +317,11 @@ export const DesignContainer = ({
 
 const DesignImage = ({
   url,
-  instagramTagPositions,
+  instagramTags,
   onClick,
 }: {
   url?: string;
-  instagramTagPositions: InstagramTagPosition[];
+  instagramTags: InstagramTag[];
   onClick: () => void;
 }) => {
   const sideLength = 300;
@@ -329,7 +329,7 @@ const DesignImage = ({
     return (
       <div className="relative" onClick={onClick}>
         <div className={`absolute h-[${sideLength}px] w-[${sideLength}px]`}>
-          {instagramTagPositions.map((itp) => (
+          {instagramTags.map((itp) => (
             <span
               key={itp.instagramTag}
               className={`absolute`}

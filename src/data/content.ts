@@ -2,6 +2,7 @@ import { Tables } from "@/types/db";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
+import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 
 export const saveContent = async (
   {
@@ -71,10 +72,14 @@ export const getContentById = async (id: string, { client }: SupabaseOptions) =>
   );
 };
 
-export const publishContent = async (id: string) => {
+export const publishContent = async ({ id, body }: { id: string; body: PublishContentRequest }) => {
   return (
     await fetch(`/api/content/${id}/publish`, {
       method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
   ).json();
 };

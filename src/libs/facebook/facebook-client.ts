@@ -109,6 +109,7 @@ export class FacebookGraphAPIClient {
   ): Promise<{ id: string }> {
     await this.refreshTokenIfNeeded();
 
+    console.log("mediaInput", mediaInput);
     const $createMediaContainers: Promise<{ id: string }>[] = mediaInput.map((input) =>
       this.createMediaContainer(accountId, { ...input, isCarouselItem: true }),
     );

@@ -139,7 +139,7 @@ checkTranslateLayersComplete();
 export const translateLayersCmd = (namespace: string, layerTranslates: LayerTranslates) => `
 var doc = app.activeDocument;
 var layers = ${JSON.stringify(layerTranslates)};
-var instagramTagPositions = [];
+var instagramTags = [];
 
 for (var i = 0; i < layers.length; i++) {
     var fromName = layers[i].from;
@@ -181,7 +181,7 @@ for (var i = 0; i < layers.length; i++) {
         var instagramTagY = toCenterY / docHeight;
 
         // Collect the instagramTag position
-        instagramTagPositions.push({
+        instagramTags.push({
             layerName: fromName,
             instagramTag: instagramTag,
             position: { x: instagramTagX, y: instagramTagY }
@@ -191,10 +191,10 @@ for (var i = 0; i < layers.length; i++) {
         to.remove();
     }
 }
-var b64 = btoa(JSON.stringify(instagramTagPositions));
+var b64 = btoa(JSON.stringify(instagramTags));
 app.echoToOE("instagram_tag_positions:${namespace}:" + b64);
 `;
-export type InstagramTagPosition = {
+export type InstagramTag = {
   layerName: string;
   instagramTag: string;
   position: { x: number; y: number };

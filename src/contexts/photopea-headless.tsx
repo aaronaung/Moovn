@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import {
   checkLayerUpdatesComplete,
   exportCmd,
-  InstagramTagPosition,
+  InstagramTag,
   translateLayersCmd,
   updateLayersCmd,
 } from "../libs/designs/photopea";
@@ -13,7 +13,7 @@ import { DesignGenSteps } from "../libs/designs/photoshop-v2";
 export type DesignExport = {
   jpg: ArrayBuffer | null;
   psd: ArrayBuffer | null;
-  instagramTagPositions: InstagramTagPosition[];
+  instagramTags: InstagramTag[];
 };
 
 type PhotopeaHeadlessContextValue = {
@@ -59,8 +59,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   >([]);
   const [photopeaMap, setPhotopeaMap] = useState<{ [key: string]: HTMLIFrameElement }>({});
   const [designGenStepsMap, setDesignGenStepsMap] = useState<{ [key: string]: DesignGenSteps }>({});
-  const [instagramTagPositionsMap, setInstagramTagPositionsMap] = useState<{
-    [key: string]: InstagramTagPosition[];
+  const [instagramTagsMap, setInstagramTagsMap] = useState<{
+    [key: string]: InstagramTag[];
   }>({});
 
   // Exposed to caller
@@ -96,8 +96,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         }
         if (e.data.startsWith("instagram_tag_positions")) {
           const [_, namespace, b64] = e.data.split(":");
-          const instagramTagPositions: InstagramTagPosition[] = JSON.parse(atob(b64));
-          setInstagramTagPositionsMap((prev) => ({ ...prev, [namespace]: instagramTagPositions }));
+          const instagramTags: InstagramTag[] = JSON.parse(atob(b64));
+          setInstagramTagsMap((prev) => ({ ...prev, [namespace]: instagramTags }));
         }
       }
       if (e.data instanceof ArrayBuffer) {
@@ -180,7 +180,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     return {
       jpg: mostRecentJpgIndex === -1 ? null : exportQueue[mostRecentJpgIndex],
       psd: mostRecentPsdIndex === -1 ? null : exportQueue[mostRecentPsdIndex],
-      instagramTagPositions: instagramTagPositionsMap[namespace] || [],
+      instagramTags: instagramTagsMap[namespace] || [],
     };
   };
 
@@ -193,7 +193,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   };
   const clear = (namespace: string) => {
     setPhotopeaMap(deleteNamespace(namespace));
-    setInstagramTagPositionsMap(deleteNamespace(namespace));
+    setInstagramTagsMap(deleteNamespace(namespace));
     setDesignGenStepsMap(deleteNamespace(namespace));
     setOnDesignExportMap(deleteNamespace(namespace));
     setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));

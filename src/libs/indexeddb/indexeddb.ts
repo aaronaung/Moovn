@@ -1,12 +1,12 @@
 import Dexie, { EntityTable } from "dexie";
-import { InstagramTagPosition } from "../designs/photopea";
+import { InstagramTag } from "../designs/photopea";
 
 export type Design = {
   templateId: string;
   psd: ArrayBuffer;
   jpg: ArrayBuffer;
   hash: string;
-  instagramTagPositions: InstagramTagPosition[];
+  instagramTags: InstagramTag[];
   lastUpdated: Date;
 };
 
@@ -23,6 +23,6 @@ export const db = new Dexie("moovn") as Dexie & {
 };
 
 db.version(1).stores({
-  designs: "templateId, psd, jpg, hash, instagramTagPositions, lastUpdated",
+  designs: "templateId, psd, jpg, hash, instagramTags, lastUpdated",
   templates: "templateId, psd, jpg, lastUpdated",
 });

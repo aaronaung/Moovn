@@ -94,7 +94,7 @@ export const useGenerateDesign = () => {
               jpg: designExport["jpg"],
               psd: designExport["psd"],
               hash: designHash,
-              instagramTagPositions: designExport.instagramTagPositions,
+              instagramTags: designExport.instagramTags,
               lastUpdated: new Date(),
             });
             if (document.body.contains(photopeaEl)) {

@@ -90,7 +90,7 @@ export class Pike13Client {
                 photo:
                   staffMember.profile_photo?.["x400"] ??
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
-                instagramHandle: staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
+                instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
               };
             }),
             name: event.name,
