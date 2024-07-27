@@ -49,7 +49,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   const [ref, setRef] = useState<RefObject<HTMLIFrameElement> | null>(null);
   const [metadata, setMetadata] = useState<PhotopeaEditorMetadata>({
     title: "Untitled",
-    source_data_view: SourceDataView.DAILY,
+    source_data_view: SourceDataView.Daily,
   });
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [options, setOptions] = useState<PhotopeaEditorOptions>({
@@ -58,9 +58,9 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   const [freeDesignTemplates, setFreeDesignTemplates] = useState<{
     [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
   }>({
-    [SourceDataView.DAILY as string]: [],
-    [SourceDataView.WEEKLY as string]: [],
-    [SourceDataView.MONTHLY as string]: [],
+    [SourceDataView.Daily as string]: [],
+    [SourceDataView.Weekly as string]: [],
+    [SourceDataView.Monthly as string]: [],
   });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 

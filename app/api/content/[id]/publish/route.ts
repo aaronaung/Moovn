@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   switch (content.destination.type) {
-    case DestinationTypes.INSTAGRAM:
+    case DestinationTypes.Instagram:
       if (!content.destination.linked_ig_user_id) {
         return Response.json(
           { message: "Destination not connected: missing linked IG user ID" },
@@ -74,7 +74,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         accessToken: content.destination.long_lived_token,
         lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? 0),
       });
-      console.log("instagramTags", instagramTags);
       try {
         const toPublish = await Promise.all(
           templates.map(async (template) => {
@@ -123,7 +122,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           });
         }
         await supaServerClient().from("published_content").insert({
-          destination_id: content.destination.id,
           owner_id: content.owner_id,
           content_id: content.id,
           ig_media_id: publishedMedia.id,
@@ -131,6 +129,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         });
         return Response.json({ id: content.id });
       } catch (err: any) {
+        console.error(err);
         return Response.json(
           { message: `Failed to publish content: ${err.message}` },
           { status: 500 },

@@ -83,14 +83,14 @@ export default function ManageContent({
 
   const handleCreateContentButtonClick = (destination: Tables<"destinations">) => {
     switch (destination.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         setContentDialogState((prev) => ({
           ...prev,
           isOpen: true,
           selectedDestination: destination,
         }));
         break;
-      case DestinationTypes.EMAIL:
+      case DestinationTypes.Email:
         openEmailEditor(
           {
             title: "Untitled",
@@ -107,9 +107,9 @@ export default function ManageContent({
   const createContentButton = () => {
     const destinationIcon = (destination: Tables<"destinations">) => {
       switch (destination.type) {
-        case DestinationTypes.INSTAGRAM:
+        case DestinationTypes.Instagram:
           return <InstagramIcon className="h-4 w-4" />;
-        case DestinationTypes.EMAIL:
+        case DestinationTypes.Email:
           return <EnvelopeIcon className="h-4 w-4" />;
         default:
           return <></>;
@@ -172,7 +172,7 @@ export default function ManageContent({
   ) => {
     let contentComp = <></>;
     switch (content.destination?.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         contentComp = (
           <InstagramPost
             key={content.id}

@@ -100,9 +100,9 @@ export default function DestinationsPage() {
 
   const renderDestinationView = () => {
     switch (selectedDestination?.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         return <InstagramDestinationView destination={selectedDestination} />;
-      case DestinationTypes.EMAIL:
+      case DestinationTypes.Email:
         return <EmailDestinationView destination={selectedDestination} />;
       default:
         return <></>;

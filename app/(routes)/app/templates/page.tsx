@@ -146,7 +146,7 @@ export default function TemplatesPage() {
             openPhotopeaEditor(
               {
                 title: "Untitled",
-                source_data_view: SourceDataView.DAILY,
+                source_data_view: SourceDataView.Daily,
               },
               new ArrayBuffer(0),
               {

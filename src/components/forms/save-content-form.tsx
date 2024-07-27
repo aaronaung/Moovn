@@ -74,7 +74,7 @@ export default function SaveContentForm({
           }
         : {}),
       source_data_view: !defaultValues?.source_data_view
-        ? SourceDataView.DAILY
+        ? SourceDataView.Daily
         : defaultValues.source_data_view,
       ...defaultValues,
       template_ids: defaultValues?.template_ids || [],

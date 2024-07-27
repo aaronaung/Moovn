@@ -42,7 +42,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     formState: { errors },
   } = useForm<SaveSourceFormSchemaType>({
     defaultValues: {
-      type: defaultValues?.type === undefined ? SourceTypes.PIKE13 : defaultValues.type,
+      type: defaultValues?.type === undefined ? SourceTypes.Pike13 : defaultValues.type,
       ...defaultValues,
     },
     resolver: zodResolver(formSchema),
@@ -67,7 +67,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
 
   const renderSourceSettings = () => {
     switch (selectedSourceType) {
-      case SourceTypes.PIKE13:
+      case SourceTypes.Pike13:
         return (
           <InputText
             label="Pike13 URL"
@@ -75,7 +75,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
             register={register}
             registerOptions={{
               validate: (value) => {
-                if (selectedSourceType === SourceTypes.PIKE13 && !value) {
+                if (selectedSourceType === SourceTypes.Pike13 && !value) {
                   return "URL is required.";
                 }
               },

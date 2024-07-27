@@ -30,7 +30,7 @@ export default function DestinationSelectItem({
 }) {
   const renderLogo = () => {
     switch (destination?.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         return <InstagramIcon className="text-secondary" />;
       default:
         return <EnvelopeIcon className="h-8 w-8 text-secondary" />;
@@ -39,7 +39,7 @@ export default function DestinationSelectItem({
 
   const renderDestinationDetails = () => {
     switch (destination.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         return (
           <InstagramDestinationItem
             destination={destination}

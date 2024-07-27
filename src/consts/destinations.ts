@@ -1,4 +1,4 @@
 export enum DestinationTypes {
-  INSTAGRAM = "Instagram",
-  EMAIL = "Email",
+  Instagram = "Instagram",
+  Email = "Email",
 }

@@ -73,6 +73,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       if (_.isString(e.data)) {
         if (e.data.startsWith("layer_updates_complete")) {
           // layer_updates_complete:namespace-123:true
+          console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (photopeaMap[namespace]) {
             sendRawPhotopeaCmd(
@@ -83,10 +84,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             if (pollIntervalMap[namespace]) {
               clearInterval(pollIntervalMap[namespace]);
             }
-            // layer moves should be relatively fast
             setTimeout(() => {
               sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
-            }, 250);
+            }, 500);
           }
         }
         if (e.data.startsWith("export_file")) {

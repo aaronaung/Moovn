@@ -11,6 +11,6 @@ export const BUCKETS = {
 export const STORAGE_DIR_PATHS = {};
 
 export const FREE_DESIGN_TEMPLATES = {
-  [SourceDataView.DAILY]: ["daily_template_1"],
-  [SourceDataView.WEEKLY]: ["weekly_1_template_1", "weekly_2_template_1"],
+  [SourceDataView.Daily]: ["daily_template_1"],
+  [SourceDataView.Weekly]: ["weekly_1_template_1", "weekly_2_template_1"],
 };

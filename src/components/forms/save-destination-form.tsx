@@ -37,7 +37,7 @@ export default function SaveDestinationForm({
     formState: { errors },
   } = useForm<SaveDestinationFormSchemaType>({
     defaultValues: {
-      type: defaultValues?.type === undefined ? DestinationTypes.INSTAGRAM : defaultValues.type,
+      type: defaultValues?.type === undefined ? DestinationTypes.Instagram : defaultValues.type,
       ...defaultValues,
     },
     resolver: zodResolver(formSchema),

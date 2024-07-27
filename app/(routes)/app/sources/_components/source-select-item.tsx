@@ -16,10 +16,13 @@ export const SourceSelectItem = ({
   source: Tables<"sources">;
   setSelectedSource: (source: Tables<"sources">) => void;
   setSourceDialogState: (state: { isOpen: boolean; source?: Tables<"sources"> }) => void;
-  setDeleteConfirmationDialogState: (state: { isOpen: boolean; source?: Tables<"sources"> }) => void;
+  setDeleteConfirmationDialogState: (state: {
+    isOpen: boolean;
+    source?: Tables<"sources">;
+  }) => void;
 }) => {
   const renderLogo = () => {
-    if (source?.type === SourceTypes.PIKE13) {
+    if (source?.type === SourceTypes.Pike13) {
       return <Pike13Logo />;
     }
     return <></>;

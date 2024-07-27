@@ -15,13 +15,18 @@ var layers = ${JSON.stringify(designGenSteps.layerUpdates)};
 var editTextValid = true;
 var deleteLayerValid = true;
 var loadSmartObjectValid = true;
+
 for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
     var layer = layers.${LayerUpdateType.EditText}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
 
+    console.log('editText', JSON.stringify({
+       layerKind: targetLayer.kind,
+       currValue: targetLayer.textItem.contents,
+       finalValue: layer.value
+    }))
     if (targetLayer.kind == LayerKind.TEXT) {
         if (targetLayer.textItem.contents != layer.value) {
-            console.log("failed: EditText ${namespace}")
             editTextValid = false;
         }
     }
@@ -30,8 +35,10 @@ for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
 // Ensure delete layers
 for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
     var layer = layers.${LayerUpdateType.DeleteLayer}[i];
+
     try {
         var targetLayer = doc.artLayers.getByName(layer.name);
+            console.log('deleteLayer', targetLayer)
         if (targetLayer != null) {
             deleteLayerValid = false;
         }
@@ -44,8 +51,8 @@ for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
 for (var i = 0; i < layers.${LayerUpdateType.LoadSmartObjectFromUrl}.length; i++) {
     var layer = layers.${LayerUpdateType.LoadSmartObjectFromUrl}[i];
     var targetLayer = doc.artLayers.getByName(layer.newLayerName);
+        console.log('smartObjectLoad', targetLayer)
     if (!targetLayer) {
-        console.log("failed: LoadSmartObject ${namespace}")
         loadSmartObjectValid = false;
     }
 }

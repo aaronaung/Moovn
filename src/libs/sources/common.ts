@@ -18,7 +18,7 @@ export const getSourceSchedule = async (sourceId: string, view: SourceDataView) 
   }
 
   switch (source.type) {
-    case SourceTypes.PIKE13:
+    case SourceTypes.Pike13:
       const sourceSettings = source.settings as Pike13SourceSettings;
       if (!sourceSettings?.url) {
         return null;

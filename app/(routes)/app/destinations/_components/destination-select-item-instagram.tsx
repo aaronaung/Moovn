@@ -51,7 +51,7 @@ export default function InstagramDestinationItem({
 }) {
   const { data: igAccounts, isLoading: isLoadingIgAccounts } = useSupaQuery(getInstagramAccounts, {
     arg: destination.id,
-    enabled: destination.type === DestinationTypes.INSTAGRAM && !!destination.long_lived_token,
+    enabled: destination.type === DestinationTypes.Instagram && !!destination.long_lived_token,
     queryKey: ["getInstagramAccounts", destination.id],
   });
 
@@ -68,7 +68,7 @@ export default function InstagramDestinationItem({
 
   const handleConnectDestination = async () => {
     switch (destination.type) {
-      case DestinationTypes.INSTAGRAM:
+      case DestinationTypes.Instagram:
         handleFacebookLogin();
         break;
     }

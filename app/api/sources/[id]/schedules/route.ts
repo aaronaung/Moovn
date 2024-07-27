@@ -3,7 +3,7 @@ import { getSourceSchedule } from "@/src/libs/sources/common";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const view = (req.nextUrl.searchParams.get("view") as SourceDataView) ?? SourceDataView.DAILY;
+  const view = (req.nextUrl.searchParams.get("view") as SourceDataView) ?? SourceDataView.Daily;
 
   const schedule = await getSourceSchedule(params.id, view);
   if (!schedule) {

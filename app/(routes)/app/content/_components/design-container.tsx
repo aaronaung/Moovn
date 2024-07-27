@@ -200,14 +200,14 @@ export const DesignContainer = ({
       <div className="w-[320px] ">
         <div className="relative flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {designOverwrite && (
-            <div className="absolute left-2 top-2">
+            <div className="absolute left-2 top-2 z-10">
               <Tooltip>
                 <TooltipTrigger>
                   <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Edited</div>
                 </TooltipTrigger>
                 <TooltipContent className="w-[300px]">
                   This design was edited which overwrites the automatically generated design.
-                  Refresh to generate a new one.
+                  Refresh to regenerate and clear the overwrite.
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -329,9 +329,9 @@ const DesignImage = ({
     return (
       <div className="relative" onClick={onClick}>
         <div className={`absolute h-[${sideLength}px] w-[${sideLength}px]`}>
-          {instagramTags.map((itp) => (
+          {instagramTags.map((itp, i) => (
             <span
-              key={itp.instagramTag}
+              key={itp.instagramTag + i}
               className={`absolute`}
               style={{
                 top: `${itp.position.y * sideLength}px`,

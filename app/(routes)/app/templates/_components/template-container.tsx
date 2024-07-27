@@ -165,13 +165,13 @@ export const TemplateContainer = ({
       from: startOfDay(currDateTime),
     };
     switch (template.source_data_view) {
-      case SourceDataView.WEEKLY:
+      case SourceDataView.Weekly:
         fromAndTo = {
           from: startOfWeek(currDateTime),
           to: endOfWeek(currDateTime),
         };
         break;
-      case SourceDataView.MONTHLY:
+      case SourceDataView.Monthly:
         fromAndTo = {
           from: startOfMonth(currDateTime),
           to: endOfMonth(currDateTime),
