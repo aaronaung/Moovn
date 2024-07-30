@@ -1,6 +1,6 @@
 "use client";
 import _ from "lodash";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   checkLayerTranslatesComplete,
   checkLayerUpdatesComplete,
@@ -53,7 +53,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
 
   // Internally managed
-  const [pollIntervalMap, setPollIntervalMap] = useState<{ [key: string]: NodeJS.Timeout }>({});
+  const pollIntervalMapRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const [exportQueue, setExportQueue] = useState<ArrayBuffer[]>([]);
   const [exportMetadataQueue, setExportMetadataQueue] = useState<
     { namespace: string; format: string }[]
@@ -76,8 +76,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // layer_updates_complete:namespace-123
           console.log(e.data);
           const [_, namespace] = e.data.split(":");
-          if (pollIntervalMap[namespace]) {
-            clearInterval(pollIntervalMap[namespace]);
+          if (pollIntervalMapRef.current[namespace]) {
+            clearIntervalForNamespace(namespace);
           }
           if (photopeaMap[namespace]) {
             sendRawPhotopeaCmd(
@@ -85,25 +85,28 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
               photopeaMap[namespace],
               translateLayersCmd(namespace, designGenStepsMap[namespace].layerTranslates),
             );
-            const intervalId = setInterval(() => {
-              sendRawPhotopeaCmd(
-                namespace,
-                photopeaMap[namespace],
-                checkLayerTranslatesComplete(
+            setIntervalForNamespace(
+              namespace,
+              () => {
+                sendRawPhotopeaCmd(
                   namespace,
-                  designGenStepsMap[namespace].layerTranslates,
-                ),
-              );
-            }, LAYER_CHECK_INTERVAL);
-            setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
+                  photopeaMap[namespace],
+                  checkLayerTranslatesComplete(
+                    namespace,
+                    designGenStepsMap[namespace].layerTranslates,
+                  ),
+                );
+              },
+              LAYER_CHECK_INTERVAL,
+            );
           }
         }
         if (e.data.startsWith("layer_translates_complete")) {
           // layer_translates_complete:namespace-123
           console.log(e.data);
           const [_, namespace] = e.data.split(":");
-          if (pollIntervalMap[namespace]) {
-            clearInterval(pollIntervalMap[namespace]);
+          if (pollIntervalMapRef.current[namespace]) {
+            clearIntervalForNamespace(namespace);
           }
           if (photopeaMap[namespace]) {
             sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
@@ -129,15 +132,17 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       photopeaMap,
       designGenStepsMap,
       onDesignExportMap,
-      pollIntervalMap,
+      pollIntervalMapRef,
       exportQueue,
       exportMetadataQueue,
     ],
   );
 
   useEffect(() => {
-    console.log("pollIntervalMap updated: ", pollIntervalMap);
-  }, [pollIntervalMap]);
+    return () => {
+      Object.keys(pollIntervalMapRef.current).forEach(clearIntervalForNamespace);
+    };
+  }, []);
 
   useEffect(() => {
     window.addEventListener("message", processEventFromPhotopea);
@@ -162,6 +167,20 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
 
+  const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
+    clearIntervalForNamespace(namespace);
+    console.log(`Setting poll interval for namespace: ${namespace}`);
+    pollIntervalMapRef.current[namespace] = setInterval(callback, delay);
+  };
+
+  const clearIntervalForNamespace = (namespace: string) => {
+    if (pollIntervalMapRef.current[namespace]) {
+      console.log(`Clearing poll interval for namespace: ${namespace}`);
+      clearInterval(pollIntervalMapRef.current[namespace]);
+      delete pollIntervalMapRef.current[namespace];
+    }
+  };
+
   const sendRawPhotopeaCmd = async (
     namespace: string,
     photopeaEl: HTMLIFrameElement,
@@ -171,7 +190,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     if (!ppWindow) {
       // console.log("photopea command rejected because window is not ready", namespace, cmd);
       // This usually happens when an interval is still running after the iframe has been removed.
-      clearInterval(pollIntervalMap[namespace]);
+      clearIntervalForNamespace(namespace);
       return;
     }
     ppWindow.postMessage(cmd, "*");
@@ -222,12 +241,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     setOnDesignExportMap(deleteNamespace(namespace));
     setExportMetadataQueue(exportMetadataQueue.filter((e) => e.namespace !== namespace));
     setExportQueue(exportQueue.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace));
-
-    if (pollIntervalMap[namespace]) {
-      console.log("clearing interval for namespace", namespace, pollIntervalMap);
-      clearInterval(pollIntervalMap[namespace]);
-    }
-    setPollIntervalMap(deleteNamespace(namespace));
+    clearIntervalForNamespace(namespace);
   };
 
   const initialize = (
@@ -264,16 +278,17 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // Start design gen
           sendRawPhotopeaCmd(namespace, photopeaEl, updateLayersCmd(designGenSteps.layerUpdates)); // Start the layer updates complete check.
 
-          if (!pollIntervalMap[namespace]) {
-            const intervalId = setInterval(() => {
+          setIntervalForNamespace(
+            namespace,
+            () => {
               sendRawPhotopeaCmd(
                 namespace,
                 photopeaEl,
                 checkLayerUpdatesComplete(namespace, designGenSteps),
               );
-            }, LAYER_CHECK_INTERVAL);
-            setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
-          }
+            },
+            LAYER_CHECK_INTERVAL,
+          );
         } else {
           console.log("no design gen steps, exporting design", namespace);
           // No design gen steps, just export the design.

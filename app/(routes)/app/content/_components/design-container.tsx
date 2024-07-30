@@ -99,7 +99,7 @@ export const DesignContainer = ({
     };
     fetchOverwrites();
     generateDesign(template, source);
-  }, []);
+  }, [template, source]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {
     if (!designExport["psd"] || !designExport["jpg"]) {
