@@ -2,6 +2,7 @@
 import _ from "lodash";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import {
+  checkLayerTranslatesComplete,
   checkLayerUpdatesComplete,
   exportCmd,
   InstagramTag,
@@ -45,7 +46,7 @@ function usePhotopeaHeadless() {
   return context;
 }
 
-const CHECK_LAYER_UPDATES_COMPLETE_INTERVAL = 500; // Gives more resolution.
+const LAYER_CHECK_INTERVAL = 500; // ms
 const DEFAULT_TIMEOUT = 15_000;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
@@ -72,7 +73,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     async (e: MessageEvent) => {
       if (_.isString(e.data)) {
         if (e.data.startsWith("layer_updates_complete")) {
-          // layer_updates_complete:namespace-123:true
+          // layer_updates_complete:namespace-123
           console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (photopeaMap[namespace]) {
@@ -84,9 +85,29 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             if (pollIntervalMap[namespace]) {
               clearInterval(pollIntervalMap[namespace]);
             }
-            setTimeout(() => {
-              sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
-            }, 500);
+
+            const intervalId = setInterval(() => {
+              sendRawPhotopeaCmd(
+                namespace,
+                photopeaMap[namespace],
+                checkLayerTranslatesComplete(
+                  namespace,
+                  designGenStepsMap[namespace].layerTranslates,
+                ),
+              );
+            }, LAYER_CHECK_INTERVAL);
+            setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
+          }
+        }
+        if (e.data.startsWith("layer_translates_complete")) {
+          // layer_translates_complete:namespace-123
+          console.log(e.data);
+          const [_, namespace] = e.data.split(":");
+          if (photopeaMap[namespace]) {
+            sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
+            if (pollIntervalMap[namespace]) {
+              clearInterval(pollIntervalMap[namespace]);
+            }
           }
         }
         if (e.data.startsWith("export_file")) {
@@ -232,7 +253,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
     if (initialData) {
       // Load the initial data.
-      photopeaEl.onload = () => {
+      photopeaEl.onload = async () => {
         sendRawPhotopeaCmd(namespace, photopeaEl, initialData);
 
         if (designGenSteps) {
@@ -246,7 +267,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 photopeaEl,
                 checkLayerUpdatesComplete(namespace, designGenSteps),
               );
-            }, CHECK_LAYER_UPDATES_COMPLETE_INTERVAL);
+            }, LAYER_CHECK_INTERVAL);
             setPollIntervalMap((prev) => ({ ...prev, [namespace]: intervalId }));
           }
         } else {
