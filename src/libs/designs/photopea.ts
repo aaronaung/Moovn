@@ -20,11 +20,6 @@ for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
     var layer = layers.${LayerUpdateType.EditText}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
 
-    console.log('editText', JSON.stringify({
-       layerKind: targetLayer.kind,
-       currValue: targetLayer.textItem.contents,
-       finalValue: layer.value
-    }))
     if (targetLayer.kind == LayerKind.TEXT) {
         if (targetLayer.textItem.contents != layer.value) {
             editTextValid = false;
@@ -38,7 +33,6 @@ for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
 
     try {
         var targetLayer = doc.artLayers.getByName(layer.name);
-            console.log('deleteLayer', targetLayer)
         if (targetLayer != null) {
             deleteLayerValid = false;
         }
@@ -51,7 +45,6 @@ for (var i = 0; i < layers.${LayerUpdateType.DeleteLayer}.length; i++) {
 for (var i = 0; i < layers.${LayerUpdateType.LoadSmartObjectFromUrl}.length; i++) {
     var layer = layers.${LayerUpdateType.LoadSmartObjectFromUrl}[i];
     var targetLayer = doc.artLayers.getByName(layer.newLayerName);
-        console.log('smartObjectLoad', targetLayer)
     if (!targetLayer) {
         loadSmartObjectValid = false;
     }
@@ -72,6 +65,12 @@ var layers = ${JSON.stringify(updateActions)}
 for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
     var layer = layers.${LayerUpdateType.EditText}[i];
     var targetLayer = doc.artLayers.getByName(layer.name);
+
+    console.log({
+        targetLayer,
+        currentValue: targetLayer.textItem.contents,
+        newValue: layer.value,
+    })
 
     if (targetLayer.kind == LayerKind.TEXT) {
         targetLayer.textItem.contents = layer.value;
@@ -193,6 +192,7 @@ for (var i = 0; i < layers.length; i++) {
             instagramTag: instagramTag,
             position: { x: instagramTagX, y: instagramTagY }
         });
+        from.name = to.name;
 
         // Remove the 'to' layer
         to.remove();
