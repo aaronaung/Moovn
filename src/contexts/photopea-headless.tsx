@@ -137,6 +137,10 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    console.log("pollIntervalMap updated: ", pollIntervalMap);
+  }, [pollIntervalMap]);
+
+  useEffect(() => {
     window.addEventListener("message", processEventFromPhotopea);
     return () => {
       window.removeEventListener("message", processEventFromPhotopea);
@@ -244,6 +248,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   ) => {
     // This ensures that we always starts with a clean slate.
     clear(namespace);
+    console.log("initializing photopea headless", namespace);
 
     setPhotopeaMap((prev) => ({ ...prev, [namespace]: photopeaEl }));
     if (designGenSteps) {

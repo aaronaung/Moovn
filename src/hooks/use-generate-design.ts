@@ -35,6 +35,7 @@ export const useGenerateDesign = () => {
     },
     forceRefresh: boolean = false,
   ) => {
+    console.log("generating design for template", template.id);
     try {
       setIsLoading(true);
       const [schedule, signedTemplateUrl] = await Promise.all([
