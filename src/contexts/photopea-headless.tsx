@@ -76,16 +76,15 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // layer_updates_complete:namespace-123
           console.log(e.data);
           const [_, namespace] = e.data.split(":");
+          if (pollIntervalMap[namespace]) {
+            clearInterval(pollIntervalMap[namespace]);
+          }
           if (photopeaMap[namespace]) {
             sendRawPhotopeaCmd(
               namespace,
               photopeaMap[namespace],
               translateLayersCmd(namespace, designGenStepsMap[namespace].layerTranslates),
             );
-            if (pollIntervalMap[namespace]) {
-              clearInterval(pollIntervalMap[namespace]);
-            }
-
             const intervalId = setInterval(() => {
               sendRawPhotopeaCmd(
                 namespace,
@@ -103,11 +102,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // layer_translates_complete:namespace-123
           console.log(e.data);
           const [_, namespace] = e.data.split(":");
+          if (pollIntervalMap[namespace]) {
+            clearInterval(pollIntervalMap[namespace]);
+          }
           if (photopeaMap[namespace]) {
             sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
-            if (pollIntervalMap[namespace]) {
-              clearInterval(pollIntervalMap[namespace]);
-            }
           }
         }
         if (e.data.startsWith("export_file")) {
