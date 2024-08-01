@@ -23,7 +23,7 @@ import { Tables } from "@/types/db";
 import { CloudArrowUpIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { DesignContainer } from "./design-container";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import _ from "lodash";
@@ -229,13 +229,13 @@ export default function InstagramPost({
   );
 }
 
-const CarosuelImageItem = ({
+const CarosuelImageItem = memo(function CarouselImageItem({
   template,
   post,
 }: {
   template: Tables<"templates">;
   post: Tables<"content">;
-}) => {
+}) {
   return (
     <CarouselItem
       key={template.id}
@@ -252,4 +252,4 @@ const CarosuelImageItem = ({
       />
     </CarouselItem>
   );
-};
+});

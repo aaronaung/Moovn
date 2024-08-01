@@ -1,16 +1,5 @@
-import { SourceDataView } from "@/src/consts/sources";
 import { ScheduleData } from "./common";
-import {
-  compareAsc,
-  endOfDay,
-  endOfMonth,
-  endOfWeek,
-  format,
-  parseISO,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { compareAsc, format, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -70,7 +59,7 @@ export class Pike13Client {
     return Object.values(groupedEvents);
   }
 
-  private async getScheduleData(from: Date, to: Date): Promise<ScheduleData> {
+  async getScheduleData(from: Date, to: Date): Promise<ScheduleData> {
     const $events = this.getRawEventOcurrences(from, to);
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
@@ -83,16 +72,18 @@ export class Pike13Client {
         return {
           date: eventsByDay[0].date,
           event: (eventsByDay || []).map((event: any) => ({
-            staff: (event.staff_members || []).map((s: any) => {
-              const staffMember = staffMembersById[s.id];
-              return {
-                name: staffMember.name,
-                photo:
-                  staffMember.profile_photo?.["x400"] ??
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
-                instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
-              };
-            }),
+            staff: (event.staff_members || [])
+              .filter((s: any) => Boolean(staffMembersById[s.id]))
+              .map((s: any) => {
+                const staffMember = staffMembersById[s.id];
+                return {
+                  name: staffMember?.name,
+                  photo:
+                    staffMember.profile_photo?.["x400"] ??
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
+                  instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
+                };
+              }),
             name: event.name,
             start: event.start_at,
             end: event.end_at,
@@ -100,19 +91,5 @@ export class Pike13Client {
         };
       }),
     };
-  }
-
-  async getScheduleDataForView(view?: SourceDataView | null): Promise<ScheduleData> {
-    const currDateTime = new Date();
-    switch (view) {
-      case SourceDataView.Daily:
-        return this.getScheduleData(startOfDay(currDateTime), endOfDay(currDateTime));
-      case SourceDataView.Weekly:
-        return this.getScheduleData(startOfWeek(currDateTime), endOfWeek(currDateTime));
-      case SourceDataView.Monthly:
-        return this.getScheduleData(startOfMonth(currDateTime), endOfMonth(currDateTime));
-      default:
-        return { schedules: [] };
-    }
   }
 }

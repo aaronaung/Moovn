@@ -1,14 +1,18 @@
-import { SourceDataView } from "@/src/consts/sources";
-import { getSourceSchedule } from "@/src/libs/sources/common";
+import { getScheduleDataFromSource } from "@/src/libs/sources/common";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const view = (req.nextUrl.searchParams.get("view") as SourceDataView) ?? SourceDataView.Daily;
+  const from = req.nextUrl.searchParams.get("from");
+  const to = req.nextUrl.searchParams.get("to");
 
-  const schedule = await getSourceSchedule(params.id, view);
+  if (!from || !to) {
+    return Response.json({ message: "from and to query parameters are required" }, { status: 400 });
+  }
+
+  const schedule = await getScheduleDataFromSource(params.id, new Date(from), new Date(to));
   if (!schedule) {
     return Response.json(
-      { message: `Failed to find schedule for source '${params.id}' and view '${view}'` },
+      { message: `Failed to find schedule for source '${params.id}' from ${from} to ${to}` },
       { status: 404 },
     );
   }

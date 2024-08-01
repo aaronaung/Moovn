@@ -1,26 +1,24 @@
 import { DestinationTypes } from "@/src/consts/destinations";
-import { SourceDataView } from "@/src/consts/sources";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getContentById } from "@/src/data/content";
 
 import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
-import { renderCaption } from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
-import { getSourceSchedule } from "@/src/libs/sources/common";
 import { z } from "zod";
 
 const PublishContentRequestSchema = z.object({
   instagramTags: z
     .record(z.string(), z.array(z.object({ x: z.number(), y: z.number(), username: z.string() })))
     .optional(), // template id -> [{x, y, username}]
+  caption: z.string().optional(),
 });
 export type PublishContentRequest = z.infer<typeof PublishContentRequestSchema>;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { instagramTags } = PublishContentRequestSchema.parse(await req.json());
+  const { instagramTags, caption } = PublishContentRequestSchema.parse(await req.json());
   const content = await getContentById(params.id, {
     client: supaServerClient(),
   });
@@ -41,17 +39,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return Response.json(
       { message: "Content does not contain any designs to publish" },
       { status: 400 },
-    );
-  }
-
-  const scheduleData = await getSourceSchedule(
-    content.source_id,
-    content.source_data_view as SourceDataView,
-  );
-  if (!scheduleData) {
-    return Response.json(
-      { message: `Failed to fetch schedule data for source ${content.source_id}` },
-      { status: 500 },
     );
   }
 
@@ -100,9 +87,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           | ReturnType<FacebookGraphAPIClient["publishSingle"]>
           | ReturnType<FacebookGraphAPIClient["publishCarousel"]>
         >;
-        const caption = content.caption
-          ? renderCaption(content.caption, scheduleData as any)
-          : undefined;
         if (toPublish.length > 1) {
           publishedMedia = await fbClient.publishCarousel(
             content.destination.linked_ig_user_id,

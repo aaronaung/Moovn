@@ -73,7 +73,12 @@ export const TemplateContainer = ({
         setIsLoadingTemplateSignedUrl(true);
 
         const templateFromIndexedDb = await db.templates.get(template.id);
-        if (templateFromIndexedDb?.jpg && templateFromIndexedDb?.psd) {
+        if (
+          templateFromIndexedDb?.jpg &&
+          templateFromIndexedDb?.psd &&
+          templateFromIndexedDb.jpg.byteLength > 0 &&
+          templateFromIndexedDb.psd.byteLength > 0
+        ) {
           setTemplateData({
             jpg: templateFromIndexedDb.jpg,
             psd: templateFromIndexedDb.psd,
