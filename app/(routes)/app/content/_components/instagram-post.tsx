@@ -42,8 +42,11 @@ export default function InstagramPost({
   const { data: templates, isLoading: isLoadingTemplatesForPost } = useSupaQuery(
     getTemplatesForContent,
     {
-      queryKey: ["getTemplatesForContent", post.id],
-      arg: post.id,
+      queryKey: ["getTemplatesForContent", post.id, post.content_type],
+      arg: {
+        contentId: post.id,
+        contentType: post.content_type,
+      },
     },
   );
 

@@ -12,6 +12,7 @@ export type Database = {
       content: {
         Row: {
           caption: string | null
+          content_type: string
           created_at: string | null
           destination_id: string
           id: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           caption?: string | null
+          content_type?: string
           created_at?: string | null
           destination_id: string
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
         }
         Update: {
           caption?: string | null
+          content_type?: string
           created_at?: string | null
           destination_id?: string
           id?: string
@@ -229,6 +232,7 @@ export type Database = {
       }
       templates: {
         Row: {
+          content_type: string
           created_at: string | null
           id: string
           name: string
@@ -237,6 +241,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          content_type?: string
           created_at?: string | null
           id?: string
           name: string
@@ -245,6 +250,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          content_type?: string
           created_at?: string | null
           id?: string
           name?: string

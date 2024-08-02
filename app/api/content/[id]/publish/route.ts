@@ -32,9 +32,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // These templates are ordered by position in ascending order. This ensures that
   // the carousel contents are in the correct order.
-  const templates = await getTemplatesForContent(content.id, {
-    client: supaServerClient(),
-  });
+  const templates = await getTemplatesForContent(
+    {
+      contentId: content.id,
+      contentType: content.content_type,
+    },
+    {
+      client: supaServerClient(),
+    },
+  );
   if (templates.length === 0) {
     return Response.json(
       { message: "Content does not contain any designs to publish" },

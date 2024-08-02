@@ -11,7 +11,7 @@ import { toast } from "../ui/use-toast";
 import { saveContent } from "@/src/data/content";
 import { cn } from "@/src/utils";
 import { SourceDataView } from "@/src/consts/sources";
-import { getTemplatesBySchedule, getTemplatesForContent } from "@/src/data/templates";
+import { getTemplatesByScheduleAndContentType, getTemplatesForContent } from "@/src/data/templates";
 import InputTextArea from "../ui/input/textarea";
 import { Tables } from "@/types/db";
 import { Spinner } from "../common/loading-spinner";
@@ -26,15 +26,14 @@ import { db } from "@/src/libs/indexeddb/indexeddb";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { BUCKETS } from "@/src/consts/storage";
 import { EyeIcon } from "@heroicons/react/24/outline";
-import dynamic from "next/dynamic";
-
-const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
+import { CONTENT_TYPES_BY_DESTINATION_TYPE, ContentType } from "@/src/consts/content";
 
 const formSchema = z.object({
   caption: z.string().min(1, { message: "Caption is required." }),
   source_id: z.string().min(1, { message: "Source is required." }),
   source_data_view: z.string().min(1, { message: "Schedule is required." }),
   template_ids: z.array(z.string()).min(1, { message: "At least one design is required." }),
+  content_type: z.string().min(1, { message: "Content type is required." }),
 });
 
 export type SaveContentFormSchemaType = z.infer<typeof formSchema> & {
@@ -77,6 +76,8 @@ export default function SaveContentForm({
         ? SourceDataView.Daily
         : defaultValues.source_data_view,
       ...defaultValues,
+      content_type:
+        defaultValues?.content_type || CONTENT_TYPES_BY_DESTINATION_TYPE[destination.type][0],
       template_ids: defaultValues?.template_ids || [],
     },
     resolver: zodResolver(formSchema),
@@ -86,6 +87,7 @@ export default function SaveContentForm({
   const sourceDataView = watch("source_data_view");
   const templateIds = watch("template_ids") || [];
   const caption = watch("caption") || "";
+  const contentType = watch("content_type") || ContentType.InstagramPost;
 
   const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
     getScheduleDataForSource,
@@ -98,22 +100,40 @@ export default function SaveContentForm({
       },
     },
   );
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesBySchedule, {
-    queryKey: ["getTemplatesBySchedule", sourceDataView],
-    arg: sourceDataView as SourceDataView,
-  });
+  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(
+    getTemplatesByScheduleAndContentType,
+    {
+      queryKey: ["getTemplatesBySchedule", sourceDataView, contentType],
+      arg: {
+        scheduleType: sourceDataView as SourceDataView,
+        contentType: contentType,
+      },
+    },
+  );
   const { data: initialTemplates } = useSupaQuery(getTemplatesForContent, {
-    queryKey: ["getTemplatesForContent", defaultValues?.id],
-    arg: defaultValues?.id,
+    queryKey: ["getTemplatesForContent", defaultValues?.id, contentType],
+    arg: {
+      contentId: defaultValues?.id!,
+      contentType: contentType,
+    },
     enabled: !!defaultValues?.id,
   });
 
   useEffect(() => {
-    if (sourceDataView !== defaultValues?.source_data_view) {
+    if (
+      sourceDataView !== defaultValues?.source_data_view ||
+      contentType !== defaultValues?.content_type
+    ) {
       // Reset template_ids when schedule selection changes.
       setValue("template_ids", []);
     }
-  }, [sourceDataView, setValue, defaultValues?.source_data_view]);
+  }, [
+    setValue,
+    sourceDataView,
+    contentType,
+    defaultValues?.source_data_view,
+    defaultValues?.content_type,
+  ]);
 
   useEffect(() => {
     if (initialTemplates) {
@@ -213,12 +233,13 @@ export default function SaveContentForm({
           }))}
           control={control}
           error={errors.source_id?.message}
-          label="Source"
+          label="Schedule source"
           inputProps={{
-            placeholder: "Select a data source",
+            placeholder: "Select a schedule source",
           }}
         />
       )}
+
       <InputSelect
         rhfKey="source_data_view"
         options={Object.keys(SourceDataView).map((key) => ({
@@ -229,15 +250,29 @@ export default function SaveContentForm({
         }))}
         control={control}
         error={errors.source_data_view?.message}
-        label="Schedule range"
+        label="Schedule type"
         inputProps={{
-          placeholder: "Select a schedule range",
+          placeholder: "Select a schedule type",
+        }}
+      />
+
+      <InputSelect
+        rhfKey="content_type"
+        options={CONTENT_TYPES_BY_DESTINATION_TYPE[destination.type].map((type) => ({
+          label: type,
+          value: type,
+        }))}
+        control={control}
+        label="Content type"
+        error={errors.content_type?.message}
+        inputProps={{
+          placeholder: "Select a content type",
         }}
       />
 
       <div className="mt-2">
         <div className="flex items-center">
-          <Label className="flex-1 leading-4">Pick designs to include in the post</Label>
+          <Label className="flex-1 leading-4">Pick designs</Label>
           <p className="text-sm text-muted-foreground">{(templates || []).length} available</p>
         </div>
 
@@ -254,33 +289,35 @@ export default function SaveContentForm({
         )}
         <p className="my-2 text-sm text-destructive">{errors.template_ids?.message}</p>
       </div>
-      <div className=" grid grid-cols-2 gap-6">
-        <InputTextArea
-          rhfKey="caption"
-          register={register}
-          error={errors.caption?.message}
-          label="Caption"
-          className="col-span-1"
-          textareaProps={{
-            rows: 7,
-            placeholder: "Write a caption for this post",
-          }}
-        />
-        {scheduleData && (
-          <div className="col-span-1">
-            <Label className="leading-4">Preview</Label>
-            {!caption ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                {`<-- Add caption to see the preview`}{" "}
-              </p>
-            ) : (
-              <p className="mt-1  overflow-scroll whitespace-pre-wrap rounded-md bg-secondary p-3">
-                {renderCaption(caption, scheduleData as any)}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      {contentType === ContentType.InstagramPost && (
+        <div className=" grid grid-cols-2 gap-6">
+          <InputTextArea
+            rhfKey="caption"
+            register={register}
+            error={errors.caption?.message}
+            label="Caption"
+            className="col-span-1"
+            textareaProps={{
+              rows: 7,
+              placeholder: "Write a caption for this post",
+            }}
+          />
+          {scheduleData && (
+            <div className="col-span-1">
+              <Label className="leading-4">Preview</Label>
+              {!caption ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {`<-- Add caption to see the preview`}{" "}
+                </p>
+              ) : (
+                <p className="mt-1  overflow-scroll whitespace-pre-wrap rounded-md bg-secondary p-3">
+                  {renderCaption(caption, scheduleData as any)}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <Button
         className="float-right mt-6"
@@ -395,7 +432,7 @@ const DesignSelectItem = ({
             <img src={designJpgUrl} className="max-h-full max-w-full" alt={template.name} />
           )}
           <Button
-            className="absolute bottom-2 right-2 bg-secondary-foreground p-3 hover:bg-neutral-700"
+            className="absolute bottom-2 right-2 bg-neutral-800 p-3 hover:bg-neutral-700"
             variant={"secondary"}
             onClick={(e) => {
               e.preventDefault();

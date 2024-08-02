@@ -17,6 +17,7 @@ import { useAuthUser } from "@/src/contexts/auth";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SourceDataView } from "@/src/consts/sources";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { ContentType } from "@/src/consts/content";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -53,7 +54,6 @@ export default function TemplatesPage() {
     designExport: DesignExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
   ) => {
-    console.log("template create!");
     if (!designExport["psd"] || !designExport["jpg"]) {
       console.error("missing psd or jpg file in export:", {
         designExport,
@@ -69,6 +69,7 @@ export default function TemplatesPage() {
       const saved = await _saveTemplate({
         name: metadataChanges.title,
         source_data_view: metadataChanges.source_data_view,
+        content_type: metadataChanges.content_type,
         owner_id: user.id,
       });
 
@@ -147,6 +148,7 @@ export default function TemplatesPage() {
               {
                 title: "Untitled",
                 source_data_view: SourceDataView.Daily,
+                content_type: ContentType.InstagramPost,
               },
               new ArrayBuffer(0),
               {

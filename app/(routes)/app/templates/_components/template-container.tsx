@@ -215,7 +215,7 @@ export const TemplateContainer = ({
               {template.name || "Untitled"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Schedule range: {template.source_data_view} ({fromAndToString()})
+              Schedule type: {template.source_data_view} ({fromAndToString()})
             </p>
           </div>
 
@@ -292,6 +292,7 @@ export const TemplateContainer = ({
                     {
                       title: template.name || "Untitled",
                       source_data_view: template.source_data_view,
+                      content_type: template.content_type,
                     },
                     templateData.psd,
                     {

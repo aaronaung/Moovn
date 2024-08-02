@@ -6,10 +6,12 @@ import { signUrl } from "../libs/storage";
 import { BUCKETS, FREE_DESIGN_TEMPLATES } from "../consts/storage";
 import { supaClientComponentClient } from "../data/clients/browser";
 import { flushSync } from "react-dom";
+import { ContentType } from "../consts/content";
 
 export type PhotopeaEditorMetadata = {
   title: string;
   source_data_view: string;
+  content_type: string;
 };
 
 type PhotopeaEditorOptions = {
@@ -31,7 +33,9 @@ type PhotopeaEditorContextValue = {
   options?: PhotopeaEditorOptions;
   metadata: PhotopeaEditorMetadata;
   freeDesignTemplates: {
-    [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+    [key: string]: {
+      [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+    };
   };
 };
 
@@ -50,63 +54,88 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   const [metadata, setMetadata] = useState<PhotopeaEditorMetadata>({
     title: "Untitled",
     source_data_view: SourceDataView.Daily,
+    content_type: ContentType.InstagramPost,
   });
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [options, setOptions] = useState<PhotopeaEditorOptions>({
     isMetadataEditable: true,
   });
   const [freeDesignTemplates, setFreeDesignTemplates] = useState<{
-    [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+    [key: string]: {
+      [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+    };
   }>({
-    [SourceDataView.Daily as string]: [],
-    [SourceDataView.Weekly as string]: [],
-    [SourceDataView.Monthly as string]: [],
+    [SourceDataView.Daily as string]: {
+      [ContentType.InstagramPost]: [],
+      [ContentType.InstagramStory]: [],
+    },
+    [SourceDataView.Weekly as string]: {
+      [ContentType.InstagramPost]: [],
+      [ContentType.InstagramStory]: [],
+    },
+    [SourceDataView.Monthly as string]: {
+      [ContentType.InstagramPost]: [],
+      [ContentType.InstagramStory]: [],
+    },
   });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchFreeDesignTemplates = async () => {
-      const downloads: Promise<{ jpg: ArrayBuffer; psd: ArrayBuffer; scheduleRange: string }>[] =
-        [];
-      for (const [scheduleRange, fileNames] of Object.entries(FREE_DESIGN_TEMPLATES)) {
-        for (const fileName of fileNames) {
-          const download = new Promise<{
-            scheduleRange: string;
-            jpg: ArrayBuffer;
-            psd: ArrayBuffer;
-          }>(async (resolve) => {
-            const [psdUrl, jpgUrl] = await Promise.all([
-              signUrl({
-                bucket: BUCKETS.freeDesignTemplates,
-                objectPath: `${fileName}.psd`,
-                client: supaClientComponentClient,
-              }),
-              signUrl({
-                bucket: BUCKETS.freeDesignTemplates,
-                objectPath: `${fileName}.jpg`,
-                client: supaClientComponentClient,
-              }),
-            ]);
-            const [psd, jpg] = await Promise.all([fetch(psdUrl), fetch(jpgUrl)]);
-            const [psdArrayBuffer, jpgArrayBuffer] = await Promise.all([
-              psd.arrayBuffer(),
-              jpg.arrayBuffer(),
-            ]);
-            resolve({ scheduleRange, jpg: jpgArrayBuffer, psd: psdArrayBuffer });
-          });
-          downloads.push(download);
+      const downloads: Promise<{
+        jpg: ArrayBuffer;
+        psd: ArrayBuffer;
+        scheduleRange: string;
+        contentType: string;
+      }>[] = [];
+      for (const [scheduleRange, byContentType] of Object.entries(FREE_DESIGN_TEMPLATES)) {
+        for (const [contentType, fileNames] of Object.entries(byContentType)) {
+          for (const fileName of fileNames) {
+            const download = new Promise<{
+              scheduleRange: string;
+              contentType: string;
+              jpg: ArrayBuffer;
+              psd: ArrayBuffer;
+            }>(async (resolve) => {
+              const [psdUrl, jpgUrl] = await Promise.all([
+                signUrl({
+                  bucket: BUCKETS.freeDesignTemplates,
+                  objectPath: `${contentType}/${fileName}.psd`,
+                  client: supaClientComponentClient,
+                }),
+                signUrl({
+                  bucket: BUCKETS.freeDesignTemplates,
+                  objectPath: `${contentType}/${fileName}.jpg`,
+                  client: supaClientComponentClient,
+                }),
+              ]);
+              const [psd, jpg] = await Promise.all([fetch(psdUrl), fetch(jpgUrl)]);
+              const [psdArrayBuffer, jpgArrayBuffer] = await Promise.all([
+                psd.arrayBuffer(),
+                jpg.arrayBuffer(),
+              ]);
+              resolve({ scheduleRange, contentType, jpg: jpgArrayBuffer, psd: psdArrayBuffer });
+            });
+            downloads.push(download);
+          }
         }
       }
       const downloaded = await Promise.all(downloads);
       const designTemplates: {
-        [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+        [key: string]: {
+          [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+        };
       } = {};
       for (const download of downloaded) {
         if (!designTemplates[download.scheduleRange]) {
-          designTemplates[download.scheduleRange] = [];
+          designTemplates[download.scheduleRange] = {};
         }
-        designTemplates[download.scheduleRange].push(download);
+        if (!designTemplates[download.scheduleRange][download.contentType]) {
+          designTemplates[download.scheduleRange][download.contentType] = [];
+        }
+        designTemplates[download.scheduleRange][download.contentType].push(download);
       }
+      console.log({ designTemplates });
       setFreeDesignTemplates(designTemplates);
     };
     fetchFreeDesignTemplates();

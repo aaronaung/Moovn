@@ -8,6 +8,7 @@ import { exportCmd } from "@/src/libs/designs/photopea";
 import { cn } from "@/src/utils";
 import { useEffect, useRef, useState } from "react";
 import EditorHeader, { EDITOR_HEADER_HEIGHT } from "./editor-header";
+import { ContentType } from "@/src/consts/content";
 
 const photopeaEditorNamespace = "global-editor";
 
@@ -34,6 +35,7 @@ export default function PhotopeaEditor() {
 
   const [title, setTitle] = useState(metadata.title);
   const [sourceDataView, setSourceDataView] = useState(metadata.source_data_view);
+  const [contentType, setContentType] = useState(metadata.content_type);
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -79,7 +81,11 @@ export default function PhotopeaEditor() {
               clearTimeout(saveTimeout);
               setSaveTimeout(null);
             }
-            await save(designExport, { title, source_data_view: sourceDataView });
+            await save(designExport, {
+              title,
+              source_data_view: sourceDataView,
+              content_type: contentType,
+            });
           }
         },
       });
@@ -88,7 +94,16 @@ export default function PhotopeaEditor() {
     return () => {
       clearHeadless(photopeaEditorNamespace);
     };
-  }, [ref.current, save, isExporting, setIsExporting, title, metadata.title]);
+  }, [
+    ref.current,
+    save,
+    isExporting,
+    setIsExporting,
+    title,
+    metadata.title,
+    sourceDataView,
+    contentType,
+  ]);
 
   return (
     <div className={cn("flex flex-col  bg-neutral-800", !isOpen && "hidden")}>
@@ -127,7 +142,7 @@ export default function PhotopeaEditor() {
           <div className="my-4 flex flex-col justify-start gap-2">
             {options?.isMetadataEditable && (
               <>
-                <p className="text-sm text-white">Select a schedule range</p>
+                <p className="text-sm text-white">Select a schedule type</p>
                 <InputSelect
                   value={sourceDataView}
                   className="w-[200px]"
@@ -144,14 +159,34 @@ export default function PhotopeaEditor() {
               </>
             )}
           </div>
+          <div className="my-4 flex flex-col justify-start gap-2">
+            {options?.isMetadataEditable && (
+              <>
+                <p className="text-sm text-white">Select a content type</p>
+                <InputSelect
+                  value={contentType}
+                  className="w-[200px]"
+                  options={Object.keys(ContentType).map((key) => ({
+                    // @ts-ignore
+                    label: ContentType[key],
+                    // @ts-ignore
+                    value: ContentType[key],
+                  }))}
+                  onChange={(value) => {
+                    setContentType(value);
+                  }}
+                />
+              </>
+            )}
+          </div>
           <p className="mt-8 text-sm text-white">Get started with sample templates</p>
           <div className="mt-4 flex flex-wrap gap-4">
-            {(freeDesignTemplates[sourceDataView] || []).length === 0 && (
+            {(freeDesignTemplates[sourceDataView][contentType] || []).length === 0 && (
               <p className="text-xs text-muted-foreground">
-                Sample templates for this schedule range coming soon!
+                Sample templates for this schedule type coming soon!
               </p>
             )}
-            {(freeDesignTemplates[sourceDataView] || []).map((template, index) => (
+            {(freeDesignTemplates[sourceDataView][contentType] || []).map((template, index) => (
               <img
                 key={index}
                 src={`data:image/jpeg;base64,${Buffer.from(template.jpg).toString("base64")}`}

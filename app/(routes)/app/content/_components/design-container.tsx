@@ -293,6 +293,7 @@ export const DesignContainer = ({
                       {
                         title: template.name || "Untitled",
                         source_data_view: template.source_data_view,
+                        content_type: template.content_type,
                       },
                       ab,
                       {
