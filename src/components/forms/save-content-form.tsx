@@ -29,7 +29,7 @@ import { EyeIcon } from "@heroicons/react/24/outline";
 import { CONTENT_TYPES_BY_DESTINATION_TYPE, ContentType } from "@/src/consts/content";
 
 const formSchema = z.object({
-  caption: z.string().min(1, { message: "Caption is required." }),
+  caption: z.string().optional(),
   source_id: z.string().min(1, { message: "Source is required." }),
   source_data_view: z.string().min(1, { message: "Schedule is required." }),
   template_ids: z.array(z.string()).min(1, { message: "At least one design is required." }),
@@ -218,7 +218,7 @@ export default function SaveContentForm({
   return (
     <form
       className="flex flex-col gap-y-3 overflow-hidden p-1"
-      onSubmit={handleSubmit(handleOnFormSuccess)}
+      onSubmit={handleSubmit(handleOnFormSuccess, (errors) => console.log(errors))}
     >
       <div className="flex items-center gap-2">
         <Label className="leading-4">Destination: </Label>
@@ -280,10 +280,19 @@ export default function SaveContentForm({
 
         {templateIds.length > 1 && (
           <>
-            <p className="mt-2 text-xs text-muted-foreground text-yellow-600">{`Multiple designs selected. This post will be published as a carousel.`}</p>
+            <p className="mt-2 text-xs text-muted-foreground text-yellow-600">{`Multiple designs selected. ${
+              contentType === ContentType.InstagramPost
+                ? "This post will be published as a carousel."
+                : contentType === ContentType.InstagramStory
+                ? "The designs will be published as consecutive stories."
+                : ""
+            }`}</p>
             <p className="my-1 text-xs text-muted-foreground">
-              The order in a carousel post is determined by the number displayed on each selected
-              design.
+              {contentType === ContentType.InstagramPost
+                ? "The order in a carousel post corresponds to the order of the selected designs."
+                : contentType === ContentType.InstagramStory
+                ? "The order of the stories corresponds to the order of the selected designs."
+                : ""}
             </p>
           </>
         )}

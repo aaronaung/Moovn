@@ -3,7 +3,7 @@ import { cn } from "@/src/utils";
 export const InstagramIcon = ({ className }: { className?: any }) => {
   return (
     <svg
-      className={cn(className, "fill-current")}
+      className={cn("fill-current", className)}
       xmlns="http://www.w3.org/2000/svg"
       width="32"
       height="32"

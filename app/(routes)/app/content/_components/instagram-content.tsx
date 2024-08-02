@@ -30,59 +30,59 @@ import _ from "lodash";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 
-export default function InstagramPost({
-  post,
-  onEditPost,
-  onDeletePost,
+export default function InstagramContent({
+  content,
+  onEditContent,
+  onDeleteContent,
 }: {
-  post: Tables<"content"> & { destination: Tables<"destinations"> | null };
-  onEditPost: () => void;
-  onDeletePost: () => void;
+  content: Tables<"content"> & { destination: Tables<"destinations"> | null };
+  onEditContent: () => void;
+  onDeleteContent: () => void;
 }) {
-  const { data: templates, isLoading: isLoadingTemplatesForPost } = useSupaQuery(
+  const { data: templates, isLoading: isLoadingTemplatesForContent } = useSupaQuery(
     getTemplatesForContent,
     {
-      queryKey: ["getTemplatesForContent", post.id, post.content_type],
+      queryKey: ["getTemplatesForContent", content.id, content.content_type],
       arg: {
-        contentId: post.id,
-        contentType: post.content_type,
+        contentId: content.id,
+        contentType: content.content_type,
       },
     },
   );
 
   const { data: igMedia } = useSupaQuery(getInstagramMedia, {
-    enabled: !!post.destination?.id && !!post.published_ig_media_id,
+    enabled: !!content.destination?.id && !!content.published_ig_media_id,
     arg: {
-      destinationId: post.destination?.id ?? "",
-      mediaId: post.published_ig_media_id ?? "",
+      destinationId: content.destination?.id ?? "",
+      mediaId: content.published_ig_media_id ?? "",
     },
-    queryKey: ["getInstagramMedia", post.destination?.id, post.published_ig_media_id],
+    queryKey: ["getInstagramMedia", content.destination?.id, content.published_ig_media_id],
   });
   const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
     getScheduleDataForSource,
     {
-      enabled: !!post.source_id,
+      enabled: !!content.source_id,
       arg: {
-        id: post.source_id,
-        view: post.source_data_view as SourceDataView,
+        id: content.source_id,
+        view: content.source_data_view as SourceDataView,
       },
-      queryKey: ["getScheduleDataForSource", post.source_id, post.source_data_view],
+      queryKey: ["getScheduleDataForSource", content.source_id, content.source_data_view],
     },
   );
 
-  const [isPublishingPost, setIsPublishingPost] = useState(false);
+  const [isPublishingContent, setIsPublishingContent] = useState(false);
   const { mutateAsync: _publishContent } = useSupaMutation(publishContent, {
-    invalidate: [["getPostsByDestinationId", post.destination?.id ?? ""]],
+    invalidate: [["getContentsByDestinationId", content.destination?.id ?? ""]],
     onSuccess: () => {
       toast({
-        title: "Post published",
+        title: "Content published",
         variant: "success",
       });
     },
     onError: (error: any) => {
       console.error(error);
       toast({
-        title: "Failed to publish post",
+        title: "Failed to publish content",
         variant: "destructive",
         description: "Please try again or contact support.",
       });
@@ -90,7 +90,7 @@ export default function InstagramPost({
   });
 
   const handlePublishContent = async () => {
-    if (!post.destination) {
+    if (!content.destination) {
       return;
     }
 
@@ -116,18 +116,18 @@ export default function InstagramPost({
       }
     }
     try {
-      setIsPublishingPost(true);
+      setIsPublishingContent(true);
       await supaClientComponentClient.storage
         .from(BUCKETS.stagingAreaForContentPublishing)
         .remove(
           Object.entries(designMap).map(
-            ([templateId, _]) => `${post.owner_id}/${post.id}/${templateId}.jpg`,
+            ([templateId, _]) => `${content.owner_id}/${content.id}/${templateId}.jpg`,
           ),
         );
 
       await Promise.all(
         Object.entries(designMap).map(async ([templateId, design]) => {
-          const objectPath = `${post.owner_id}/${post.id}/${templateId}.jpg`;
+          const objectPath = `${content.owner_id}/${content.id}/${templateId}.jpg`;
           const { token } = await signUploadUrl({
             bucket: BUCKETS.stagingAreaForContentPublishing,
             objectPath,
@@ -141,24 +141,24 @@ export default function InstagramPost({
         }),
       );
 
-      await _publishContent({ id: post.id, body: { instagramTags } });
+      await _publishContent({ id: content.id, body: { instagramTags } });
     } catch (err) {
       console.error(err);
       toast({
-        title: "Failed to publish post",
+        title: "Failed to publish content",
         variant: "destructive",
         description: "Please try again or contact support.",
       });
     } finally {
-      setIsPublishingPost(false);
+      setIsPublishingContent(false);
     }
   };
 
-  if (isLoadingTemplatesForPost || isLoadingScheduleData) {
+  if (isLoadingTemplatesForContent || isLoadingScheduleData) {
     return <Skeleton className="h-[600px] w-[300px] rounded-lg" />;
   }
   return (
-    <div className="w-fit rounded-md bg-secondary" key={post.id}>
+    <div className="w-fit rounded-md bg-secondary" key={content.id}>
       <div className="flex items-center gap-x-1 px-3 py-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>
@@ -169,42 +169,46 @@ export default function InstagramPost({
                 </div>
               </Link>
             </TooltipTrigger>
-            <TooltipContent>Go to the instagram post</TooltipContent>
+            <TooltipContent>Go to the instagram content</TooltipContent>
           </Tooltip>
         )}
+        <div className="group flex cursor-pointer items-center gap-1 rounded-full p-1.5 ">
+          <InstagramIcon className="h-6 w-6 fill-purple-600 text-secondary-foreground" />
+          <p className="text-xs font-medium text-pink-600">{content.content_type.split(" ")[1]}</p>
+        </div>
         <div className="flex-1"></div>
-        {isPublishingPost ? (
+        {isPublishingContent ? (
           <Spinner />
         ) : (
           <>
             <PencilSquareIcon
-              onClick={onEditPost}
+              onClick={onEditContent}
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-secondary-foreground hover:bg-secondary-foreground hover:text-secondary"
             />
             <TrashIcon
-              onClick={onDeletePost}
+              onClick={onDeleteContent}
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary-foreground hover:text-secondary"
             />
             <Tooltip>
               <TooltipTrigger
-                disabled={!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData)}
+                disabled={!content.destination?.linked_ig_user_id || _.isEmpty(scheduleData)}
               >
                 <CloudArrowUpIcon
                   onClick={handlePublishContent}
                   className={cn(
                     "ml-1 h-9 w-9 cursor-pointer rounded-full bg-primary p-2 text-secondary ",
-                    (!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData)) &&
+                    (!content.destination?.linked_ig_user_id || _.isEmpty(scheduleData)) &&
                       "opacity-50",
                   )}
                 />
               </TooltipTrigger>
-              {!post.destination?.linked_ig_user_id || _.isEmpty(scheduleData) ? (
+              {!content.destination?.linked_ig_user_id || _.isEmpty(scheduleData) ? (
                 <></>
               ) : (
                 <TooltipContent className="max-w-[300px]">
-                  {!post.destination?.linked_ig_user_id
+                  {!content.destination?.linked_ig_user_id
                     ? "The Destination isn't connected. Please visit the destinations page to make changes."
-                    : "Publish post"}{" "}
+                    : "Publish content"}{" "}
                 </TooltipContent>
               )}
             </Tooltip>
@@ -217,7 +221,7 @@ export default function InstagramPost({
           <CarouselContent>
             {/** @eslint-ignore  */}
             {(templates ?? []).map((template) => (
-              <CarosuelImageItem key={template.id} template={template} post={post} />
+              <CarosuelImageItem key={template.id} template={template} content={content} />
             ))}
           </CarouselContent>
           <CarouselDots className="mt-4" />
@@ -225,7 +229,7 @@ export default function InstagramPost({
       </div>
       <div className="max-w-[300px] overflow-scroll p-2">
         <p className="overflow-scroll whitespace-pre-wrap text-sm">
-          {renderCaption(post.caption || "", scheduleData as any)}
+          {renderCaption(content.caption || "", scheduleData as any)}
         </p>
       </div>
     </div>
@@ -234,10 +238,10 @@ export default function InstagramPost({
 
 const CarosuelImageItem = memo(function CarouselImageItem({
   template,
-  post,
+  content,
 }: {
   template: Tables<"templates">;
-  post: Tables<"content">;
+  content: Tables<"content">;
 }) {
   return (
     <CarouselItem
@@ -248,8 +252,8 @@ const CarosuelImageItem = memo(function CarouselImageItem({
     >
       <DesignContainer
         source={{
-          id: post.source_id,
-          view: post.source_data_view as SourceDataView,
+          id: content.source_id,
+          view: content.source_data_view as SourceDataView,
         }}
         template={template}
       />

@@ -7,7 +7,7 @@ import { deleteContent, getContentForAuthUser } from "@/src/data/content";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
-import InstagramPost from "./instagram-post";
+import InstagramContent from "./instagram-content";
 import { Header2 } from "@/src/components/common/header";
 import { getSourcesForAuthUser } from "@/src/data/sources";
 import { SaveContentDialog } from "@/src/components/dialogs/save-content-dialog";
@@ -174,16 +174,16 @@ export default function ManageContent({
     switch (content.destination?.type) {
       case DestinationTypes.Instagram:
         contentComp = (
-          <InstagramPost
+          <InstagramContent
             key={content.id}
-            post={content}
-            onEditPost={() => {
+            content={content}
+            onEditContent={() => {
               setContentDialogState({
                 isOpen: true,
                 content,
               });
             }}
-            onDeletePost={() => {
+            onDeleteContent={() => {
               setDeleteConfirmationDialogState({
                 isOpen: true,
                 content,

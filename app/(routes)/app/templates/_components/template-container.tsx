@@ -201,7 +201,7 @@ export const TemplateContainer = ({
         src={jpgBlobUrl}
         onClick={() => setIsImageViewerOpen(true)}
         alt="Template"
-        className="h-[300px] w-[300px]"
+        className=" h-full w-full object-contain"
       />
     );
   };

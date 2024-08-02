@@ -162,7 +162,11 @@ export const DesignContainer = ({
       return <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>;
     }
     if (isDesignNotReady || !designJpgUrl) {
-      return <Spinner />;
+      return (
+        <div className="flex h-[300px] w-full items-center justify-center">
+          <Spinner />
+        </div>
+      );
     }
 
     return (
@@ -198,7 +202,7 @@ export const DesignContainer = ({
         />
       )}
       <div className="w-[320px] ">
-        <div className="relative flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
+        <div className="relative flex cursor-pointer items-center justify-center bg-secondary p-0">
           {designOverwrite && (
             <div className="absolute left-2 top-2 z-10">
               <Tooltip>
@@ -328,8 +332,8 @@ const DesignImage = ({
   const sideLength = 300;
   if (url) {
     return (
-      <div className="relative" onClick={onClick}>
-        <div className={`absolute h-[${sideLength}px] w-[${sideLength}px]`}>
+      <div className="relative h-auto" onClick={onClick}>
+        <div className={`absolute w-[${sideLength}px]`}>
           {instagramTags.map((itp, i) => (
             <span
               key={itp.instagramTag + i}
@@ -349,12 +353,7 @@ const DesignImage = ({
             </span>
           ))}
         </div>
-        <img
-          src={url}
-          onClick={onClick}
-          alt="Design"
-          className={`h-[${sideLength}px] w-[${sideLength}px]`}
-        />
+        <img src={url} onClick={onClick} alt="Design" className={`w-[${sideLength}px]`} />
       </div>
     );
   }

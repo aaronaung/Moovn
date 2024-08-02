@@ -13,6 +13,11 @@ var doc = app.activeDocument;
 var layers = ${JSON.stringify(designGenSteps.layerUpdates)};
 var loadedLayers = doc.artLayers;
 
+if ("${namespace}" == "c217b96e-da60-427e-b2a4-61e1dc1e077b") {
+    console.log({ layerUpdates: layers });
+}
+
+
 function areLayersUpdated() {
     for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
         var layer = layers.${LayerUpdateType.EditText}[i];
@@ -121,13 +126,24 @@ export const checkLayerTranslatesComplete = (
 var doc = app.activeDocument;
 var layers = ${JSON.stringify(layerTranslates)};
 
+if ("${namespace}" == "c217b96e-da60-427e-b2a4-61e1dc1e077b") {
+    console.log("checking layer translates complete")
+    console.log({ layerUpdates: layers });
+}
+
 function checkLayerTranslatesComplete() {
     for (var i = 0; i < layers.length; i++) {
         var fromName = layers[i].from;
         var toName = layers[i].to;
 
-        var from = doc.artLayers.getByName(fromName);
-        var to = doc.artLayers.getByName(toName);
+        try {
+            var from = doc.artLayers.getByName(fromName);
+            var to = doc.artLayers.getByName(toName);
+        } catch(e) {
+            console.error("Error getting layers for translation", e)
+        }
+       
+        console.log({ from, to })
 
         if (from && to) {
             // Calculate the center of the 'to' layer
@@ -147,7 +163,13 @@ function checkLayerTranslatesComplete() {
             var fromCenterY = (fromTop + fromBottom) / 2;
 
             // Check if the current position of 'from' matches the 'to' position
-            if (fromCenterX !== toCenterX || fromCenterY !== toCenterY) {
+            if (Math.abs(fromCenterX - toCenterX) > 2 || Math.abs(fromCenterY - toCenterY) > 2) {
+                console.log("not translated", {
+                    fromCenterX,
+                    toCenterX,
+                    fromCenterY,
+                    toCenterY
+                })
                 return;
             } else {
                 from.name = to.name;
