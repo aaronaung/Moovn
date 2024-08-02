@@ -13,11 +13,6 @@ var doc = app.activeDocument;
 var layers = ${JSON.stringify(designGenSteps.layerUpdates)};
 var loadedLayers = doc.artLayers;
 
-if ("${namespace}" == "c217b96e-da60-427e-b2a4-61e1dc1e077b") {
-    console.log({ layerUpdates: layers });
-}
-
-
 function areLayersUpdated() {
     for (var i = 0; i < layers.${LayerUpdateType.EditText}.length; i++) {
         var layer = layers.${LayerUpdateType.EditText}[i];
@@ -125,11 +120,6 @@ export const checkLayerTranslatesComplete = (
 ) => `
 var doc = app.activeDocument;
 var layers = ${JSON.stringify(layerTranslates)};
-
-if ("${namespace}" == "c217b96e-da60-427e-b2a4-61e1dc1e077b") {
-    console.log("checking layer translates complete")
-    console.log({ layerUpdates: layers });
-}
 
 function checkLayerTranslatesComplete() {
     for (var i = 0; i < layers.length; i++) {
