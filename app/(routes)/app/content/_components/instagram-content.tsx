@@ -164,13 +164,7 @@ export default function InstagramContent({
   }
   return (
     <div className="w-fit rounded-md bg-secondary" key={content.id}>
-      <div className="flex gap-2 rounded-t-md bg-slate-500 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <RocketLaunchIcon className="h-5 w-5 text-white" />
-          <p className="text-xs text-white">{content.destination?.name}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-x-1 px-3 py-2">
+      <div className="flex items-center gap-x-1 px-3 py-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>
             <TooltipTrigger>
@@ -183,9 +177,17 @@ export default function InstagramContent({
             <TooltipContent>Go to the instagram content</TooltipContent>
           </Tooltip>
         )}
-        <div className="flex items-center gap-2">
-          <InstagramIcon className="h-5 w-5 fill-purple-600 text-secondary-foreground" />
-          <p className="text-xs font-medium text-pink-600">{content.content_type.split(" ")[1]}</p>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <InstagramIcon className="h-4 w-4 fill-purple-600 text-secondary-foreground" />
+            <p className="text-xs font-medium text-pink-600">
+              {content.content_type.split(" ")[1]}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <RocketLaunchIcon className="h-4 w-4 text-primary" />
+            <p className="text-xs text-primary">{content.destination?.name}</p>
+          </div>
         </div>
         <div className="flex-1"></div>
         {isPublishingContent ? (
