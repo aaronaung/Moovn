@@ -20,7 +20,12 @@ import { renderCaption } from "@/src/libs/content";
 import { signUploadUrl } from "@/src/libs/storage";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
-import { CloudArrowUpIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  CloudArrowUpIcon,
+  PencilSquareIcon,
+  RocketLaunchIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import Link from "next/link";
 
 import { memo, useState } from "react";
@@ -159,7 +164,13 @@ export default function InstagramContent({
   }
   return (
     <div className="w-fit rounded-md bg-secondary" key={content.id}>
-      <div className="flex items-center gap-x-1 px-3 py-3">
+      <div className="flex gap-2 rounded-t-md bg-slate-500 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <RocketLaunchIcon className="h-5 w-5 text-white" />
+          <p className="text-xs text-white">{content.destination?.name}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-x-1 px-3 py-2">
         {igMedia && igMedia.permalink && (
           <Tooltip>
             <TooltipTrigger>
@@ -172,8 +183,8 @@ export default function InstagramContent({
             <TooltipContent>Go to the instagram content</TooltipContent>
           </Tooltip>
         )}
-        <div className="group flex cursor-pointer items-center gap-1 rounded-full p-1.5 ">
-          <InstagramIcon className="h-6 w-6 fill-purple-600 text-secondary-foreground" />
+        <div className="flex items-center gap-2">
+          <InstagramIcon className="h-5 w-5 fill-purple-600 text-secondary-foreground" />
           <p className="text-xs font-medium text-pink-600">{content.content_type.split(" ")[1]}</p>
         </div>
         <div className="flex-1"></div>
