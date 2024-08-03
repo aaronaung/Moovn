@@ -9,7 +9,7 @@ export type ScheduleData = {
   [key: string]: any;
 };
 
-export const getScheduleDataFromSource = async (sourceId: string, from: Date, to: Date) => {
+export const getScheduleDataFromSource = async (sourceId: string, from: string, to: string) => {
   const source = await getSourceById(sourceId, {
     client: supaServerClient(),
   });

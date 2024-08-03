@@ -1,5 +1,5 @@
 import { ScheduleData } from "./common";
-import { compareAsc, format, parseISO, startOfDay } from "date-fns";
+import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
 
 export type Pike13SourceSettings = {
@@ -24,16 +24,15 @@ export class Pike13Client {
     return resp.json();
   }
 
-  async getRawEventOcurrences(from: Date, to: Date) {
+  async getRawEventOcurrences(from: string, to: string) {
     const urlParams = new URLSearchParams();
-    const fromStr = format(from, "yyyy-MM-dd");
-    const toStr = format(to, "yyyy-MM-dd");
-    if (fromStr === toStr) {
-      urlParams.set("from", fromStr);
+    if (from === to) {
+      urlParams.set("from", from);
     } else {
-      urlParams.set("from", fromStr);
-      urlParams.set("to", toStr);
+      urlParams.set("from", from);
+      urlParams.set("to", to);
     }
+    console.log(urlParams.toString());
     const resp = await this.get(`/api/v2/front/event_occurrences`, urlParams.toString());
     return resp.event_occurrences || [];
   }
@@ -59,7 +58,7 @@ export class Pike13Client {
     return Object.values(groupedEvents);
   }
 
-  async getScheduleData(from: Date, to: Date): Promise<ScheduleData> {
+  async getScheduleData(from: string, to: string): Promise<ScheduleData> {
     const $events = this.getRawEventOcurrences(from, to);
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);

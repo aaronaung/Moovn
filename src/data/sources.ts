@@ -4,7 +4,15 @@ import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
 import { ScheduleData } from "../libs/sources/common";
-import { endOfDay, endOfMonth, endOfWeek, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import {
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 
 export const saveSource = async (
   source: Partial<Tables<"sources">>,
@@ -49,32 +57,34 @@ export const getScheduleDataForSource = async ({
   view: SourceDataView;
 }): Promise<ScheduleData> => {
   const current = new Date();
-  let range = { from: current, to: current };
+  let range = {
+    from: format(startOfDay(current), "yyyy-MM-dd"),
+    to: format(endOfDay(current), "yyyy-MM-dd"),
+  };
   switch (view) {
     case SourceDataView.Daily:
       range = {
-        from: startOfDay(current),
-        to: endOfDay(current),
+        from: format(startOfDay(current), "yyyy-MM-dd"),
+        to: format(endOfDay(current), "yyyy-MM-dd"),
       };
       break;
     case SourceDataView.Weekly:
       range = {
-        from: startOfWeek(current),
-        to: endOfWeek(current),
+        from: format(startOfWeek(current), "yyyy-MM-dd"),
+        to: format(endOfWeek(current), "yyyy-MM-dd"),
       };
       break;
     case SourceDataView.Monthly:
       range = {
-        from: startOfMonth(current),
-        to: endOfMonth(current),
+        from: format(startOfMonth(current), "yyyy-MM-dd"),
+        to: format(endOfMonth(current), "yyyy-MM-dd"),
       };
       break;
     default:
       break;
   }
+  console.log("range", range);
 
-  const resp = await fetch(
-    `/api/sources/${id}/schedules?from=${range.from.toISOString()}&to=${range.to.toISOString()}`,
-  );
+  const resp = await fetch(`/api/sources/${id}/schedules?from=${range.from}&to=${range.to}`);
   return resp.json();
 };

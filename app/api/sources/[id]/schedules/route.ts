@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return Response.json({ message: "from and to query parameters are required" }, { status: 400 });
   }
 
-  const schedule = await getScheduleDataFromSource(params.id, new Date(from), new Date(to));
+  const schedule = await getScheduleDataFromSource(params.id, from, to);
   if (!schedule) {
     return Response.json(
       { message: `Failed to find schedule for source '${params.id}' from ${from} to ${to}` },
