@@ -92,7 +92,17 @@ export class FacebookGraphAPIClient {
     return this.request("GET", `/${mediaId}`, new URLSearchParams("fields=id,permalink"));
   }
 
-  async publishSingle(
+  async publishStory(
+    accountId: string,
+    input: Omit<CreateMediaContainerInput, "isCarouselItem" | "userTags" | "caption">,
+  ) {
+    await this.refreshTokenIfNeeded();
+
+    const mediaContainer = await this.createMediaContainer(accountId, input, "STORIES");
+    return this.publishMediaContainer(accountId, mediaContainer.id);
+  }
+
+  async publishPost(
     accountId: string,
     input: Omit<CreateMediaContainerInput, "isCarouselItem">,
   ): Promise<{ id: string }> {
@@ -102,30 +112,26 @@ export class FacebookGraphAPIClient {
     return this.publishMediaContainer(accountId, mediaContainer.id);
   }
 
-  async publishCarousel(
+  async publishCarouselPost(
     accountId: string,
     mediaInput: Omit<CreateMediaContainerInput, "isCarouselItem" | "caption">[],
     carouselInput: Omit<CreateCarouselContainerInput, "children">,
   ): Promise<{ id: string }> {
     await this.refreshTokenIfNeeded();
 
-    console.log("mediaInput", mediaInput);
     const $createMediaContainers: Promise<{ id: string }>[] = mediaInput.map((input) =>
       this.createMediaContainer(accountId, { ...input, isCarouselItem: true }),
     );
     const mediaContainers = await Promise.all($createMediaContainers);
-    console.log("mediaContainers", mediaContainers);
     const carouselContainer = await this.createCarouselContainer(accountId, {
       ...carouselInput,
       children: mediaContainers.map((result) => result.id),
     });
-    console.log("carouselContainer", carouselContainer);
     return this.publishMediaContainer(accountId, carouselContainer.id);
   }
 
   private async publishMediaContainer(accountId: string, mediaContainerId: string) {
     const searchParams = new URLSearchParams();
-    console.log("mediaContainerId", mediaContainerId);
     searchParams.set("creation_id", mediaContainerId);
     return this.request("POST", `/${accountId}/media_publish`, searchParams);
   }
@@ -133,9 +139,13 @@ export class FacebookGraphAPIClient {
   private async createMediaContainer(
     accountId: string,
     req: CreateMediaContainerInput,
+    mediaType?: "STORIES" | "REELS",
   ): Promise<CreateMediaContainerResult> {
     const searchParams = new URLSearchParams();
     searchParams.set("image_url", req.imageUrl);
+    if (mediaType) {
+      searchParams.set("media_type", mediaType);
+    }
     if (req.isCarouselItem) {
       // If isCarouselItem is present or true, the media will be added to a carousel container.
       searchParams.set("is_carousel_item", req.isCarouselItem.toString());
@@ -150,7 +160,9 @@ export class FacebookGraphAPIClient {
     if (req.userTags) {
       searchParams.set("user_tags", JSON.stringify(req.userTags));
     }
-    return this.request("POST", `/${accountId}/media`, searchParams);
+    const resp = await this.request("POST", `/${accountId}/media`, searchParams);
+    console.log("createMediaContainer resp", resp);
+    return resp;
   }
 
   private async createCarouselContainer(
@@ -172,6 +184,8 @@ export class FacebookGraphAPIClient {
     if (req.locationId) {
       searchParams.set("location_id", req.locationId);
     }
-    return this.request("POST", `/${accountId}/media`, searchParams);
+    const resp = await this.request("POST", `/${accountId}/media`, searchParams);
+    console.log("createCarouselContainer resp", resp);
+    return resp;
   }
 }

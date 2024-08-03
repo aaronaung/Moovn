@@ -41,7 +41,8 @@ export default function PhotopeaEditor() {
   useEffect(() => {
     setTitle(metadata.title);
     setSourceDataView(metadata.source_data_view);
-  }, [metadata.title, metadata.source_data_view]);
+    setContentType(metadata.content_type);
+  }, [metadata.title, metadata.source_data_view, metadata.content_type]);
 
   const handleSave = async () => {
     // handleSave simply sends the export command to the photopea iframe. The actual saving of the design is done in the onDesignExport callback.

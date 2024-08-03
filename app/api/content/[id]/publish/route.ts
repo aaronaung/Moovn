@@ -8,6 +8,7 @@ import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
 import { z } from "zod";
+import { ContentType } from "@/src/consts/content";
 
 const PublishContentRequestSchema = z.object({
   instagramTags: z
@@ -89,34 +90,81 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           return Response.json({ message: "Failed to fetch designs" }, { status: 500 });
         }
 
-        let publishedMedia: Awaited<
-          | ReturnType<FacebookGraphAPIClient["publishSingle"]>
-          | ReturnType<FacebookGraphAPIClient["publishCarousel"]>
-        >;
-        if (toPublish.length > 1) {
-          publishedMedia = await fbClient.publishCarousel(
-            content.destination.linked_ig_user_id,
-            toPublish.map(({ url, instagramTags }) => ({
-              imageUrl: url,
-              userTags: instagramTags,
-            })),
-            {
-              caption,
-            },
-          );
-        } else {
-          publishedMedia = await fbClient.publishSingle(content.destination.linked_ig_user_id, {
-            imageUrl: toPublish[0].url,
-            userTags: toPublish[0].instagramTags,
-            caption,
-          });
+        let publishedMediaIds = [];
+        switch (content.content_type) {
+          case ContentType.InstagramPost:
+            if (toPublish.length > 1) {
+              const resp = await fbClient.publishCarouselPost(
+                content.destination.linked_ig_user_id,
+                toPublish.map(({ url, instagramTags }) => ({
+                  imageUrl: url,
+                  userTags: instagramTags,
+                })),
+                {
+                  caption,
+                },
+              );
+              if (!resp.id) {
+                console.error(`Failed to publish carousel post ${content.id}, resp`);
+                return Response.json(
+                  { message: "Failed to publish carousel post" },
+                  { status: 500 },
+                );
+              }
+              publishedMediaIds.push(resp.id);
+            } else {
+              const resp = await fbClient.publishPost(content.destination.linked_ig_user_id, {
+                imageUrl: toPublish[0].url,
+                userTags: toPublish[0].instagramTags,
+                caption,
+              });
+              if (!resp.id) {
+                console.error(`Failed to publish post ${content.id}, resp`);
+                return Response.json({ message: "Failed to publish post" }, { status: 500 });
+              }
+              publishedMediaIds.push(resp.id);
+            }
+            break;
+          case ContentType.InstagramStory:
+            if (toPublish.length > 1) {
+              for (const media of toPublish) {
+                const resp = await fbClient.publishStory(content.destination.linked_ig_user_id, {
+                  imageUrl: media.url,
+                });
+                if (!resp.id) {
+                  console.error(`Failed to publish story ${content.id}, resp`);
+                  return Response.json({ message: "Failed to publish story" }, { status: 500 });
+                }
+                publishedMediaIds.push(resp.id);
+              }
+            } else {
+              const resp = await fbClient.publishStory(content.destination.linked_ig_user_id, {
+                imageUrl: toPublish[0].url,
+              });
+              if (!resp.id) {
+                console.error(`Failed to publish story ${content.id}, resp`);
+                return Response.json({ message: "Failed to publish story" }, { status: 500 });
+              }
+              publishedMediaIds.push(resp.id);
+            }
+            break;
+          default:
+            return Response.json(
+              { message: `Content type ${content.content_type} not supported` },
+              { status: 400 },
+            );
         }
-        await supaServerClient().from("published_content").insert({
-          owner_id: content.owner_id,
-          content_id: content.id,
-          ig_media_id: publishedMedia.id,
-          published_at: new Date().toISOString(),
-        });
+
+        await Promise.all(
+          publishedMediaIds.map((id) =>
+            supaServerClient().from("published_content").insert({
+              owner_id: content.owner_id,
+              content_id: content.id,
+              ig_media_id: id,
+              published_at: new Date().toISOString(),
+            }),
+          ),
+        );
         return Response.json({ id: content.id });
       } catch (err: any) {
         console.error(err);

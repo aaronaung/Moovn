@@ -88,6 +88,11 @@ export const useGenerateDesign = () => {
       initialize(template.id, photopeaEl, {
         initialData: templateFile,
         designGenSteps,
+        onTimeout: () => {
+          if (document.body.contains(photopeaEl)) {
+            document.body.removeChild(photopeaEl);
+          }
+        },
         onDesignExport: async (designExport) => {
           if (designExport?.["psd"] && designExport?.["jpg"]) {
             await db.designs.put({

@@ -73,7 +73,6 @@ export const getTemplatesForContent = async (
   { contentId, contentType }: { contentId: string; contentType: string },
   { client }: SupabaseOptions,
 ) => {
-  console.log({ contentId, contentType });
   const templates = await throwOrData(
     client
       .from("content_templates")

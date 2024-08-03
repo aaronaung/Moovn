@@ -1,27 +1,45 @@
 import { format, parseISO } from "date-fns";
 
-export function renderCaption(template: string, values?: { [key: string]: string }): string {
-  if (!values) {
+export function renderCaption(template: string, schedule?: { [key: string]: string }): string {
+  if (!schedule) {
     return template;
   }
-  return template.replace(/{(.*?)}/g, (match, key) => {
+
+  // First, replace all keys with their values or placeholders
+  let result = template.replace(/{(.*?)}/g, (match, key) => {
     let [actualKey, dateFormat] = key.split("|");
     actualKey = actualKey.trim();
 
-    if (actualKey in values) {
+    if (actualKey in schedule) {
       if (dateFormat) {
-        // If dateFormat exists, format the date value
         try {
-          const date = parseISO(values[actualKey]);
+          const date = parseISO(schedule[actualKey]);
           return format(date, dateFormat.trim());
         } catch (error) {
           console.error(`Error formatting date: ${error}`);
-          return values[actualKey]; // Fallback to the original value
+          return schedule[actualKey]; // Fallback to the original value
         }
       } else {
-        return values[actualKey];
+        return schedule[actualKey];
       }
     }
-    return match;
+    return "\0"; // Use null character as placeholder for missing keys
   });
+
+  // Remove lines containing only the null character placeholder
+  // Preserve the newline if the next line is not empty
+  result = result.replace(
+    /^([^\S\n]*)\0[^\S\n]*$\n?(?=(.|\n))/gm,
+    (match, leadingSpace, nextLine) => {
+      return nextLine.trim() ? "\n" : "";
+    },
+  );
+
+  // Remove any remaining null characters
+  result = result.replace(/\0/g, "");
+
+  // Remove any consecutive newlines more than two
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  return result.trim(); // Trim any leading or trailing whitespace
 }

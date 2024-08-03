@@ -29,6 +29,7 @@ type PhotopeaHeadlessContextValue = {
     options: {
       initialData?: ArrayBuffer;
       designGenSteps?: DesignGenSteps;
+      onTimeout?: () => void;
       onDesignExport?: (args: DesignExport | null) => void;
       timeout?: number;
     },
@@ -161,6 +162,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           onDesignExportMap[exportMetadata.namespace]
         ) {
           onDesignExportMap[exportMetadata.namespace](mostRecentExport);
+          clear(exportMetadata.namespace);
+          return;
         }
       }
     }
@@ -251,10 +254,12 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       initialData,
       designGenSteps,
       onDesignExport,
+      onTimeout,
       timeout = DEFAULT_TIMEOUT,
     }: {
       initialData?: ArrayBuffer;
       designGenSteps?: DesignGenSteps;
+      onTimeout?: () => void;
       onDesignExport?: (args: DesignExport | null) => void;
       timeout?: number;
     },
@@ -300,6 +305,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       // Design gen timeout has been reached.
       clear(namespace);
+      onTimeout?.();
     }, timeout);
   };
 
