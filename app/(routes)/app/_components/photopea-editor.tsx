@@ -107,7 +107,7 @@ export default function PhotopeaEditor() {
   ]);
 
   return (
-    <div className={cn("flex flex-col  bg-neutral-800", !isOpen && "hidden")}>
+    <div className={cn("flex h-screen flex-col bg-neutral-800", !isOpen && "hidden")}>
       {options?.onSaveConfirmationTitle && (
         <ConfirmationDialog
           isOpen={isConfirmationDialogOpen}
@@ -133,7 +133,12 @@ export default function PhotopeaEditor() {
         isTitleEditable={options?.isMetadataEditable}
       />
 
-      <div className={`flex`}>
+      <div
+        className={`flex`}
+        style={{
+          height: `calc(100vh - ${EDITOR_HEADER_HEIGHT}px)`,
+        }}
+      >
         <div
           className={`w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4`}
           style={{

@@ -71,7 +71,7 @@ export default function EditorHeader({
           </div>
         ) : (
           <p
-            className="mr-2 cursor-pointer text-xl font-semibold text-secondary-foreground dark:text-white"
+            className="mr-2 cursor-pointer text-xl font-semibold text-secondary-foreground text-white"
             onDoubleClick={() => {
               if (isTitleEditable) {
                 setIsEditingTitle(true);
@@ -83,7 +83,7 @@ export default function EditorHeader({
         )}
         {!isEditingTitle && isTitleEditable && (
           <PencilIcon
-            className="h-8 w-8 cursor-pointer rounded-full p-2  text-secondary-foreground hover:bg-secondary dark:text-white dark:hover:bg-gray-600"
+            className="h-8 w-8 cursor-pointer rounded-full p-2  text-secondary-foreground text-white hover:bg-gray-600"
             onClick={() => {
               setIsEditingTitle(true);
             }}
