@@ -7809,7 +7809,7 @@ packages:
       react: '>=15'
     dependencies:
       react: 18.2.0
-      unlayer-types: 1.52.0
+      unlayer-types: 1.65.0
     dev: false
 
   /react-fast-compare@3.2.2:
@@ -8941,8 +8941,8 @@ packages:
       '@fastify/busboy': 2.1.1
     dev: false
 
-  /unlayer-types@1.52.0:
-    resolution: {integrity: sha512-+1tRK9z9Ydj+4rIaFgbiViTZVHN1TGyCGQR32lSgfuUNJLnb8hASxRkjcYmxyaYYfJo/wR9hIgd3k1kTo1DtXw==}
+  /unlayer-types@1.65.0:
+    resolution: {integrity: sha512-fIeh/TtUhQ16A0oW3mHkcDekvhIbZbN+h0qVgBuVxjGnYME/Ma3saFRO4eKJll0YNyalvb9MdmSz0nyTgr/1/w==}
     dev: false
 
   /update-browserslist-db@1.0.13(browserslist@4.22.1):

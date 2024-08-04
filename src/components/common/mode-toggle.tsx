@@ -1,8 +1,9 @@
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { useTheme } from "next-themes";
+import { cn } from "@/src/utils";
 
-export function ModeToggle() {
+export function ModeToggle({ className }: { className?: any }) {
   const { setTheme, resolvedTheme } = useTheme();
 
   return (
@@ -12,7 +13,7 @@ export function ModeToggle() {
       }}
       variant="ghost"
       size="icon"
-      className="ghost"
+      className={cn(className, "ghost")}
     >
       {resolvedTheme === "light" ? (
         <Sun className="h-[1.1rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

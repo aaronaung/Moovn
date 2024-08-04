@@ -237,14 +237,16 @@ export default function InstagramContent({
               <CarosuelImageItem key={template.id} template={template} content={content} />
             ))}
           </CarouselContent>
-          <CarouselDots className="mt-4" />
+          {!_.isEmpty(scheduleData) && <CarouselDots className="mt-4" />}
         </Carousel>
       </div>
-      <div className="max-w-[300px] overflow-scroll p-2">
-        <p className="overflow-scroll whitespace-pre-wrap text-sm">
-          {renderCaption(content.caption || "", scheduleData as any)}
-        </p>
-      </div>
+      {!_.isEmpty(scheduleData) && (
+        <div className="max-w-[300px] overflow-scroll p-2">
+          <p className="overflow-scroll whitespace-pre-wrap text-sm">
+            {renderCaption(content.caption || "", scheduleData as any)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
