@@ -5,6 +5,7 @@ import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
 import { ScheduleData } from "../libs/sources/common";
 import {
+  addDays,
   endOfDay,
   endOfMonth,
   endOfWeek,
@@ -64,8 +65,8 @@ export const getScheduleDataForSource = async ({
   switch (view) {
     case SourceDataView.Daily:
       range = {
-        from: format(startOfDay(current), "yyyy-MM-dd"),
-        to: format(endOfDay(current), "yyyy-MM-dd"),
+        from: format(startOfDay(addDays(current, 1)), "yyyy-MM-dd"),
+        to: format(endOfDay(addDays(current, 1)), "yyyy-MM-dd"),
       };
       break;
     case SourceDataView.Weekly:

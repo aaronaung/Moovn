@@ -130,10 +130,7 @@ export default function CalendarV3() {
                 <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
               </Menu.Button>
 
-              <Menu.Items
-                transition
-                className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-              >
+              <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in">
                 <div className="py-1">
                   <Menu.Item>
                     <a
@@ -184,10 +181,7 @@ export default function CalendarV3() {
               <EllipsisHorizontalIcon className="h-5 w-5" aria-hidden="true" />
             </Menu.Button>
 
-            <Menu.Items
-              transition
-              className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-            >
+            <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in">
               <div className="py-1">
                 <Menu.Item>
                   <a
@@ -288,7 +282,7 @@ export default function CalendarV3() {
                       : undefined
                   }
                 >
-                  {day.date.split("-").pop().replace(/^0/, "")}
+                  {day.date && day.date.split("-").pop()?.replace(/^0/, "")}
                 </time>
                 {day.events.length > 0 && (
                   <ol className="mt-2">
@@ -339,7 +333,7 @@ export default function CalendarV3() {
                     "ml-auto",
                   )}
                 >
-                  {day.date.split("-").pop().replace(/^0/, "")}
+                  {day.date && day.date.split("-").pop()?.replace(/^0/, "")}
                 </time>
                 <span className="sr-only">{day.events.length} events</span>
                 {day.events.length > 0 && (
@@ -357,10 +351,10 @@ export default function CalendarV3() {
           </div>
         </div>
       </div>
-      {selectedDay?.events.length > 0 && (
+      {(selectedDay?.events || []).length > 0 && (
         <div className="px-4 py-10 sm:px-6 lg:hidden">
           <ol className="divide-y divide-gray-100 overflow-hidden rounded-lg bg-white text-sm shadow ring-1 ring-black ring-opacity-5">
-            {selectedDay.events.map((event) => (
+            {(selectedDay?.events || []).map((event) => (
               <li
                 key={event.id}
                 className="group flex p-4 pr-6 focus-within:bg-gray-50 hover:bg-gray-50"
