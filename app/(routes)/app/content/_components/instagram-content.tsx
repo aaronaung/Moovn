@@ -163,7 +163,7 @@ export default function InstagramContent({
     return <Skeleton className="h-[600px] w-[300px] rounded-lg" />;
   }
   return (
-    <div className="w-fit rounded-md bg-secondary" key={content.id}>
+    <div className="w-fit  max-w-[300px] rounded-md bg-secondary" key={content.id}>
       <div className="flex items-center gap-x-1 px-3 py-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>
@@ -186,7 +186,7 @@ export default function InstagramContent({
           </div>
           <div className="flex items-center gap-2">
             <RocketLaunchIcon className="h-4 w-4 text-primary" />
-            <p className="text-xs text-primary">{content.destination?.name}</p>
+            <p className="line-clamp-1 text-xs text-primary">{content.destination?.name}</p>
           </div>
         </div>
         <div className="flex-1"></div>

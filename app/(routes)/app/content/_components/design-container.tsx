@@ -201,7 +201,7 @@ export const DesignContainer = ({
           This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
-      <div className=" w-[320px] ">
+      <div className="w-[320px]">
         <div className="relative flex min-h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
           {designOverwrite && (
             <div className="absolute left-2 top-2 z-10">
