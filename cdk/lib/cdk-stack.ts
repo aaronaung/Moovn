@@ -4,6 +4,14 @@ import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { ConfigProps } from "../bin/cdk";
+import {
+  Effect,
+  Policy,
+  PolicyDocument,
+  PolicyStatement,
+  Role,
+  ServicePrincipal,
+} from "aws-cdk-lib/aws-iam";
 
 // 1. New type for the props adding in our configuration
 type AwsEnvStackProps = cdk.StackProps & {
@@ -21,48 +29,135 @@ export class CdkStack extends cdk.Stack {
       throw new Error("No configuration provided for the stack");
     }
 
-    // Define the Lambda function resource
+    const cloudWatchLogPolicy = new PolicyStatement({
+      actions: ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      resources: ["*"],
+    });
+
+    /** ------------- Create the content publishing function ------------- */
     const publishContentFunction = new lambda.Function(this, "PublishContentFunction", {
       runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
-      code: lambda.Code.fromAsset("lambda"), // Points to the lambda directory
-      handler: "publish-content.handler", // Points to the function file in the lambda directory
+      code: lambda.Code.fromAsset("lambda/publish-content"), // Points to the lambda directory
+      handler: "index.handler", // Points to the function file in the lambda directory
       environment: {
         SUPABASE_URL: props?.config.SUPABASE_URL!,
         SUPABASE_SERVICE_ROLE_KEY: props?.config.SUPABASE_SERVICE_ROLE_KEY!,
       },
     });
+    publishContentFunction.addToRolePolicy(cloudWatchLogPolicy);
 
-    // Define the API Gateway resource
-    const api = new apigateway.LambdaRestApi(this, "PublishContentApi", {
-      handler: publishContentFunction,
-      proxy: false,
+    /** ------------- Create delete schedule function ------------- */
+    const deleteScheduleFunction = new lambda.Function(this, "DeleteScheduleFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
+      code: lambda.Code.fromAsset("lambda/delete-schedule"), // Points to the lambda directory
+      handler: "index.handler", // Points to the function file in the lambda directory
     });
-    const apiKey = new apigateway.ApiKey(this, "PublishContentApiKey", {
-      apiKeyName: "publish-content-api-key",
+    deleteScheduleFunction.addToRolePolicy(cloudWatchLogPolicy);
+    deleteScheduleFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["scheduler:DeleteSchedule"],
+        resources: ["*"],
+      }),
+    );
+
+    /** --------------- Create the scheduler function -------------- */
+    // Define the IAM role for the scheduler to invoke our Lambda functions with
+    const schedulerRole = new Role(this, "SchedulerRole", {
+      assumedBy: new ServicePrincipal("scheduler.amazonaws.com"),
+    });
+    // Create the policy that will allow the role to invoke our functions
+    const invokeLambdaPolicy = new Policy(this, "invokeLambdaPolicy", {
+      document: new PolicyDocument({
+        statements: [
+          new PolicyStatement({
+            actions: ["lambda:InvokeFunction"],
+            resources: [publishContentFunction.functionArn],
+            effect: Effect.ALLOW,
+          }),
+        ],
+      }),
+    });
+    // Attach the policy to the role
+    schedulerRole.attachInlinePolicy(invokeLambdaPolicy);
+    // Define the scheduler function
+    const schedulePublishContentFunction = new lambda.Function(
+      this,
+      "SchedulePublishContentFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset("lambda/schedule-publish-content"),
+        handler: "index.handler",
+        environment: {
+          TARGET_FUNCTION_ARN: publishContentFunction.functionArn,
+          // Pass the role ARN to the scheduler function, so it can assume it to invoke the target function.
+          SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
+        },
+      },
+    );
+    schedulePublishContentFunction.addToRolePolicy(cloudWatchLogPolicy);
+    schedulePublishContentFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["scheduler:CreateSchedule"],
+        resources: ["*"],
+      }),
+    );
+    schedulePublishContentFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: ["*"],
+      }),
+    );
+
+    /** --------------- Set up API routes ---------------- */
+    const apiKey = new apigateway.ApiKey(this, "content-scheduling-api", {
+      apiKeyName: "content-scheduling-api-key",
       enabled: true,
     });
-    const plan = api.addUsagePlan("PublishContentUsagePlan", {
-      name: "publish-content-usage-plan",
-      throttle: {
-        rateLimit: 1000,
-        burstLimit: 200,
-      },
+    const apiUsagePlan = new apigateway.UsagePlan(this, "content-scheduling-usage-plan", {
+      name: "content-scheduling-usage-plan",
     });
-    plan.addApiKey(apiKey);
-    plan.addApiStage({
-      stage: api.deploymentStage,
-    });
-
-    // Set up API GW and Lambda integration
-    const apiGwAndLambdaIntegration = new apigateway.LambdaIntegration(publishContentFunction);
-
-    // Define the '/publish-content' resource with a GET method
-    const publishContentResource = api.root.addResource("publish-content");
-    publishContentResource.addMethod("POST", apiGwAndLambdaIntegration, {
+    apiUsagePlan.addApiKey(apiKey);
+    const apiConfig = {
       apiKeyRequired: true,
       requestParameters: {
         "method.request.header.x-api-key": true,
       },
+    };
+
+    // Define the '/publish-content' route.
+    const publishContentApi = new apigateway.LambdaRestApi(this, "PublishContentApi", {
+      handler: publishContentFunction,
+      proxy: false,
     });
+    apiUsagePlan.addApiStage({
+      stage: publishContentApi.deploymentStage,
+    });
+    const publishContentLambdaInt = new apigateway.LambdaIntegration(publishContentFunction);
+    const publishContentResource = publishContentApi.root.addResource("publish-content");
+    publishContentResource.addMethod("POST", publishContentLambdaInt, apiConfig);
+
+    // Define the '/schedule-publish-content' route
+    const scheduleApi = new apigateway.LambdaRestApi(this, "SchedulePublishContentApi", {
+      handler: schedulePublishContentFunction,
+      proxy: false,
+    });
+    apiUsagePlan.addApiStage({
+      stage: scheduleApi.deploymentStage,
+    });
+    const scheduleLambdaInt = new apigateway.LambdaIntegration(schedulePublishContentFunction);
+    const schedulePublishContentResource = scheduleApi.root.addResource("schedule-publish-content");
+    schedulePublishContentResource.addMethod("POST", scheduleLambdaInt, apiConfig);
+
+    // Define the '/delete-schedule' resource with a POST method
+    const deleteScheduleApi = new apigateway.LambdaRestApi(this, "DeleteScheduleApi", {
+      handler: deleteScheduleFunction,
+      proxy: false,
+    });
+    apiUsagePlan.addApiStage({
+      stage: deleteScheduleApi.deploymentStage,
+    });
+    const deleteScheduleLambdaInt = new apigateway.LambdaIntegration(deleteScheduleFunction);
+    const deleteScheduleResource = deleteScheduleApi.root.addResource("delete-schedule");
+    deleteScheduleResource.addMethod("POST", deleteScheduleLambdaInt, apiConfig);
   }
 }
