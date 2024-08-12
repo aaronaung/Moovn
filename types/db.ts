@@ -73,6 +73,41 @@ export type Database = {
           },
         ]
       }
+      content_schedules: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          schedule_expression: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          schedule_expression: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          schedule_expression?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_schedules_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_templates: {
         Row: {
           content_id: string
@@ -149,6 +184,29 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publish_content_jobs: {
+        Row: {
+          content_id: string
+          job_id: number
+        }
+        Insert: {
+          content_id: string
+          job_id: number
+        }
+        Update: {
+          content_id?: string
+          job_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publish_content_jobs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
             referencedColumns: ["id"]
           },
         ]
@@ -235,6 +293,7 @@ export type Database = {
           content_type: string
           created_at: string | null
           id: string
+          ig_caption_template: string | null
           name: string
           owner_id: string
           source_data_view: string
@@ -244,6 +303,7 @@ export type Database = {
           content_type?: string
           created_at?: string | null
           id?: string
+          ig_caption_template?: string | null
           name: string
           owner_id: string
           source_data_view: string
@@ -253,6 +313,7 @@ export type Database = {
           content_type?: string
           created_at?: string | null
           id?: string
+          ig_caption_template?: string | null
           name?: string
           owner_id?: string
           source_data_view?: string
@@ -306,10 +367,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      schedule_content_publish: {
+        Args: {
+          content_id: number
+          api_key: string
+          cron_schedule: string
+        }
+        Returns: number
+      }
+      schedule_content_publish_run_once: {
+        Args: {
+          content_id: string
+          publish_content_function_url: string
+          api_key: string
+          date_time: string
+        }
+        Returns: number
+      }
       set_content_template_links: {
         Args: {
           arg_content_id: string
           new_template_ids: string[]
+        }
+        Returns: undefined
+      }
+      unschedule_job: {
+        Args: {
+          job_id: number
         }
         Returns: undefined
       }

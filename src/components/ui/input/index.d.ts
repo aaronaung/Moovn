@@ -8,7 +8,7 @@ export type CommonRhfInputProps = {
   error?: string;
   label?: string;
   rhfKey?: string;
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+  inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>;
   onChange?: (e) => void; // This is used for when you want to do extra things on top of RHF or not use RHF controls.
   value?: any; // This is used for when you want to do extra things on top of RHF or not use RHF controls.
   defaultValue?: any;

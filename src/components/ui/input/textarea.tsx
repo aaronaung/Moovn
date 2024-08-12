@@ -28,6 +28,8 @@ export default function InputTextArea(props: InputTextAreaProps) {
               })
             : {})}
           {...(props.onChange ? { onChange: props.onChange } : {})}
+          {...(props.value ? { value: props.value } : {})}
+          {...props.inputProps}
           name={props.rhfKey}
           id={props.rhfKey}
           className="text-md w-full border-0 bg-transparent p-0 pr-3 placeholder:text-sm placeholder:text-muted-foreground focus:ring-0"

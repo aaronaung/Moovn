@@ -123,41 +123,37 @@ export class CdkStack extends cdk.Stack {
         "method.request.header.x-api-key": true,
       },
     };
-
-    // Define the '/publish-content' route.
-    const publishContentApi = new apigateway.LambdaRestApi(this, "PublishContentApi", {
-      handler: publishContentFunction,
+    const contentSchedulingApi = new apigateway.LambdaRestApi(this, "ContentSchedulingApi", {
       proxy: false,
+      handler: new lambda.Function(this, "DefaultFunction", {
+        code: lambda.Code.fromInline(`
+exports.handler = function(event) { 
+  return { statusCode: 404, body: 'Not found' };
+}`),
+        handler: "index.handler",
+        runtime: lambda.Runtime.NODEJS_20_X,
+      }),
+      cloudWatchRole: true,
     });
     apiUsagePlan.addApiStage({
-      stage: publishContentApi.deploymentStage,
+      stage: contentSchedulingApi.deploymentStage,
     });
+
+    // Define the '/publish-content' route.
     const publishContentLambdaInt = new apigateway.LambdaIntegration(publishContentFunction);
-    const publishContentResource = publishContentApi.root.addResource("publish-content");
+    const publishContentResource = contentSchedulingApi.root.addResource("publish-content");
     publishContentResource.addMethod("POST", publishContentLambdaInt, apiConfig);
 
     // Define the '/schedule-publish-content' route
-    const scheduleApi = new apigateway.LambdaRestApi(this, "SchedulePublishContentApi", {
-      handler: schedulePublishContentFunction,
-      proxy: false,
-    });
-    apiUsagePlan.addApiStage({
-      stage: scheduleApi.deploymentStage,
-    });
     const scheduleLambdaInt = new apigateway.LambdaIntegration(schedulePublishContentFunction);
-    const schedulePublishContentResource = scheduleApi.root.addResource("schedule-publish-content");
+    const schedulePublishContentResource = contentSchedulingApi.root.addResource(
+      "schedule-publish-content",
+    );
     schedulePublishContentResource.addMethod("POST", scheduleLambdaInt, apiConfig);
 
     // Define the '/delete-schedule' resource with a POST method
-    const deleteScheduleApi = new apigateway.LambdaRestApi(this, "DeleteScheduleApi", {
-      handler: deleteScheduleFunction,
-      proxy: false,
-    });
-    apiUsagePlan.addApiStage({
-      stage: deleteScheduleApi.deploymentStage,
-    });
     const deleteScheduleLambdaInt = new apigateway.LambdaIntegration(deleteScheduleFunction);
-    const deleteScheduleResource = deleteScheduleApi.root.addResource("delete-schedule");
+    const deleteScheduleResource = contentSchedulingApi.root.addResource("delete-schedule");
     deleteScheduleResource.addMethod("POST", deleteScheduleLambdaInt, apiConfig);
   }
 }

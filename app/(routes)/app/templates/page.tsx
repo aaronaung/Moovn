@@ -161,7 +161,7 @@ export default function TemplatesPage() {
           {isSavingTemplate ? <Spinner /> : "Create template"}
         </Button>
       </div>
-      <div className="flex flex-wrap gap-4">
+      <div className="flex gap-4 overflow-scroll">
         {!templates || templates.length === 0 ? (
           <p className="mt-16 w-full text-center text-muted-foreground">
             No templates found. Create one to get started.

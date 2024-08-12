@@ -1,0 +1,1 @@
+alter table templates add column ig_caption_template text;

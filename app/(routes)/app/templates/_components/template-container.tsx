@@ -14,7 +14,7 @@ import { BUCKETS } from "@/src/consts/storage";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { download } from "@/src/utils";
+import { cn, download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -24,8 +24,9 @@ import { useEffect, useState } from "react";
 import { signUrl, upsertObjectAtPath } from "@/src/libs/storage";
 import { useGenerateTemplateJpg } from "@/src/hooks/use-generate-template-jpg";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek } from "date-fns";
-import { SourceDataView } from "@/src/consts/sources";
+import { InstagramIcon } from "@/src/components/ui/icons/instagram";
+import InputTextArea from "@/src/components/ui/input/textarea";
+import { ContentType } from "@/src/consts/content";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -44,6 +45,8 @@ export const TemplateContainer = ({
   } = useGenerateTemplateJpg();
   const [isLoadingTemplateSignedUrl, setIsLoadingTemplateSignedUrl] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
+  const [igCaption, setIgCaption] = useState<string>(template.ig_caption_template || "");
 
   const [templateData, setTemplateData] = useState<{
     psd?: ArrayBuffer;
@@ -117,6 +120,22 @@ export const TemplateContainer = ({
     fetchTemplateSignedUrl();
   }, []);
 
+  const handleUpdateIgCaption = async () => {
+    try {
+      await supaClientComponentClient
+        .from("templates")
+        .update({
+          ig_caption_template: igCaption,
+        })
+        .eq("id", template.id);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update caption. Please try again or contact support.",
+      });
+    }
+  };
+
   const handleTemplateSave = async (
     designExport: DesignExport,
     metadataChanges: Partial<PhotopeaEditorMetadata>,
@@ -162,35 +181,6 @@ export const TemplateContainer = ({
       title: "Template saved",
     });
   };
-  const fromAndToString = () => {
-    const currDateTime = new Date();
-
-    // Default to daily view
-    let fromAndTo: { from: Date; to?: Date } = {
-      from: startOfDay(currDateTime),
-    };
-    switch (template.source_data_view) {
-      case SourceDataView.Weekly:
-        fromAndTo = {
-          from: startOfWeek(currDateTime),
-          to: endOfWeek(currDateTime),
-        };
-        break;
-      case SourceDataView.Monthly:
-        fromAndTo = {
-          from: startOfMonth(currDateTime),
-          to: endOfMonth(currDateTime),
-        };
-        break;
-      default:
-    }
-
-    if (!fromAndTo.to) {
-      return format(fromAndTo.from, "MMM d");
-    }
-    return `${format(fromAndTo.from, "MMM d")} - 
-    ${format(fromAndTo.to, "MMM d")}`;
-  };
 
   const renderTemplateContent = () => {
     if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !jpgBlobUrl) {
@@ -207,15 +197,21 @@ export const TemplateContainer = ({
   };
 
   return (
-    <Card className="w-[320px]">
+    <Card className="h-fit w-[320px] shrink-0">
       <CardHeader className="py-4 pl-4 pr-2">
-        <div className="flex ">
-          <div className="flex-1">
+        <div className="flex items-center">
+          <div className="flex flex-col items-center gap-1">
+            <InstagramIcon className="h-5 w-5 fill-purple-600 text-secondary-foreground" />
+            <p className="text-xs font-medium text-pink-600">
+              {template.content_type.split(" ")[1]}
+            </p>
+          </div>
+          <div className="ml-4 flex-1">
             <p className="mb-1 line-clamp-2 flex-1 text-sm font-medium">
               {template.name || "Untitled"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Schedule type: {template.source_data_view} ({fromAndToString()})
+              Schedule type: <b>{template.source_data_view}</b>
             </p>
           </div>
 
@@ -240,7 +236,8 @@ export const TemplateContainer = ({
           />
         )}
       </CardContent>
-      <CardFooter className="flex flex-row-reverse gap-2 p-4">
+
+      <CardFooter className="flex justify-center gap-2 py-3">
         <DropdownMenu>
           <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateData}>
             <Tooltip>
@@ -309,6 +306,54 @@ export const TemplateContainer = ({
           <TooltipContent>Edit template</TooltipContent>
         </Tooltip>
       </CardFooter>
+      {template.content_type === ContentType.InstagramPost && (
+        <div className="group rounded-md px-3 pb-4">
+          {isEditingIgCaption ? (
+            <div>
+              <InputTextArea
+                value={igCaption || null}
+                onChange={(e) => {
+                  setIgCaption(e.target.value);
+                }}
+                className="mt-0"
+                inputProps={
+                  {
+                    placeholder: "Add caption for Instagram post",
+                    rows: Math.min(12, igCaption.split("\n").length),
+                  } as React.TextareaHTMLAttributes<HTMLTextAreaElement>
+                }
+              />
+              <Button
+                onClick={() => {
+                  setIsEditingIgCaption(false);
+                  handleUpdateIgCaption();
+                }}
+                className="mt-2 w-full rounded-md"
+                size={"sm"}
+              >
+                Save
+              </Button>
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger className="w-full">
+                <p
+                  onClick={() => {
+                    setIsEditingIgCaption(true);
+                  }}
+                  className={cn(
+                    "max-h-[300px] w-full cursor-pointer overflow-scroll whitespace-pre-wrap p-2 text-left text-sm group-hover:bg-secondary",
+                    !igCaption && "text-muted-foreground",
+                  )}
+                >
+                  {igCaption || "Add caption for Instagram post here..."}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>Click to {!igCaption ? "add" : "edit"}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
     </Card>
   );
 };
