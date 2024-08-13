@@ -15,7 +15,7 @@ enum CalendarView {
   Monthly = "Monthly",
 }
 
-export default function FullCalendar() {
+export default function FullCalendar({ actionButtons }: { actionButtons?: React.ReactNode[] }) {
   const today = startOfToday();
 
   const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
@@ -113,7 +113,7 @@ export default function FullCalendar() {
           </button>
         </div>
         <span className="flex-1"></span>
-        <div className="ml-4 flex items-center">
+        <div className="ml-4 flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Button className="flex w-[100px] items-center gap-x-2 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600">
@@ -137,6 +137,7 @@ export default function FullCalendar() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {actionButtons}
         </div>
       </header>
       {renderCalendarView()}

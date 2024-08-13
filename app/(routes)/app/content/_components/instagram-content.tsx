@@ -163,7 +163,7 @@ export default function InstagramContent({
     return <Skeleton className="h-[600px] w-[300px] rounded-lg" />;
   }
   return (
-    <div className="w-fit  max-w-[300px] rounded-md bg-secondary" key={content.id}>
+    <div className="w-fit max-w-[300px] rounded-md bg-secondary" key={content.id}>
       <div className="flex items-center gap-x-1 px-3 py-3">
         {igMedia && igMedia.permalink && (
           <Tooltip>

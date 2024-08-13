@@ -70,6 +70,7 @@ export class Pike13Client {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
+          timezone: eventsByDay[0].timezone,
           event: (eventsByDay || []).map((event: any) => ({
             staff: (event.staff_members || [])
               .filter((s: any) => Boolean(staffMembersById[s.id]))
