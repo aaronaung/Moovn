@@ -43,7 +43,7 @@ export default function Calendar() {
           setIsScheduleSheetOpen(open);
         }}
       >
-        <SheetContent className="h-[calc(100%_-_30px)]" side={"bottom"}>
+        <SheetContent className="h-[calc(100%_-_30px)] overflow-scroll" side={"bottom"}>
           {/**
            * Form goes here
            * 1. Select schedule source (dropdown)

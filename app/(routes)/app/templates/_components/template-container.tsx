@@ -159,7 +159,7 @@ export const TemplateContainer = ({
         content: designExport["psd"],
         contentType: "image/vnd.adobe.photoshop",
       }),
-      db.designs.delete(template.id), // Bust design cache since the template has changed, so we can regenerate the design.
+      db.designs.where({ templateId: template.id }), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templates.put({
         templateId: template.id,
         jpg: designExport["jpg"],

@@ -10,18 +10,15 @@ import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { getTemplateById } from "@/src/data/templates";
 import InputDateRangePicker from "../ui/input/date-range-picker";
 import { Badge } from "../ui/badge";
-import { SourceDataView } from "@/src/consts/sources";
+import { CONTENT_TYPES_BY_DESTINATION_TYPE, ContentType } from "@/src/consts/content";
+import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
+import { InstagramIcon } from "@/src/components/ui/icons/instagram";
+import { renderCaption } from "@/src/libs/content";
+import { cn } from "@/src/utils";
+import _ from "lodash";
 import { ScheduleData } from "@/src/libs/sources/common";
-import {
-  addWeeks,
-  differenceInDays,
-  endOfWeek,
-  format,
-  isAfter,
-  isBefore,
-  min,
-  startOfWeek,
-} from "date-fns";
+import { DesignContainer } from "../common/design-container";
+import { useMemo } from "react";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -79,6 +76,13 @@ export default function ContentSchedulingForm({
   const templateId = watch("template_id");
   const scheduleRange = watch("schedule_range");
 
+  const allowedDestinations = availableDestinations.filter((destination) => {
+    const selectedTemplate = availableTemplates.find((t) => t.id === templateId);
+    return CONTENT_TYPES_BY_DESTINATION_TYPE[destination.type].includes(
+      selectedTemplate?.content_type || "",
+    );
+  });
+
   return (
     <form className="flex flex-col gap-y-3">
       <div className="block gap-x-4 md:flex">
@@ -105,20 +109,6 @@ export default function ContentSchedulingForm({
           error={errors.schedule_range?.message}
         />
       </div>
-      <InputSelect
-        label="Destination"
-        className="md:w-[620px]"
-        rhfKey={"destination_id"}
-        options={availableDestinations.map((destination) => ({
-          value: destination.id,
-          label: destination.name,
-        }))}
-        control={control}
-        error={errors.destination_id?.message}
-        inputProps={{
-          placeholder: "Select a destination",
-        }}
-      />
       <div className="flex gap-x-3">
         <InputSelect
           label="Template"
@@ -138,6 +128,20 @@ export default function ContentSchedulingForm({
           {availableTemplates.find((t) => t.id === templateId)?.source_data_view} schedule
         </Badge>
       </div>
+      <InputSelect
+        label="Destination"
+        className="md:w-[620px]"
+        rhfKey={"destination_id"}
+        options={allowedDestinations.map((destination) => ({
+          value: destination.id,
+          label: destination.name,
+        }))}
+        control={control}
+        error={errors.destination_id?.message}
+        inputProps={{
+          placeholder: "Select a destination",
+        }}
+      />
       <ContentList sourceId={sourceId} templateId={templateId} scheduleRange={scheduleRange} />
     </form>
   );
@@ -169,111 +173,104 @@ function ContentList({
       },
     },
   );
-
-  console.log({ scheduleData });
-  function getWeeklyRanges() {
-    const ranges: { start: Date; end: Date }[] = [];
-    const start = new Date(scheduleRange.from);
-    const end = new Date(scheduleRange.to);
-
-    let tempStart = start;
-    let tempEnd: Date;
-
-    while (isBefore(tempStart, end)) {
-      tempEnd = min([endOfWeek(tempStart), end]);
-      ranges.push({ start: tempStart, end: tempEnd });
-      tempStart = addWeeks(startOfWeek(tempStart), 1);
-    }
-
-    return ranges;
-  }
-
-  function organizeSchedule(view: string, scheduleData: ScheduleData) {
-    const organizedData: { [key: string]: any } = {};
-    const numDays = differenceInDays(scheduleRange.to, scheduleRange.from);
-
-    // Helper function to get the start and end of a week
-    switch (view) {
-      case SourceDataView.Daily:
-        for (let i = 0; i < numDays; i++) {
-          for (const key in scheduleData) {
-            if (key.startsWith(`day#${i + 1}.`)) {
-              organizedData[scheduleData[`day#${i + 1}.date`]] = {
-                ...(organizedData[scheduleData[`day#${i + 1}.date`]] || {}),
-                // Replace the day number with 1
-                [key.replaceAll(`day#${i + 1}.`, "day#1.")]: scheduleData[key],
-              };
-            }
-          }
-        }
-        break;
-      case SourceDataView.Weekly:
-        const weeklyRanges = getWeeklyRanges();
-        let weekIndex = 0;
-        let lastDayNumberBeforeWeekSwitch = 0;
-        for (const key in scheduleData) {
-          const keySplit = key.split(".");
-          const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
-          const date = scheduleData[`day#${dayNumberInKey}.date`];
-
-          const weekRange = weeklyRanges[weekIndex];
-          if (isAfter(new Date(date), weekRange.end)) {
-            weekIndex++;
-            lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
-          }
-          const weeklyKey = `${format(weeklyRanges[weekIndex].start, "yyyy-MM-dd")} - ${format(
-            weeklyRanges[weekIndex].end,
-            "yyyy-MM-dd",
-          )}`;
-          const dailyKey = key.replaceAll(
-            `day#${dayNumberInKey}.`,
-            `day#${dayNumberInKey - lastDayNumberBeforeWeekSwitch}.`,
-          );
-          organizedData[weeklyKey] = {
-            ...(organizedData[weeklyKey] || {}),
-            [dailyKey]: scheduleData[key],
-          };
-        }
-        break;
-    }
-
-    return organizedData;
-  }
-  console.log({ organizeSchedule: organizeSchedule(template?.source_data_view!, scheduleData!) });
+  const scheduleDataByView = useMemo(
+    () => organizeScheduleDataByView(template?.source_data_view!, scheduleRange, scheduleData!),
+    [template?.source_data_view!, scheduleData, scheduleRange],
+  );
 
   if (isLoadingScheduleData || isLoadingTemplate) {
     return <Spinner />;
   }
-  // console.log({ organizeSchedule: organizeSchedule(template?.source_data_view!, scheduleData!) });
+  console.log({ scheduleDataByView });
 
-  const renderContent = (
-    content: Tables<"content"> & { destination: Tables<"destinations"> | null },
-  ) => {
+  const renderContent = (idbKey: string, scheduleData: ScheduleData) => {
+    if (!template || !scheduleData) {
+      return <></>;
+    }
+
     let contentComp = <></>;
-    // switch (content.destination?.type) {
-    //   case DestinationTypes.Instagram:
-    //     contentComp = <InstagramContent key={content.id} content={content} />;
-    //     break;
-    //   default:
-    //     return <></>;
-    // }
+    switch (template.content_type) {
+      case ContentType.InstagramPost:
+      case ContentType.InstagramStory:
+        contentComp = (
+          <InstagramContent
+            key={idbKey}
+            designIdbKey={idbKey}
+            scheduleData={scheduleData}
+            template={template}
+          />
+        );
+        break;
+      default:
+        return <></>;
+    }
 
     return contentComp;
   };
 
   return (
     <div>
-      <div className="mb-3 flex items-end">
+      <div className="my-3 flex items-end">
         <div className="flex-1">
-          <Header2 title="Content" />
+          <Header2 title="Generated designs" />
           <p className="text-sm text-muted-foreground">
-            Content is auto-generated from a template and can be published to a destination. If you
-            think an auto-generated design is incorrect, you can refresh the design or edit to
-            overwrite it.
+            If you think the design is incorrect, you can refresh the design or edit to overwrite
+            it.
           </p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-3 overflow-scroll"></div>
+      <div className="flex flex-wrap gap-3 overflow-scroll">
+        {Object.entries(scheduleDataByView).map(([idbKey, scheduleData]) =>
+          renderContent(idbKey, scheduleData),
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InstagramContent({
+  designIdbKey,
+  template,
+  scheduleData,
+}: {
+  designIdbKey: string;
+  template: Tables<"templates">;
+  scheduleData: ScheduleData;
+}) {
+  return (
+    <div className="w-fit max-w-[300px] rounded-md bg-secondary" key={designIdbKey}>
+      <div className="flex items-center gap-x-1 px-3 py-3">
+        {/* {igMedia && igMedia.permalink && (
+          <Tooltip>
+            <TooltipTrigger>
+              <Link href={igMedia.permalink} target="_blank">
+                <div className="group cursor-pointer rounded-full p-1.5 hover:bg-primary">
+                  <InstagramIcon className="h-6 w-6 text-secondary-foreground group-hover:text-secondary" />
+                </div>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Go to the instagram content</TooltipContent>
+          </Tooltip>
+        )} */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <InstagramIcon className="h-4 w-4 fill-purple-600 text-secondary-foreground" />
+            <p className="text-xs font-medium text-pink-600">
+              {template.content_type.split(" ")[1]}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className={cn("flex flex-col items-center")}>
+        <DesignContainer idbKey={designIdbKey} scheduleData={scheduleData} template={template} />
+      </div>
+      {!_.isEmpty(scheduleData) && template.ig_caption_template && (
+        <div className="max-w-[300px] overflow-scroll p-2">
+          <p className="overflow-scroll whitespace-pre-wrap text-sm">
+            {renderCaption(template.ig_caption_template || "", scheduleData as any)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

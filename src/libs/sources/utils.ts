@@ -1,5 +1,7 @@
+import { addWeeks, endOfWeek, format, isAfter, isBefore, min, startOfWeek } from "date-fns";
 import { ScheduleData } from "./common";
 import { isArray, isPlainObject } from "lodash";
+import { SourceDataView } from "@/src/consts/sources";
 
 const testData: ScheduleData = {
   schedules: [
@@ -92,4 +94,71 @@ export const transformScheduleV2 = (input?: ScheduleData) => {
   const result = {};
   internalTransform(input.day, "day", result);
   return result;
+};
+
+export const organizeScheduleDataByView = (
+  view: string,
+  scheduleRange: { from: Date; to: Date },
+  scheduleData: ScheduleData,
+) => {
+  const organizedSchedule: { [key: string]: any } = {};
+
+  // Helper function to get the start and end of a week
+  switch (view) {
+    case SourceDataView.Daily:
+      for (const key in scheduleData) {
+        const keySplit = key.split(".");
+        const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
+        const date = scheduleData[`day#${dayNumberInKey}.date`];
+
+        const dailyKey = format(new Date(date), "yyyy-MM-dd");
+
+        organizedSchedule[dailyKey] = {
+          ...(organizedSchedule[dailyKey] || {}),
+          // Replace the day number with 1
+          [key.replaceAll(`day#${dayNumberInKey}.`, "day#1.")]: scheduleData[key],
+        };
+      }
+      break;
+    case SourceDataView.Weekly:
+      const weeklyRanges: { start: Date; end: Date }[] = [];
+      const start = new Date(scheduleRange.from);
+      const end = new Date(scheduleRange.to);
+
+      let tempStart = start;
+      let tempEnd: Date;
+      while (isBefore(tempStart, end)) {
+        tempEnd = min([endOfWeek(tempStart), end]);
+        weeklyRanges.push({ start: tempStart, end: tempEnd });
+        tempStart = addWeeks(startOfWeek(tempStart), 1);
+      }
+
+      let weekIndex = 0;
+      let lastDayNumberBeforeWeekSwitch = 0;
+      for (const key in scheduleData) {
+        const keySplit = key.split(".");
+        const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
+        const date = scheduleData[`day#${dayNumberInKey}.date`];
+
+        const weekRange = weeklyRanges[weekIndex];
+        if (isAfter(new Date(date), weekRange.end)) {
+          weekIndex++;
+          lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
+        }
+        const weeklyKey = `${format(weeklyRanges[weekIndex].start, "yyyy-MM-dd")} - ${format(
+          weeklyRanges[weekIndex].end,
+          "yyyy-MM-dd",
+        )}`;
+        const dailyKey = key.replaceAll(
+          `day#${dayNumberInKey}.`,
+          `day#${dayNumberInKey - lastDayNumberBeforeWeekSwitch}.`,
+        );
+        organizedSchedule[weeklyKey] = {
+          ...(organizedSchedule[weeklyKey] || {}),
+          [dailyKey]: scheduleData[key],
+        };
+      }
+      break;
+  }
+  return organizedSchedule;
 };

@@ -11,12 +11,96 @@ import { db } from "../libs/indexeddb/indexeddb";
 import { MD5 as hash } from "object-hash";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
+import { ScheduleData } from "../libs/sources/common";
 
 export const useGenerateDesign = () => {
   const [isScheduleEmpty, setIsScheduleEmpty] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const { initialize } = usePhotopeaHeadless();
+
+  const generateDesignForSchedule = async (
+    idbKey: string,
+    template: Tables<"templates">,
+    schedule: ScheduleData,
+    forceRefresh: boolean = false,
+    signedTemplateUrl?: string,
+  ) => {
+    try {
+      if (!signedTemplateUrl) {
+        signedTemplateUrl = await signUrl({
+          bucket: BUCKETS.designTemplates,
+          objectPath: `${template.owner_id}/${template.id}.psd`,
+          client: supaClientComponentClient,
+        });
+      }
+      const designHash = hash({
+        templateId: template.id,
+        schedule,
+      });
+      if (!forceRefresh) {
+        const design = await db.designs.get(idbKey);
+        if (design?.hash === designHash) {
+          console.info(
+            `schedule data hasn't changed for template ${template.id} - skipping design generation`,
+          );
+          return;
+        }
+      }
+      const designInIndexedDb = await db.designs.get(idbKey);
+      if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
+        // Schedule data has changed, delete the overwritten design.
+        await db.designs.delete(idbKey);
+        await supaClientComponentClient.storage
+          .from(BUCKETS.designOverwrites)
+          .remove([
+            `${template.owner_id}/${template.id}/${idbKey}.psd`,
+            `${template.owner_id}/${template.id}/${idbKey}.jpg`,
+          ]);
+      }
+
+      if (Object.keys(schedule).length === 0) {
+        setIsScheduleEmpty(true);
+        return;
+      }
+
+      const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();
+      const psd = readPsd(templateFile);
+      const designGenSteps = determineDesignGenSteps(schedule, psd);
+
+      const photopeaEl = addHeadlessPhotopeaToDom();
+      initialize(template.id, photopeaEl, {
+        initialData: templateFile,
+        designGenSteps,
+        onTimeout: () => {
+          if (document.body.contains(photopeaEl)) {
+            document.body.removeChild(photopeaEl);
+          }
+        },
+        onDesignExport: async (designExport) => {
+          if (designExport?.["psd"] && designExport?.["jpg"]) {
+            await db.designs.put({
+              key: idbKey,
+              templateId: template.id,
+              jpg: designExport["jpg"],
+              psd: designExport["psd"],
+              hash: designHash,
+              instagramTags: designExport.instagramTags,
+              lastUpdated: new Date(),
+            });
+            if (document.body.contains(photopeaEl)) {
+              document.body.removeChild(photopeaEl);
+            }
+          }
+        },
+      });
+    } catch (err) {
+      console.error("failed to generate design", err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    *
@@ -50,65 +134,7 @@ export const useGenerateDesign = () => {
         }),
       ]);
 
-      const designHash = hash({
-        templateId: template.id,
-        schedule,
-      });
-      if (!forceRefresh) {
-        const design = await db.designs.get(template.id);
-        if (design?.hash === designHash) {
-          console.info(
-            `schedule data hasn't changed for template ${template.id} - skipping design generation`,
-          );
-          return;
-        }
-      }
-      const designInIndexedDb = await db.designs.get(template.id);
-      if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
-        // Schedule data has changed, delete the overwritten design.
-        await db.designs.delete(template.id);
-        await supaClientComponentClient.storage
-          .from(BUCKETS.designOverwrites)
-          .remove([
-            `${template.owner_id}/${template.id}.psd`,
-            `${template.owner_id}/${template.id}.jpg`,
-          ]);
-      }
-
-      if (Object.keys(schedule).length === 0) {
-        setIsScheduleEmpty(true);
-        return;
-      }
-
-      const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();
-      const psd = readPsd(templateFile);
-      const designGenSteps = determineDesignGenSteps(schedule, psd);
-
-      const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(template.id, photopeaEl, {
-        initialData: templateFile,
-        designGenSteps,
-        onTimeout: () => {
-          if (document.body.contains(photopeaEl)) {
-            document.body.removeChild(photopeaEl);
-          }
-        },
-        onDesignExport: async (designExport) => {
-          if (designExport?.["psd"] && designExport?.["jpg"]) {
-            await db.designs.put({
-              templateId: template.id,
-              jpg: designExport["jpg"],
-              psd: designExport["psd"],
-              hash: designHash,
-              instagramTags: designExport.instagramTags,
-              lastUpdated: new Date(),
-            });
-            if (document.body.contains(photopeaEl)) {
-              document.body.removeChild(photopeaEl);
-            }
-          }
-        },
-      });
+      await generateDesignForSchedule("", template, schedule, forceRefresh, signedTemplateUrl);
     } catch (err) {
       console.error("failed to generate design", err);
       setError(err);
@@ -118,6 +144,7 @@ export const useGenerateDesign = () => {
   };
 
   return {
+    generateDesignForSchedule,
     generateDesign,
     isScheduleEmpty,
     isLoading,
