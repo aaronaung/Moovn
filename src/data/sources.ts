@@ -97,7 +97,7 @@ export const getScheduleDataForSourceByTimeRange = async ({
   dateRange: { from: Date; to: Date };
 }): Promise<ScheduleData> => {
   const from = format(startOfDay(dateRange.from), "yyyy-MM-dd");
-  const to = format(endOfDay(dateRange.to), "yyyy-MM-dd");
+  const to = format(startOfDay(addDays(dateRange.to, 1)), "yyyy-MM-dd");
 
   const resp = await fetch(`/api/sources/${id}/schedules?from=${from}&to=${to}`);
   return resp.json();

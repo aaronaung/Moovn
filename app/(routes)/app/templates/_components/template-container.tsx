@@ -30,6 +30,8 @@ import { ContentType } from "@/src/consts/content";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
+export const TEMPLATE_WIDTH = 320;
+
 export const TemplateContainer = ({
   template,
   onDeleteTemplate,
@@ -197,7 +199,7 @@ export const TemplateContainer = ({
   };
 
   return (
-    <Card className="h-fit w-[320px] shrink-0">
+    <Card className={`h-fit w-[${TEMPLATE_WIDTH}px] shrink-0`}>
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex items-center">
           <div className="flex flex-col items-center gap-1">

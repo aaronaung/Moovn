@@ -29,6 +29,8 @@ import { ScheduleData } from "@/src/libs/sources/common";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
+export const DESIGN_WIDTH = 220;
+
 export const DesignContainer = ({
   idbKey,
   template,
@@ -207,15 +209,17 @@ export const DesignContainer = ({
           This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
-      <div className="w-[300px]">
-        <div className="relative flex min-h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
+      <div className={`w-[${DESIGN_WIDTH}px]`}>
+        <div
+          className={`relative flex min-h-[${DESIGN_WIDTH}px] cursor-pointer items-center justify-center bg-secondary p-0`}
+        >
           {designOverwrite && (
             <div className="absolute left-2 top-2 z-10">
               <Tooltip>
                 <TooltipTrigger>
                   <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Edited</div>
                 </TooltipTrigger>
-                <TooltipContent className="w-[300px]">
+                <TooltipContent className={`w-[${DESIGN_WIDTH}px]`}>
                   This design was edited which overwrites the automatically generated design.
                   Refresh to regenerate and clear the overwrite.
                 </TooltipContent>
@@ -225,7 +229,9 @@ export const DesignContainer = ({
           {renderDesignContent()}
           <ImageViewer
             visible={isImageViewerOpen}
-            onMaskClick={() => setIsImageViewerOpen(false)}
+            onMaskClick={() => {
+              setIsImageViewerOpen(false);
+            }}
             images={[{ src: designJpgUrl || "", alt: "Design" }]}
             onClose={() => setIsImageViewerOpen(false)}
           />
@@ -234,8 +240,9 @@ export const DesignContainer = ({
           <DropdownMenu>
             <DropdownMenuTrigger disabled={!designPsdUrl && !designJpgUrl}>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger type="button">
                   <Button
+                    type="button"
                     className="group hover:bg-secondary-foreground hover:text-secondary"
                     variant="secondary"
                     disabled={!designPsdUrl && !designJpgUrl}
@@ -272,7 +279,7 @@ export const DesignContainer = ({
             </DropdownMenuContent>
           </DropdownMenu>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger type="button">
               <Button
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary "
@@ -291,8 +298,9 @@ export const DesignContainer = ({
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger type="button">
               <Button
+                type="button"
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary"
                 disabled={isDesignNotReady || !designPsdUrl || isScheduleEmpty}
@@ -335,18 +343,17 @@ const DesignImage = ({
   instagramTags: InstagramTag[];
   onClick: () => void;
 }) => {
-  const sideLength = 300;
   if (url) {
     return (
       <div className="relative h-auto" onClick={onClick}>
-        <div className={`absolute w-[${sideLength}px]`}>
+        <div className={`absolute w-[${DESIGN_WIDTH}px]`}>
           {instagramTags.map((itp, i) => (
             <span
               key={itp.instagramTag + i}
               className={`absolute`}
               style={{
-                top: `${itp.position.y * sideLength}px`,
-                left: `${itp.position.x * sideLength}px`,
+                top: `${itp.position.y * DESIGN_WIDTH}px`,
+                left: `${itp.position.x * DESIGN_WIDTH}px`,
                 transform: "translate(-50%, -50%)",
               }}
             >
@@ -359,7 +366,7 @@ const DesignImage = ({
             </span>
           ))}
         </div>
-        <img src={url} onClick={onClick} alt="Design" className={`w-[${sideLength}px]`} />
+        <img src={url} onClick={onClick} alt="Design" className={`w-[${DESIGN_WIDTH}px]`} />
       </div>
     );
   }

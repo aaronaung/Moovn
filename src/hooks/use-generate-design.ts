@@ -69,7 +69,7 @@ export const useGenerateDesign = () => {
       const designGenSteps = determineDesignGenSteps(schedule, psd);
 
       const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(template.id, photopeaEl, {
+      initialize(`${template.id}|${idbKey}`, photopeaEl, {
         initialData: templateFile,
         designGenSteps,
         onTimeout: () => {

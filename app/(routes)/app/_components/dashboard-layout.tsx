@@ -25,7 +25,9 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { getAuthUser } from "@/src/data/users";
 import { Spinner } from "@/src/components/common/loading-spinner";
 
-export default function Dashboard({ children }: { children: any }) {
+export const SIDEBAR_WIDTH = 200;
+
+export default function Dashboard({ children, className }: { children: any; className?: string }) {
   // const { data: currentSubscription, isLoading: isLoadingSubscription } =
   //   useSupaQuery(getStripeSubscriptionForBusiness, {
   //     queryKey: ["getStripeSubscriptionForBusiness"],
@@ -42,7 +44,12 @@ export default function Dashboard({ children }: { children: any }) {
   }
 
   return (
-    <div className="grid h-screen w-full  md:grid-cols-[200px_1fr] lg:grid-cols-[200px_1fr]">
+    <div
+      className={cn(
+        "grid h-screen w-full  md:grid-cols-[200px_1fr] lg:grid-cols-[200px_1fr]",
+        className,
+      )}
+    >
       <div className="z-20 hidden border-r bg-muted/40 md:block">
         <div className="fixed flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center gap-x-1.5 px-4 lg:h-[60px] lg:px-6">
@@ -63,7 +70,7 @@ export default function Dashboard({ children }: { children: any }) {
                     href={n.href}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-4 py-2 transition-all hover:bg-muted hover:text-primary",
-                      path === n.href && "bg-muted text-primary",
+                      path.startsWith(n.href) && "bg-muted text-primary",
                     )}
                   >
                     <n.icon className="h-6 w-6" />
@@ -221,7 +228,9 @@ export default function Dashboard({ children }: { children: any }) {
           </DropdownMenu>
         </header>
 
-        <main className="flex h-full w-screen flex-1 flex-col gap-4 p-4 py-6 md:w-[calc(100vw_-_200px)] md:px-6 lg:gap-6">
+        <main
+          className={`flex h-full w-screen flex-1 flex-col gap-4 p-4 pb-6 pt-2 md:w-[calc(100vw_-_${SIDEBAR_WIDTH}px)] md:px-6 lg:gap-6`}
+        >
           {children}
         </main>
       </div>

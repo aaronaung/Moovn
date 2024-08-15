@@ -7,7 +7,7 @@ import { deleteTemplate, getTemplatesForAuthUser, saveTemplate } from "@/src/dat
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
-import { TemplateContainer } from "./_components/template-container";
+import { TEMPLATE_WIDTH, TemplateContainer } from "./_components/template-container";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { toast } from "@/src/components/ui/use-toast";
@@ -18,6 +18,16 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SourceDataView } from "@/src/consts/sources";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { ContentType } from "@/src/consts/content";
+import { SIDEBAR_WIDTH } from "../_components/dashboard-layout";
+import { isMobile } from "react-device-detect";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/src/components/ui/carousel";
+import { cn } from "@/src/utils";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -103,6 +113,8 @@ export default function TemplatesPage() {
       title: "Template saved",
     });
   };
+  const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / TEMPLATE_WIDTH;
+  const showCarousel = (templates || []).length >= carouselCount && !isMobile;
 
   return (
     <div>
@@ -133,7 +145,7 @@ export default function TemplatesPage() {
         }}
       />
 
-      <div className="mb-3 flex items-end">
+      <div className="mb-3 mt-2 flex items-end">
         <div className="flex-1">
           <Header2 title="Design templates" />
           <p className="text-sm text-muted-foreground">
@@ -161,11 +173,37 @@ export default function TemplatesPage() {
           {isSavingTemplate ? <Spinner /> : "Create template"}
         </Button>
       </div>
-      <div className="flex gap-4 overflow-scroll">
+      <div
+        className={cn(
+          "mt-8 flex gap-3 overflow-scroll",
+          showCarousel ? "justify-center" : "flex-wrap",
+        )}
+      >
         {!templates || templates.length === 0 ? (
           <p className="mt-16 w-full text-center text-muted-foreground">
             No templates found. Create one to get started.
           </p>
+        ) : showCarousel ? (
+          <Carousel className="w-[calc(100%_-_100px)]">
+            <CarouselContent>
+              {templates.map((template) => (
+                <CarouselItem className="basis-[1/5]" key={template.id}>
+                  <TemplateContainer
+                    key={template.id}
+                    template={template}
+                    onDeleteTemplate={() => {
+                      setDeleteConfirmationDialogState({
+                        isOpen: true,
+                        template,
+                      });
+                    }}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         ) : (
           templates.map((template) => (
             <TemplateContainer

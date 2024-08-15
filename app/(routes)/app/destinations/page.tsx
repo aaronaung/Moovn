@@ -110,7 +110,7 @@ export default function DestinationsPage() {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="mt-2 flex flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={"You'll no longer be able to post content to the destination. Are you sure?"}

@@ -20,20 +20,16 @@ export default function SourcesPage() {
   }>({
     isOpen: false,
   });
-  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] =
-    useState<{
-      isOpen: boolean;
-      source?: Tables<"sources">;
-    }>({
-      isOpen: false,
-    });
+  const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
+    isOpen: boolean;
+    source?: Tables<"sources">;
+  }>({
+    isOpen: false,
+  });
 
-  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(
-    getSourcesForAuthUser,
-    {
-      queryKey: ["getSourcesForAuthUser"],
-    },
-  );
+  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getSourcesForAuthUser, {
+    queryKey: ["getSourcesForAuthUser"],
+  });
   const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
   useEffect(() => {
     if (sources && sources.length > 0 && !selectedSource) {
@@ -41,8 +37,9 @@ export default function SourcesPage() {
     }
   }, [sources, selectedSource]);
 
-  const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } =
-    useSupaMutation(deleteSource, {
+  const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } = useSupaMutation(
+    deleteSource,
+    {
       invalidate: [["getSourcesForAuthUser"]],
       onSuccess: () => {
         toast({
@@ -58,7 +55,8 @@ export default function SourcesPage() {
           description: "Please try again or contact support.",
         });
       },
-    });
+    },
+  );
 
   if (isLoadingSources) {
     return <Spinner />;
@@ -95,12 +93,10 @@ export default function SourcesPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-110px)] flex-col">
+    <div className="mt-2 flex h-[calc(100vh-110px)] flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={
-          "All designs created from this source will be deleted. Are you sure?"
-        }
+        label={"All designs created from this source will be deleted. Are you sure?"}
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({
