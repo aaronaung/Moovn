@@ -230,6 +230,9 @@ export default function Dashboard({ children, className }: { children: any; clas
 
         <main
           className={`flex h-full w-screen flex-1 flex-col gap-4 p-4 pb-6 pt-2 md:w-[calc(100vw_-_${SIDEBAR_WIDTH}px)] md:px-6 lg:gap-6`}
+          style={{
+            width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
+          }}
         >
           {children}
         </main>

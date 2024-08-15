@@ -17,6 +17,9 @@ import {
 } from "@/src/components/ui/carousel";
 import ContentListItem from "./content-list-item";
 import { ScheduleData } from "@/src/libs/sources/common";
+import { Checkbox } from "@/src/components/ui/checkbox";
+import { Label } from "@/src/components/ui/label";
+import { Button } from "@/src/components/ui/button";
 
 export default function ContentList({
   sourceId,
@@ -82,10 +85,39 @@ export default function ContentList({
   );
 
   return (
-    <div>
-      <p className="mb-6 mt-2 text-sm text-muted-foreground">
-        If you think the design is incorrect, you can refresh or edit it.
-      </p>
+    <div className="w-full">
+      <div className="flex">
+        <p className="mb-4 mt-2 flex-1 text-sm text-muted-foreground">
+          Schedule one or more generated designs for publication on any desired date. If a design is
+          incorrect, you can refresh or edit it.
+        </p>
+        <div className="flex items-center gap-2 self-end">
+          {selectedContentItems.length > 0 && (
+            <p className="flex h-10 items-center rounded-full bg-secondary px-4 text-sm text-secondary-foreground">
+              {selectedContentItems.length} selected
+            </p>
+          )}
+          <Button disabled={selectedContentItems.length === 0} className="h-10">
+            Schedule for publishing
+          </Button>
+        </div>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <Checkbox
+            id="select-all"
+            onCheckedChange={(checked: boolean) => {
+              if (checked) {
+                setSelectedContentItems(Object.keys(scheduleDataByView));
+              } else {
+                setSelectedContentItems([]);
+              }
+            }}
+          />
+          <Label htmlFor={"select-all"}>Select all</Label>
+        </div>
+      </div>
       <div
         className={cn("flex gap-3 overflow-scroll", showCarousel ? "justify-center" : "flex-wrap")}
       >

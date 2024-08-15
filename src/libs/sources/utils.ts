@@ -133,6 +133,10 @@ export const organizeScheduleDataByView = (
         tempStart = addWeeks(startOfWeek(tempStart), 1);
       }
 
+      if (weeklyRanges.length === 0) {
+        break;
+      }
+
       let weekIndex = 0;
       let lastDayNumberBeforeWeekSwitch = 0;
       for (const key in scheduleData) {
@@ -140,7 +144,7 @@ export const organizeScheduleDataByView = (
         const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
         const date = scheduleData[`day#${dayNumberInKey}.date`];
 
-        const weekRange = weeklyRanges[weekIndex];
+        const weekRange = weeklyRanges[weekIndex] ?? {};
         if (isAfter(new Date(date), weekRange.end)) {
           weekIndex++;
           lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
