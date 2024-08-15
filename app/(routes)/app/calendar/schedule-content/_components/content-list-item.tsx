@@ -4,6 +4,7 @@ import { Tables } from "@/types/db";
 import InstagramContent from "./instagram-content";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
+import { cn } from "@/src/utils";
 
 export default function ContentListItem({
   idbKey,
@@ -44,7 +45,7 @@ export default function ContentListItem({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn("flex flex-col gap-3")}>
       <div className="flex items-center justify-center gap-2">
         <Checkbox
           checked={isSelected}
@@ -61,7 +62,9 @@ export default function ContentListItem({
           }}
         />
       </div>
-      {renderContent()}
+      <div className={cn(isSelected && "rounded-lg border-2 border-green-500")}>
+        {renderContent()}
+      </div>
     </div>
   );
 }
