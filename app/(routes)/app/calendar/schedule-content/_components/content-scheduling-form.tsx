@@ -4,13 +4,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputSelect from "../../../../../../src/components/ui/input/select";
 import InputDateRangePicker from "../../../../../../src/components/ui/input/date-range-picker";
-import { Badge } from "../../../../../../src/components/ui/badge";
 import { CONTENT_TYPES_BY_DESTINATION_TYPE } from "@/src/consts/content";
 import ContentList from "./content-list";
+import InputMultiSelect from "@/src/components/ui/input/multi-select";
 
 const formSchema = z.object({
   source_id: z.string(),
-  template_id: z.string(),
+  template_ids: z.array(z.string()),
   destination_id: z.string(),
   schedule_range: z
     .object({
@@ -52,7 +52,7 @@ export default function ContentSchedulingForm({
     defaultValues: {
       source_id: availableSources?.[0].id || "",
       destination_id: availableDestinations?.[0].id || "",
-      template_id: availableTemplates?.[0].id || "",
+      template_ids: availableTemplates?.[0].id ? [availableTemplates?.[0].id] : [],
       schedule_range: {
         from: new Date(),
         to: new Date(),
@@ -61,13 +61,12 @@ export default function ContentSchedulingForm({
     resolver: zodResolver(formSchema),
   });
   const sourceId = watch("source_id");
-  const templateId = watch("template_id");
+  const templateIds = watch("template_ids");
   const scheduleRange = watch("schedule_range");
 
   const allowedDestinations = availableDestinations.filter((destination) => {
-    const selectedTemplate = availableTemplates.find((t) => t.id === templateId);
     return CONTENT_TYPES_BY_DESTINATION_TYPE[destination.type].includes(
-      selectedTemplate?.content_type || "",
+      availableTemplates.find((t) => templateIds.includes(t.id))?.content_type || "",
     );
   });
 
@@ -103,23 +102,23 @@ export default function ContentSchedulingForm({
         />
       </div>
       <div className="flex gap-x-3">
-        <InputSelect
-          label="Template"
-          rhfKey={"template_id"}
+        <InputMultiSelect
+          label="Templates"
+          rhfKey={"template_ids"}
           className="w-full md:w-[620px]"
           options={availableTemplates.map((template) => ({
             value: template.id,
             label: template.name,
           }))}
           control={control}
-          error={errors.template_id?.message}
+          error={errors.template_ids?.message}
           inputProps={{
-            placeholder: "Select a template",
+            placeholder: "Select one or more templates",
           }}
         />
-        <Badge className="mb-2 h-[30px] min-w-[110px] self-end text-center">
+        {/* <Badge className="mb-2 h-[30px] min-w-[110px] self-end text-center">
           {availableTemplates.find((t) => t.id === templateId)?.source_data_view} schedule
-        </Badge>
+        </Badge> */}
       </div>
       <InputSelect
         label="Destination"
@@ -138,7 +137,7 @@ export default function ContentSchedulingForm({
 
       <ContentList
         sourceId={sourceId}
-        templateId={templateId}
+        templateIds={templateIds}
         scheduleRange={{
           from: scheduleRange?.from || new Date(),
           to: scheduleRange?.to || new Date(),

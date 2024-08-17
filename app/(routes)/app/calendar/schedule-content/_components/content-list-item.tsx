@@ -6,10 +6,11 @@ import { Checkbox } from "@/src/components/ui/checkbox";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { cn } from "@/src/utils";
 import { memo } from "react";
+import { parse } from "date-fns";
 
 export default memo(
   function ContentListItem({
-    idbKey,
+    designPath,
     scheduleData,
     template,
     isSelected,
@@ -17,7 +18,7 @@ export default memo(
     publishDateTime,
     onPublishDateTimeChange,
   }: {
-    idbKey: string;
+    designPath: string;
     scheduleData: ScheduleData;
     template: Tables<"templates">;
     isSelected: boolean;
@@ -25,7 +26,6 @@ export default memo(
     publishDateTime: Date;
     onPublishDateTimeChange: (dateTime: Date) => void;
   }) {
-    console.log({ idbKey });
     const renderContent = () => {
       let contentComp = <></>;
       switch (template.content_type) {
@@ -33,8 +33,8 @@ export default memo(
         case ContentType.InstagramStory:
           contentComp = (
             <InstagramContent
-              key={idbKey}
-              designIdbKey={idbKey}
+              key={designPath}
+              designPath={designPath}
               scheduleData={scheduleData}
               template={template}
             />
@@ -46,16 +46,22 @@ export default memo(
       return contentComp;
     };
 
+    const date = parse(designPath.split("/")[0].split(" - ")[0], "yyyy-MM-dd", new Date());
+    console.log({
+      date,
+      designPath,
+    });
+
     return (
-      <div className={cn("flex flex-col gap-3")}>
-        <div className="flex items-center justify-center gap-2">
+      <div className={cn("flex flex-col gap-2")}>
+        <div className="ml-1 flex items-center gap-2">
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
           <DateTimePicker
             value={{
-              date: publishDateTime || new Date(idbKey.split(" - ")[0]),
+              date: publishDateTime || date,
               hasTime: true,
             }}
             className="h-[32px] w-[185px] min-w-0 px-3"
@@ -77,7 +83,7 @@ export default memo(
   },
   (prev, next) => {
     return (
-      prev.idbKey === next.idbKey &&
+      prev.designPath === next.designPath &&
       prev.isSelected === next.isSelected &&
       prev.publishDateTime === next.publishDateTime &&
       prev.scheduleData === next.scheduleData

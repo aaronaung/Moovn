@@ -9,16 +9,16 @@ import { memo } from "react";
 
 export default memo(
   function InstagramContent({
-    designIdbKey,
+    designPath,
     template,
     scheduleData,
   }: {
-    designIdbKey: string;
+    designPath: string;
     template: Tables<"templates">;
     scheduleData: ScheduleData;
   }) {
     return (
-      <div className="w-fit rounded-md bg-secondary" key={designIdbKey}>
+      <div className="w-fit rounded-md bg-secondary" key={designPath}>
         <div className="flex items-center gap-x-1 px-3 py-3">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -30,7 +30,11 @@ export default memo(
           </div>
         </div>
         <div className={cn("flex flex-col items-center")}>
-          <DesignContainer idbKey={designIdbKey} scheduleData={scheduleData} template={template} />
+          <DesignContainer
+            designPath={designPath}
+            scheduleData={scheduleData}
+            template={template}
+          />
         </div>
         {!_.isEmpty(scheduleData) && template.ig_caption_template && (
           <div className="overflow-scroll p-2">

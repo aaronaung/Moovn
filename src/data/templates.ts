@@ -24,6 +24,10 @@ export const getTemplateById = async (id: string, { client }: SupabaseOptions) =
   return throwOrData(client.from("templates").select("*").eq("id", id).maybeSingle());
 };
 
+export const getTemplatesByIds = async (ids: string[], { client }: SupabaseOptions) => {
+  return throwOrData(client.from("templates").select("*").in("id", ids));
+};
+
 export const getTemplatesByScheduleAndContentType = async (
   { scheduleType, contentType }: { scheduleType: SourceDataView; contentType: string },
   { client }: SupabaseOptions,

@@ -20,7 +20,7 @@ export const useGenerateDesign = () => {
   const { initialize } = usePhotopeaHeadless();
 
   const generateDesignForSchedule = async (
-    idbKey: string,
+    designPath: string,
     template: Tables<"templates">,
     schedule: ScheduleData,
     forceRefresh: boolean = false,
@@ -39,7 +39,7 @@ export const useGenerateDesign = () => {
         schedule,
       });
       if (!forceRefresh) {
-        const design = await db.designs.get(idbKey);
+        const design = await db.designs.get(designPath);
         if (design?.hash === designHash) {
           console.info(
             `schedule data hasn't changed for template ${template.id} - skipping design generation`,
@@ -47,15 +47,15 @@ export const useGenerateDesign = () => {
           return;
         }
       }
-      const designInIndexedDb = await db.designs.get(idbKey);
+      const designInIndexedDb = await db.designs.get(designPath);
       if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
         // Schedule data has changed, delete the overwritten design.
-        await db.designs.delete(idbKey);
+        await db.designs.delete(designPath);
         await supaClientComponentClient.storage
           .from(BUCKETS.designOverwrites)
           .remove([
-            `${template.owner_id}/${template.id}/${idbKey}.psd`,
-            `${template.owner_id}/${template.id}/${idbKey}.jpg`,
+            `${template.owner_id}/${designPath}.psd`,
+            `${template.owner_id}/${designPath}.jpg`,
           ]);
       }
 
@@ -69,7 +69,7 @@ export const useGenerateDesign = () => {
       const designGenSteps = determineDesignGenSteps(schedule, psd);
 
       const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(`${template.id}|${idbKey}`, photopeaEl, {
+      initialize(designPath, photopeaEl, {
         initialData: templateFile,
         designGenSteps,
         onTimeout: () => {
@@ -80,7 +80,7 @@ export const useGenerateDesign = () => {
         onDesignExport: async (designExport) => {
           if (designExport?.["psd"] && designExport?.["jpg"]) {
             await db.designs.put({
-              key: idbKey,
+              key: designPath,
               templateId: template.id,
               jpg: designExport["jpg"],
               psd: designExport["psd"],
