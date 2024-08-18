@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 export function renderCaption(template: string, schedule?: { [key: string]: string }): string {
   if (!schedule) {
@@ -43,3 +44,20 @@ export function renderCaption(template: string, schedule?: { [key: string]: stri
 
   return result.trim(); // Trim any leading or trailing whitespace
 }
+
+// scheduleRange is a string that represents the range of the schedule. e.g. "2022-01-01 - 2022-01-31" or "2022-01-01" if it's a single day.
+export const getContentKey = (scheduleRange: string, templateId: string) =>
+  `${scheduleRange}/${templateId}`;
+
+export const desconstructContentKey = (contentKey: string) => {
+  const [range, templateId] = contentKey.split("/");
+  return { range, templateId };
+};
+
+export const fromAtScheduleExpressionToDate = (expression: string) => {
+  const date = expression.match(/at\((.*)\)/)?.[1];
+  return date ? parseISO(date) : null;
+};
+
+export const atScheduleExpression = (date: Date) =>
+  `at(${formatInTimeZone(date, "UTC", "yyyy-MM-dd'T'HH:mm:ss")})`; // toISOString() includes milli seconds which is not supported by eventbridge

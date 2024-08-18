@@ -15,7 +15,7 @@ import { Label } from "@/src/components/ui/label";
 import { TimePicker } from "@/src/components/ui/time-picker";
 import { parse, startOfDay } from "date-fns";
 import { Tables } from "@/types/db";
-import { getContentKey } from "@/src/libs/designs/util";
+import { getContentKey } from "@/src/libs/content";
 import _ from "lodash";
 
 export default function ContentList({

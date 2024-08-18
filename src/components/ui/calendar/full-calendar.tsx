@@ -8,6 +8,7 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Button } from "../button";
 import FullCalendarMonthlyView from "./monthly-view";
 import FullCalendarWeeklyView from "./weekly-view";
+import { ContentType } from "@/src/consts/content";
 
 enum CalendarView {
   // Daily = "Daily",
@@ -15,8 +16,24 @@ enum CalendarView {
   Monthly = "Monthly",
 }
 
-export default function FullCalendar({ actionButtons }: { actionButtons?: React.ReactNode[] }) {
+export type CalendarEvent = {
+  title: string;
+  start: Date;
+  end?: Date;
+  color?: string;
+  contentType: ContentType;
+  previewUrl?: string;
+};
+
+export default function FullCalendar({
+  actionButtons,
+  events = [],
+}: {
+  actionButtons?: React.ReactNode[];
+  events?: CalendarEvent[];
+}) {
   const today = startOfToday();
+  const [selectedDay, setSelectedDay] = useState<Date>(today);
 
   const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
   const [currentWeek, setCurrentWeek] = useState({
@@ -74,9 +91,16 @@ export default function FullCalendar({ actionButtons }: { actionButtons?: React.
   function renderCalendarView() {
     switch (currentView) {
       case CalendarView.Weekly:
-        return <FullCalendarWeeklyView week={currentWeek} selectedDay={today} />;
+        return <FullCalendarWeeklyView week={currentWeek} selectedDay={selectedDay} />;
       case CalendarView.Monthly:
-        return <FullCalendarMonthlyView month={currentMonth} selectedDay={today} />;
+        return (
+          <FullCalendarMonthlyView
+            events={events}
+            month={currentMonth}
+            selectedDay={selectedDay}
+            onDaySelect={(day) => setSelectedDay(day)}
+          />
+        );
     }
   }
   function renderDateRange() {
@@ -114,63 +138,35 @@ export default function FullCalendar({ actionButtons }: { actionButtons?: React.
         </div>
         <span className="flex-1"></span>
         <div className="ml-4 flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button className="flex w-[100px] items-center gap-x-2 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600">
-                {currentView}
-                <ChevronDownIcon
-                  className="-mr-1 h-4 w-4 text-secondary-foreground"
-                  aria-hidden="true"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {Object.values(CalendarView).map((view) => (
-                <DropdownMenuItem
-                  onClick={() => {
-                    setCurrentView(view);
-                  }}
-                  key={view}
-                >
-                  {view}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {false && (
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button className="flex w-[100px] items-center gap-x-2 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm hover:bg-slate-200 dark:hover:bg-slate-600">
+                  {currentView}
+                  <ChevronDownIcon
+                    className="-mr-1 h-4 w-4 text-secondary-foreground"
+                    aria-hidden="true"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {Object.values(CalendarView).map((view) => (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setCurrentView(view);
+                    }}
+                    key={view}
+                  >
+                    {view}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {actionButtons}
         </div>
       </header>
       {renderCalendarView()}
-
-      {/* {(selectedDay?.events || []).length > 0 && (
-        <div className="px-4 py-10 sm:px-6 lg:hidden">
-          <ol className="divide-y divide-gray-100 overflow-hidden rounded-lg bg-secondary text-sm shadow ring-1 ring-black ring-opacity-5 dark:divide-gray-600">
-            {(selectedDay?.events || []).map((event) => (
-              <li
-                key={event.id}
-                className="group flex p-4 pr-6 focus-within:bg-gray-50 hover:bg-gray-50"
-              >
-                <div className="flex-auto">
-                  <p className="font-semibold text-secondary-foreground">{event.name}</p>
-                  <time
-                    dateTime={event.datetime}
-                    className="mt-2 flex items-center text-secondary-foreground"
-                  >
-                    <ClockIcon className="mr-2 h-5 w-5 text-gray-400" aria-hidden="true" />
-                    {event.time}
-                  </time>
-                </div>
-                <a
-                  href={event.href}
-                  className="ml-6 flex-none self-center rounded-md bg-secondary px-3 py-2 font-semibold text-secondary-foreground opacity-0 shadow-sm ring-1 ring-inset ring-gray-300 hover:ring-gray-400 focus:opacity-100 group-hover:opacity-100"
-                >
-                  Edit<span className="sr-only">, {event.name}</span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )} */}
     </div>
   );
 }

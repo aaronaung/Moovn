@@ -6,17 +6,8 @@ import { BUCKETS } from "../consts/storage";
 import { SourceDataView } from "../consts/sources";
 
 export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
-  const user = await getAuthUser({ client });
-  if (!user) {
-    return [];
-  }
-
   return throwOrData(
-    client
-      .from("templates")
-      .select("*")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false }),
+    client.from("templates").select("*").order("created_at", { ascending: false }),
   );
 };
 

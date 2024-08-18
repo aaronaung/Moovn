@@ -99,3 +99,7 @@ export const scheduleContent = async (
   }
   throw new Error(await resp.text());
 };
+
+export const getContentSchedules = async ({ client }: SupabaseOptions) => {
+  return throwOrData(client.from("content_schedules").select("*"));
+};

@@ -17,10 +17,6 @@ export type PSDActions = {
   };
 };
 
-// scheduleRange is a string that represents the range of the schedule. e.g. "2022-01-01 - 2022-01-31" or "2022-01-01" if it's a single day.
-export const getContentKey = (scheduleRange: string, templateId: string) =>
-  `${scheduleRange}/${templateId}`;
-
 export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActions => {
   if (!psd.children) {
     return {};

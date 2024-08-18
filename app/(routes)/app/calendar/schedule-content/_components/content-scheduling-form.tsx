@@ -19,7 +19,7 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { isMobile } from "react-device-detect";
 import { cn } from "@/src/utils";
 import { scheduleContent as upsertSchedulesOnEventBridge } from "@/src/data/content";
-import { formatInTimeZone } from "date-fns-tz";
+import { atScheduleExpression } from "@/src/libs/content";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -94,7 +94,7 @@ export default function ContentSchedulingForm({
     content: ArrayBuffer,
     contentType: string,
   ) => {
-    let objectPath = `${ownerId}/${contentKey}.psd`;
+    let objectPath = `${ownerId}/${contentKey}.jpeg`;
 
     await supaClientComponentClient.storage.from(BUCKETS.scheduledContent).remove([objectPath]);
     const { token } = await signUploadUrl({
@@ -110,9 +110,9 @@ export default function ContentSchedulingForm({
 
     await supaClientComponentClient.from("content_schedules").upsert(
       {
-        name: objectPath,
+        name: contentKey,
         owner_id: ownerId,
-        schedule_expression: `at(${publishDateTime.toISOString()})`,
+        schedule_expression: atScheduleExpression(publishDateTime),
         updated_at: new Date().toISOString(),
       },
       {
@@ -155,11 +155,7 @@ export default function ContentSchedulingForm({
         );
         schedules.push({
           contentKey: contentKey.replaceAll("/", "_"), // replace / with _ to comply with eventbridge naming restrictions.
-          scheduleExpression: `at(${formatInTimeZone(
-            publishDateTime,
-            "UTC",
-            "yyyy-MM-dd'T'HH:mm:ss",
-          )})`, // toISOString() includes milli seconds which is not supported by eventbridge
+          scheduleExpression: atScheduleExpression(publishDateTime),
         });
         doneCount++;
       }
@@ -167,13 +163,13 @@ export default function ContentSchedulingForm({
       if (schedulePromises.length > 0) {
         await Promise.all(schedulePromises);
       }
-      console.log("Schedules", schedules);
       await upsertSchedulesOnEventBridge(schedules);
       toast({
         variant: "success",
         title: "Content scheduled successfully",
       });
       setSelectedContentItems([]);
+      setPublishDateTimeMap({});
     } catch (err) {
       console.error(err);
       toast({
