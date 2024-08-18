@@ -7,6 +7,7 @@ export const BUCKETS = {
   emailAssets: "email_assets",
   stagingAreaForContentPublishing: "staging_area_for_content_publishing",
   freeDesignTemplates: "free_design_templates",
+  scheduledContent: "scheduled_content",
 };
 
 export const STORAGE_DIR_PATHS = {};

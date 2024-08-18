@@ -92,12 +92,13 @@ export class CdkStack extends cdk.Stack {
           // Pass the role ARN to the scheduler function, so it can assume it to invoke the target function.
           SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
         },
+        timeout: cdk.Duration.seconds(60),
       },
     );
     schedulePublishContentFunction.addToRolePolicy(cloudWatchLogPolicy);
     schedulePublishContentFunction.addToRolePolicy(
       new PolicyStatement({
-        actions: ["scheduler:CreateSchedule"],
+        actions: ["scheduler:CreateSchedule", "scheduler:UpdateSchedule", "scheduler:GetSchedule"],
         resources: ["*"],
       }),
     );

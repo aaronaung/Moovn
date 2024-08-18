@@ -3,7 +3,7 @@ import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { getTemplatesByIds } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn } from "@/src/utils";
 import { SIDEBAR_WIDTH } from "../../../_components/dashboard-layout";
 import { DESIGN_WIDTH } from "@/src/components/common/design-container";
@@ -12,17 +12,20 @@ import ContentListItem from "./content-list-item";
 import { ScheduleData } from "@/src/libs/sources/common";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
-import { Button } from "@/src/components/ui/button";
-import { SourceDataView } from "@/src/consts/sources";
 import { TimePicker } from "@/src/components/ui/time-picker";
-import { startOfDay } from "date-fns";
+import { parse, startOfDay } from "date-fns";
 import { Tables } from "@/types/db";
-import { getDesignPath } from "@/src/libs/designs/util";
+import { getContentKey } from "@/src/libs/designs/util";
+import _ from "lodash";
 
 export default function ContentList({
   sourceId,
   templateIds,
   scheduleRange,
+  selectedContentItems,
+  setSelectedContentItems,
+  publishDateTimeMap,
+  setPublishDateTimeMap,
 }: {
   sourceId: string;
   templateIds: string[];
@@ -30,10 +33,11 @@ export default function ContentList({
     from: Date;
     to: Date;
   };
+  selectedContentItems: string[];
+  setSelectedContentItems: Dispatch<SetStateAction<string[]>>;
+  publishDateTimeMap: { [key: string]: Date };
+  setPublishDateTimeMap: Dispatch<SetStateAction<{ [key: string]: Date }>>;
 }) {
-  const [selectedContentItems, setSelectedContentItems] = useState<string[]>([]);
-  const [publishDateTimeMap, setPublishDateTimeMap] = useState<{ [key: string]: Date }>({});
-
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesByIds, {
     queryKey: ["getTemplatesByIds", templateIds],
     arg: templateIds,
@@ -54,30 +58,12 @@ export default function ContentList({
   }
 
   return (
-    <div className="mb-8">
+    <div className="relative mb-8">
       <div className="flex">
         <p className="mb-4 mt-1 flex-1 text-sm text-muted-foreground">
           Schedule one or more generated designs for publication on any desired date. If a design is
           incorrect, you can refresh or edit it.
         </p>
-        <div
-          className={cn(
-            "fixed right-4 z-10 rounded-md  p-2 md:right-12 md:top-6 md:p-4",
-            isMobile && "bottom-4",
-            selectedContentItems.length > 0 && "bg-secondary",
-          )}
-        >
-          <div className="flex items-center gap-1 self-end">
-            {selectedContentItems.length > 0 && (
-              <p className="flex h-14 items-center px-4 text-sm text-secondary-foreground">
-                {selectedContentItems.length} selected
-              </p>
-            )}
-            <Button size={"lg"} disabled={selectedContentItems.length === 0} className="h-14">
-              Schedule for publishing
-            </Button>
-          </div>
-        </div>
       </div>
       {templates.map((template, index) => (
         <div key={template.id}>
@@ -121,31 +107,45 @@ const ContentListForTemplate = ({
 }) => {
   const [timeForAll, setTimeForAll] = useState<Date | null>(null);
 
-  const scheduleDataByView = useMemo(
+  const scheduleDataByRange = useMemo(
     () => organizeScheduleDataByView(template?.source_data_view!, scheduleRange, scheduleData!),
     [template?.source_data_view!, scheduleData, scheduleRange],
   );
-  const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / DESIGN_WIDTH;
-  const showCarousel = Object.keys(scheduleDataByView).length >= carouselCount && !isMobile;
 
-  const renderContentListItem = (designPath: string, schedule: ScheduleData) => {
+  useEffect(() => {
+    for (const range in scheduleDataByRange) {
+      const date = parse(range.split(" - ")[0], "yyyy-MM-dd", new Date());
+      setPublishDateTimeMap((prev) => {
+        const contentKey = getContentKey(range, template.id);
+        return {
+          ...prev,
+          [contentKey]: date,
+        };
+      });
+    }
+  }, []);
+
+  const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / DESIGN_WIDTH;
+  const showCarousel = Object.keys(scheduleDataByRange).length >= carouselCount && !isMobile;
+
+  const renderContentListItem = (contentKey: string, schedule: ScheduleData) => {
     return (
       <ContentListItem
-        key={designPath}
-        designPath={designPath}
+        key={contentKey}
+        contentKey={contentKey}
         template={template}
         scheduleData={schedule}
-        publishDateTime={publishDateTimeMap[designPath]}
+        publishDateTime={publishDateTimeMap[contentKey]}
         onPublishDateTimeChange={(publishDateTime) => {
           setPublishDateTimeMap((prev) => ({
             ...prev,
-            [designPath]: publishDateTime,
+            [contentKey]: publishDateTime,
           }));
         }}
-        isSelected={selectedContentItems.includes(designPath)}
+        isSelected={selectedContentItems.includes(contentKey)}
         onSelectChange={(isSelected) => {
           setSelectedContentItems((prev) =>
-            isSelected ? [...prev, designPath] : prev.filter((item) => item !== designPath),
+            isSelected ? [...prev, contentKey] : prev.filter((item) => item !== contentKey),
           );
         }}
       />
@@ -155,58 +155,77 @@ const ContentListForTemplate = ({
   return (
     <div className="flex w-full flex-col">
       <div className="mb-2 flex min-h-[40px] flex-wrap items-center gap-3 rounded-md p-2">
-        <p className="flex-1 font-semibold">{template.name}</p>
-        <div className="flex min-h-[40px] items-center gap-2 rounded-md bg-secondary px-4">
-          <Checkbox
-            id={`select-all-${template.id}`}
-            checked={Object.keys(scheduleDataByView)
-              .map((scheduleRange) => getDesignPath(scheduleRange, template.id))
-              .every((designPath) => selectedContentItems.includes(designPath))}
-            onCheckedChange={(checked: boolean) => {
-              if (checked) {
-                setSelectedContentItems((prev) => [
-                  ...prev,
-                  ...Object.keys(scheduleDataByView)
-                    .map((scheduleRange) => getDesignPath(scheduleRange, template.id))
-                    .filter((designPath) => !prev.includes(designPath)),
-                ]);
-              } else {
-                setSelectedContentItems((prev) =>
-                  prev.filter(
-                    (designPath) =>
-                      !Object.keys(scheduleDataByView)
-                        .map((scheduleRange) => getDesignPath(scheduleRange, template.id))
-                        .includes(designPath),
-                  ),
-                );
-              }
-            }}
-          />
-          <Label htmlFor={`select-all-${template.id}`}>Select all</Label>
+        <div className="flex flex-1 items-center gap-2">
+          <p className="font-semibold">{template.name}</p>
+          <p className="rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
+            {template.source_data_view} schedule
+          </p>
         </div>
-        {template.source_data_view === SourceDataView.Daily && (
-          <div className="flex min-h-[40px] items-center gap-2 rounded-md bg-secondary px-4">
-            <Label htmlFor="publish-date shrink-0">Set schedule time for all</Label>
-            <TimePicker
-              date={timeForAll ?? startOfDay(new Date())}
-              setDate={(date) => {
-                setTimeForAll(date ?? new Date());
-                Object.keys(scheduleDataByView).forEach((scheduleRange) => {
-                  setPublishDateTimeMap((prev) => ({
-                    ...prev,
-                    [getDesignPath(scheduleRange, template.id)]: date ?? startOfDay(new Date()),
-                  }));
-                });
-              }}
-            />
-          </div>
+        {!_.isEmpty(scheduleDataByRange) && (
+          <>
+            <div className="flex min-h-[40px] items-center gap-2 rounded-md bg-secondary px-4">
+              <Checkbox
+                id={`select-all-${template.id}`}
+                checked={Object.keys(scheduleDataByRange)
+                  .map((scheduleRange) => getContentKey(scheduleRange, template.id))
+                  .every((contentKey) => selectedContentItems.includes(contentKey))}
+                onCheckedChange={(checked: boolean) => {
+                  const contentKeys = Object.keys(scheduleDataByRange).map((scheduleRange) =>
+                    getContentKey(scheduleRange, template.id),
+                  );
+                  if (checked) {
+                    setSelectedContentItems((prev) => [
+                      ...prev,
+                      ...contentKeys.filter((contentKey) => !prev.includes(contentKey)),
+                    ]);
+                  } else {
+                    setSelectedContentItems((prev) =>
+                      prev.filter((contentKey) => !contentKeys.includes(contentKey)),
+                    );
+                  }
+                }}
+              />
+              <Label htmlFor={`select-all-${template.id}`}>Select all</Label>
+            </div>
+            <div className="flex min-h-[40px] items-center gap-2 rounded-md bg-secondary px-4">
+              <Label htmlFor="publish-date shrink-0">Set publish time for all</Label>
+              <TimePicker
+                hideSeconds
+                date={timeForAll ?? startOfDay(new Date())}
+                setDate={(date) => {
+                  const d = date ?? new Date();
+                  setTimeForAll(d);
+                  Object.keys(scheduleDataByRange).forEach((scheduleRange) => {
+                    setPublishDateTimeMap((prev) => {
+                      const contentKey = getContentKey(scheduleRange, template.id);
+                      const prevDate = prev[contentKey];
+                      const newDate = new Date(d.getTime());
+                      newDate.setDate(prevDate.getDate());
+
+                      return {
+                        ...prev,
+                        [contentKey]: newDate,
+                      };
+                    });
+                  });
+                }}
+              />
+            </div>
+          </>
         )}
       </div>
-      <div className={cn("flex flex-wrap gap-3 overflow-scroll")}>
-        {Object.entries(scheduleDataByView).map(([scheduleRange, schedule]) =>
-          renderContentListItem(getDesignPath(scheduleRange, template.id), schedule),
-        )}
-      </div>
+      {_.isEmpty(scheduleDataByRange) && (
+        <p className="text-sm text-muted-foreground">
+          The schedule data is empty for the selected date range.
+        </p>
+      )}
+      {!_.isEmpty(scheduleDataByRange) && (
+        <div className={cn("flex flex-wrap gap-3 overflow-scroll")}>
+          {Object.entries(scheduleDataByRange).map(([scheduleRange, schedule]) =>
+            renderContentListItem(getContentKey(scheduleRange, template.id), schedule),
+          )}
+        </div>
+      )}
     </div>
   );
 };

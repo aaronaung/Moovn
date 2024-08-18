@@ -6,11 +6,11 @@ import { Checkbox } from "@/src/components/ui/checkbox";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { cn } from "@/src/utils";
 import { memo } from "react";
-import { parse } from "date-fns";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 
 export default memo(
   function ContentListItem({
-    designPath,
+    contentKey,
     scheduleData,
     template,
     isSelected,
@@ -18,7 +18,7 @@ export default memo(
     publishDateTime,
     onPublishDateTimeChange,
   }: {
-    designPath: string;
+    contentKey: string;
     scheduleData: ScheduleData;
     template: Tables<"templates">;
     isSelected: boolean;
@@ -33,8 +33,8 @@ export default memo(
         case ContentType.InstagramStory:
           contentComp = (
             <InstagramContent
-              key={designPath}
-              designPath={designPath}
+              key={contentKey}
+              contentKey={contentKey}
               scheduleData={scheduleData}
               template={template}
             />
@@ -46,12 +46,6 @@ export default memo(
       return contentComp;
     };
 
-    const date = parse(designPath.split("/")[0].split(" - ")[0], "yyyy-MM-dd", new Date());
-    console.log({
-      date,
-      designPath,
-    });
-
     return (
       <div className={cn("flex flex-col gap-2")}>
         <div className="ml-1 flex items-center gap-2">
@@ -59,16 +53,21 @@ export default memo(
             checked={isSelected}
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
-          <DateTimePicker
-            value={{
-              date: publishDateTime || date,
-              hasTime: true,
-            }}
-            className="h-[32px] w-[185px] min-w-0 px-3"
-            onChange={(dateTime) => {
-              onPublishDateTimeChange(dateTime.date);
-            }}
-          />
+          <Tooltip>
+            <TooltipTrigger>
+              <DateTimePicker
+                value={{
+                  date: publishDateTime,
+                  hasTime: true,
+                }}
+                className="h-[32px] w-[185px] min-w-0 rounded-md px-3"
+                onChange={(dateTime) => {
+                  onPublishDateTimeChange(dateTime.date);
+                }}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{`Date time to publish`}</TooltipContent>
+          </Tooltip>
         </div>
         <div
           className={cn("m-1", isSelected && "rounded-md")}
@@ -83,7 +82,7 @@ export default memo(
   },
   (prev, next) => {
     return (
-      prev.designPath === next.designPath &&
+      prev.contentKey === next.contentKey &&
       prev.isSelected === next.isSelected &&
       prev.publishDateTime === next.publishDateTime &&
       prev.scheduleData === next.scheduleData

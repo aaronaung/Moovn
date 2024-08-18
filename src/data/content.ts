@@ -83,3 +83,19 @@ export const publishContent = async ({ id, body }: { id: string; body: PublishCo
     })
   ).json();
 };
+
+export const scheduleContent = async (
+  schedules: { contentKey: string; scheduleExpression: string }[],
+) => {
+  const resp = await fetch(`/api/content/schedule`, {
+    method: "POST",
+    body: JSON.stringify(schedules),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (resp.ok) {
+    return resp.text();
+  }
+  throw new Error(await resp.text());
+};
