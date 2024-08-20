@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { CdkStack } from "../lib/cdk-stack";
+import { MoovnStack } from "../lib/cdk-stack";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -12,18 +12,11 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 export type ConfigProps = {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  ENVIRONMENT: string;
 };
 
-// 3. Define a function to retrieve our env variables
-export const getConfig = (): ConfigProps => ({
-  SUPABASE_URL: process.env.SUPABASE_URL!,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-});
-
-const config = getConfig();
-
 const app = new cdk.App();
-new CdkStack(app, "CdkStack", {
+new MoovnStack(app, "moovn-prod", {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -34,5 +27,17 @@ new CdkStack(app, "CdkStack", {
    * want to deploy the stack to. */
   // env: { account: '123456789012', region: 'us-east-1' },
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-  config,
+  config: {
+    SUPABASE_URL: process.env.PROD_SUPABASE_URL!,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!,
+    ENVIRONMENT: "prod",
+  },
+});
+
+new MoovnStack(app, "moovn-dev", {
+  config: {
+    SUPABASE_URL: process.env.DEV_SUPABASE_URL!,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.DEV_SUPABASE_SERVICE_ROLE_KEY!,
+    ENVIRONMENT: "dev",
+  },
 });

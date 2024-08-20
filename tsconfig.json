@@ -29,7 +29,7 @@
     ".next/types/**/*.ts",
     "*.ts",
     "playground.js",
-    "cdk/lambda/schedule-publish-content/index.js"
+    "cdk/lambda/schedule-content/index.js"
   ],
   "exclude": ["node_modules"]
 }

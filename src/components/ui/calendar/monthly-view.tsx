@@ -14,10 +14,12 @@ import {
 } from "date-fns";
 import { CalendarEvent } from "./full-calendar";
 import { ClockIcon } from "@heroicons/react/24/outline";
-import { Dialog, DialogContent } from "../dialog";
 
 import { useState } from "react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../hover-card";
+import dynamic from "next/dynamic";
+
+const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
 function getCalendarDays(date = new Date()) {
   const monthStart = startOfMonth(date);
@@ -31,7 +33,7 @@ function getCalendarDays(date = new Date()) {
 export function groupEventsByStartDate(events: CalendarEvent[]): Record<string, CalendarEvent[]> {
   return events.reduce(
     (groups, event) => {
-      const dateKey = event.start.toISOString().split("T")[0];
+      const dateKey = format(event.start, "yyyy-MM-dd");
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -55,7 +57,7 @@ export default function FullCalendarMonthlyView({
 }) {
   const firstDayCurrentMonth = parse(month, "MMM-yyyy", new Date());
   const days = getCalendarDays(firstDayCurrentMonth);
-  const [previewDialogState, setPreviewDialogState] = useState<{
+  const [imageViewerState, setImageViewerState] = useState<{
     isOpen: boolean;
     previewUrl?: string;
   }>({
@@ -63,27 +65,29 @@ export default function FullCalendarMonthlyView({
   });
 
   const eventsByDay = groupEventsByStartDate(events);
-  const eventsOnSelectedDay = eventsByDay[selectedDay.toISOString().split("T")[0]] || [];
+  const eventsOnSelectedDay = (eventsByDay[selectedDay.toISOString().split("T")[0]] || []).sort(
+    (a, b) => b.start.getTime() - a.start.getTime(),
+  );
+  console.log({ eventsOnSelectedDay });
 
   return (
     <>
-      <Dialog
-        open={previewDialogState.isOpen}
-        onOpenChange={() => {
-          setPreviewDialogState((prev) => ({
+      <ImageViewer
+        visible={imageViewerState.isOpen}
+        onMaskClick={() =>
+          setImageViewerState((prev) => ({
             ...prev,
             isOpen: false,
-          }));
-        }}
-      >
-        <DialogContent className="flex justify-center">
-          {previewDialogState.previewUrl ? (
-            <img className="w-[350px]" src={previewDialogState.previewUrl} />
-          ) : (
-            "No preview available"
-          )}
-        </DialogContent>
-      </Dialog>
+          }))
+        }
+        images={[{ src: imageViewerState.previewUrl || "", alt: "Design" }]}
+        onClose={() =>
+          setImageViewerState((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
       <div className="shadow ring-1 ring-black ring-opacity-5 lg:flex lg:flex-auto lg:flex-col">
         <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-secondary text-center text-xs font-semibold leading-6 text-secondary-foreground dark:border-gray-600 lg:flex-none">
           <div className="bg-secondary py-2">
@@ -112,7 +116,9 @@ export default function FullCalendarMonthlyView({
           <div className="hidden w-full lg:grid lg:grid-cols-7 lg:grid-rows-5 lg:gap-px">
             {days.map((day) => {
               const formattedDay = format(day, "yyyy-MM-dd");
-              const eventsOnDay = eventsByDay[formattedDay] ?? [];
+              const eventsOnDay = (eventsByDay[formattedDay] ?? []).sort(
+                (a, b) => a.start.getTime() - b.start.getTime(),
+              );
               return (
                 <div
                   key={day.getTime()}
@@ -160,7 +166,15 @@ export default function FullCalendarMonthlyView({
                               </div>
                             </li>
                           </HoverCardTrigger>
-                          <HoverCardContent>
+                          <HoverCardContent
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setImageViewerState({
+                                isOpen: true,
+                                previewUrl: event.previewUrl,
+                              });
+                            }}
+                          >
                             {event.previewUrl ? (
                               <img className={"w-[350px]"} src={event.previewUrl} />
                             ) : (
@@ -184,7 +198,9 @@ export default function FullCalendarMonthlyView({
             {days.map((day) => {
               const isSelected = isEqual(day, selectedDay);
               const formattedDay = format(day, "yyyy-MM-dd");
-              const eventsOnDay = eventsByDay[formattedDay] ?? [];
+              const eventsOnDay = (eventsByDay[formattedDay] ?? []).sort(
+                (a, b) => a.start.getTime() - b.start.getTime(),
+              );
               return (
                 <button
                   key={day.getTime()}
@@ -240,7 +256,7 @@ export default function FullCalendarMonthlyView({
               <li
                 key={index}
                 onClick={() => {
-                  setPreviewDialogState({
+                  setImageViewerState({
                     isOpen: true,
                     previewUrl: event.previewUrl,
                   });

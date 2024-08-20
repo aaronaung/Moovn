@@ -44,7 +44,7 @@ export default function EmptyState({
   };
 
   return (
-    <div className={cn("text-center", className)}>
+    <div className={cn("mt-4 text-center", className)}>
       {Icon && <Icon className="mx-auto h-12 w-12" aria-hidden="true" />}
       {icon && icon}
       {title && <p className="mt-2 font-semibold">{title}</p>}

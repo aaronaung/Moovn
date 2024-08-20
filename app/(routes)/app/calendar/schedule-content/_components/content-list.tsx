@@ -1,5 +1,4 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { getTemplatesByIds } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
@@ -19,20 +18,20 @@ import { getContentKey } from "@/src/libs/content";
 import _ from "lodash";
 
 export default function ContentList({
-  sourceId,
   templateIds,
   scheduleRange,
+  scheduleData,
   selectedContentItems,
   setSelectedContentItems,
   publishDateTimeMap,
   setPublishDateTimeMap,
 }: {
-  sourceId: string;
   templateIds: string[];
   scheduleRange: {
     from: Date;
     to: Date;
   };
+  scheduleData: ScheduleData;
   selectedContentItems: string[];
   setSelectedContentItems: Dispatch<SetStateAction<string[]>>;
   publishDateTimeMap: { [key: string]: Date };
@@ -42,18 +41,8 @@ export default function ContentList({
     queryKey: ["getTemplatesByIds", templateIds],
     arg: templateIds,
   });
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
-    getScheduleDataForSourceByTimeRange,
-    {
-      queryKey: ["getScheduleDataForSourceByTimeRange", sourceId, scheduleRange],
-      arg: {
-        id: sourceId,
-        dateRange: scheduleRange,
-      },
-    },
-  );
 
-  if (isLoadingScheduleData || isLoadingTemplates || !templates || !scheduleData) {
+  if (isLoadingTemplates || !templates) {
     return <Spinner className="mt-8" />;
   }
 
@@ -201,6 +190,8 @@ const ContentListForTemplate = ({
                       const prevDate = prev[contentKey];
                       const newDate = new Date(d.getTime());
                       newDate.setDate(prevDate.getDate());
+                      newDate.setMonth(prevDate.getMonth());
+                      newDate.setFullYear(prevDate.getFullYear());
 
                       return {
                         ...prev,

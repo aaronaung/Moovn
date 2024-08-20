@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const schedules = ScheduleContentRequestSchema.parse(await req.json());
 
   try {
-    const resp = await fetch(`${env.CONTENT_SCHEDULING_API_HOST}/schedule-publish-content`, {
+    const resp = await fetch(`${env.CONTENT_SCHEDULING_API_HOST}/schedule-content`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

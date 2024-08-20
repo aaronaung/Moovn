@@ -36,6 +36,7 @@ export default function Calendar() {
         for (const schedule of contentSchedules ?? []) {
           const { templateId } = desconstructContentKey(schedule.name);
           const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
+
           const template = (templates ?? []).find((template) => template.id === templateId);
 
           if (template && scheduledDate) {
@@ -86,7 +87,6 @@ export default function Calendar() {
             onClick={() => {
               router.push("/app/calendar/schedule-content");
             }}
-            className="rounded-md"
           >
             Schedule content
           </Button>,

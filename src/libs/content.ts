@@ -56,7 +56,7 @@ export const desconstructContentKey = (contentKey: string) => {
 
 export const fromAtScheduleExpressionToDate = (expression: string) => {
   const date = expression.match(/at\((.*)\)/)?.[1];
-  return date ? parseISO(date) : null;
+  return date ? new Date(`${date}.000Z`) : null;
 };
 
 export const atScheduleExpression = (date: Date) =>

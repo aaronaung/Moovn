@@ -16,9 +16,7 @@ export type Database = {
           created_at: string | null
           destination_id: string
           id: string
-          last_published_at: string | null
           owner_id: string
-          published_ig_media_id: string | null
           source_data_view: string
           source_id: string
           updated_at: string | null
@@ -29,9 +27,7 @@ export type Database = {
           created_at?: string | null
           destination_id: string
           id?: string
-          last_published_at?: string | null
           owner_id: string
-          published_ig_media_id?: string | null
           source_data_view: string
           source_id: string
           updated_at?: string | null
@@ -42,9 +38,7 @@ export type Database = {
           created_at?: string | null
           destination_id?: string
           id?: string
-          last_published_at?: string | null
           owner_id?: string
-          published_ig_media_id?: string | null
           source_data_view?: string
           source_id?: string
           updated_at?: string | null
@@ -75,30 +69,49 @@ export type Database = {
       }
       content_schedules: {
         Row: {
+          content_type: string
           created_at: string | null
+          destination_id: string
           id: string
+          ig_caption: string | null
+          ig_tags: Json | null
           name: string
           owner_id: string
           schedule_expression: string
           updated_at: string | null
         }
         Insert: {
+          content_type: string
           created_at?: string | null
+          destination_id: string
           id?: string
+          ig_caption?: string | null
+          ig_tags?: Json | null
           name: string
           owner_id: string
           schedule_expression: string
           updated_at?: string | null
         }
         Update: {
+          content_type?: string
           created_at?: string | null
+          destination_id?: string
           id?: string
+          ig_caption?: string | null
+          ig_tags?: Json | null
           name?: string
           owner_id?: string
           schedule_expression?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "content_schedules_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_schedules_owner_id_fkey"
             columns: ["owner_id"]
@@ -184,29 +197,6 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      publish_content_jobs: {
-        Row: {
-          content_id: string
-          job_id: number
-        }
-        Insert: {
-          content_id: string
-          job_id: number
-        }
-        Update: {
-          content_id?: string
-          job_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "publish_content_jobs_content_id_fkey"
-            columns: ["content_id"]
-            isOneToOne: false
-            referencedRelation: "content"
             referencedColumns: ["id"]
           },
         ]
@@ -367,33 +357,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      schedule_content_publish: {
-        Args: {
-          content_id: number
-          api_key: string
-          cron_schedule: string
-        }
-        Returns: number
-      }
-      schedule_content_publish_run_once: {
-        Args: {
-          content_id: string
-          publish_content_function_url: string
-          api_key: string
-          date_time: string
-        }
-        Returns: number
-      }
       set_content_template_links: {
         Args: {
           arg_content_id: string
           new_template_ids: string[]
-        }
-        Returns: undefined
-      }
-      unschedule_job: {
-        Args: {
-          job_id: number
         }
         Returns: undefined
       }
@@ -488,4 +455,3 @@ export type Enums<
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-

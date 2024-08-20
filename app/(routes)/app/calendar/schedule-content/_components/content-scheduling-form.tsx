@@ -19,7 +19,10 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { isMobile } from "react-device-detect";
 import { cn } from "@/src/utils";
 import { scheduleContent as upsertSchedulesOnEventBridge } from "@/src/data/content";
-import { atScheduleExpression } from "@/src/libs/content";
+import { atScheduleExpression, renderCaption } from "@/src/libs/content";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
+import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
+import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -79,6 +82,7 @@ export default function ContentSchedulingForm({
   });
   const sourceId = watch("source_id");
   const templateIds = watch("template_ids");
+  const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
 
   const allowedDestinations = availableDestinations.filter((destination) => {
@@ -87,15 +91,46 @@ export default function ContentSchedulingForm({
     );
   });
 
-  const scheduleContent = async (
-    contentKey: string,
-    ownerId: string,
-    publishDateTime: Date,
-    content: ArrayBuffer,
-    contentType: string,
-  ) => {
-    let objectPath = `${ownerId}/${contentKey}.jpeg`;
+  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
+    getScheduleDataForSourceByTimeRange,
+    {
+      queryKey: ["getScheduleDataForSourceByTimeRange", sourceId, scheduleRange],
+      arg: {
+        id: sourceId,
+        dateRange: scheduleRange,
+      },
+    },
+  );
 
+  const scheduleContent = async (contentKey: string, ownerId: string, publishDateTime: Date) => {
+    const design = await db.designs.get(contentKey);
+    if (!design) {
+      console.error(`Design ${contentKey} not found in indexedDB`);
+      toast({
+        variant: "destructive",
+        title: `Design not found. Please contact support.`,
+      });
+      return;
+    }
+    const template = availableTemplates.find((t) => t.id === design.templateId);
+    if (!template) {
+      console.error(`Template ${design.templateId} not found in available templates`);
+      toast({
+        variant: "destructive",
+        title: `Template not found. Please contact support.`,
+      });
+      return;
+    }
+    if (!scheduleData) {
+      console.error(`Schedule data not found for source ${sourceId}`);
+      toast({
+        variant: "destructive",
+        title: `Schedule data not found. Please contact support.`,
+      });
+      return;
+    }
+
+    const objectPath = `${ownerId}/${contentKey}.jpeg`;
     await supaClientComponentClient.storage.from(BUCKETS.scheduledContent).remove([objectPath]);
     const { token } = await signUploadUrl({
       bucket: BUCKETS.scheduledContent,
@@ -104,16 +139,28 @@ export default function ContentSchedulingForm({
     });
     await supaClientComponentClient.storage
       .from(BUCKETS.scheduledContent)
-      .uploadToSignedUrl(objectPath, token, content, {
-        contentType,
+      .uploadToSignedUrl(objectPath, token, design.jpg, {
+        contentType: "image/jpeg",
       });
 
+    const scheduleByRange = organizeScheduleDataByView(
+      template.source_data_view,
+      scheduleRange,
+      scheduleData,
+    );
+    const scheduleDataForRange = scheduleByRange[contentKey.split("/")[0]];
     await supaClientComponentClient.from("content_schedules").upsert(
       {
         name: contentKey,
         owner_id: ownerId,
         schedule_expression: atScheduleExpression(publishDateTime),
+        content_type: template.content_type,
+        destination_id: destinationId,
+        ig_tags: design.instagramTags,
         updated_at: new Date().toISOString(),
+        ...(template.ig_caption_template
+          ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
+          : {}),
       },
       {
         onConflict: "name",
@@ -141,18 +188,8 @@ export default function ContentSchedulingForm({
         const ownerId = availableTemplates[0].owner_id;
         const contentKey = selectedContentItems[doneCount];
         const publishDateTime = publishDateTimeMap[contentKey];
-        const design = await db.designs.get(contentKey);
-        if (!design?.jpg) {
-          console.error(`Design ${contentKey} not found in indexedDB`);
-          toast({
-            variant: "destructive",
-            title: `Design not found. Please contact support.`,
-          });
-          return;
-        }
-        schedulePromises.push(
-          scheduleContent(contentKey, ownerId, publishDateTime, design.jpg, "image/jpeg"),
-        );
+
+        schedulePromises.push(scheduleContent(contentKey, ownerId, publishDateTime));
         schedules.push({
           contentKey: contentKey.replaceAll("/", "_"), // replace / with _ to comply with eventbridge naming restrictions.
           scheduleExpression: atScheduleExpression(publishDateTime),
@@ -276,19 +313,22 @@ export default function ContentSchedulingForm({
             placeholder: "Select a destination",
           }}
         />
-
-        <ContentList
-          sourceId={sourceId}
-          templateIds={templateIds}
-          scheduleRange={{
-            from: scheduleRange?.from || new Date(),
-            to: scheduleRange?.to || new Date(),
-          }}
-          selectedContentItems={selectedContentItems}
-          setSelectedContentItems={setSelectedContentItems}
-          publishDateTimeMap={publishDateTimeMap}
-          setPublishDateTimeMap={setPublishDateTimeMap}
-        />
+        {isLoadingScheduleData ? (
+          <Spinner />
+        ) : (
+          <ContentList
+            templateIds={templateIds}
+            scheduleRange={{
+              from: scheduleRange?.from ?? new Date(),
+              to: scheduleRange?.to ?? new Date(),
+            }}
+            scheduleData={scheduleData ?? {}}
+            selectedContentItems={selectedContentItems}
+            setSelectedContentItems={setSelectedContentItems}
+            publishDateTimeMap={publishDateTimeMap}
+            setPublishDateTimeMap={setPublishDateTimeMap}
+          />
+        )}
       </form>
     </div>
   );
