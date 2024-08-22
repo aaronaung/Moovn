@@ -2,7 +2,10 @@ create table "public"."content" (
   "id" uuid primary key default gen_random_uuid(),
   "owner_id" uuid not null,
   "destination_id" uuid not null references "public"."destinations" ("id"), -- if destination doesn't exist user can't publish
-  "caption" text,
+  "template_id" uuid not null references "public"."templates" ("id"),
+  "ig_caption" text,
+  "ig_tags" jsonb,
+  "type" text not null,
   "source_id" uuid not null references "public"."sources" ("id"),
   "source_data_view" text not null,
   "created_at" timestamp with time zone default now(),

@@ -49,6 +49,7 @@ function usePhotopeaHeadless() {
 
 const LAYER_CHECK_INTERVAL = 500; // ms
 const DEFAULT_TIMEOUT = 15_000;
+const MAX_IN_PROGRESS = 5;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
@@ -75,7 +76,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       if (_.isString(e.data)) {
         if (e.data.startsWith("layer_updates_complete")) {
           // layer_updates_complete:namespace-123
-          console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (pollIntervalMapRef.current[namespace]) {
             clearIntervalForNamespace(namespace);
@@ -173,6 +173,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
     clearIntervalForNamespace(namespace);
     console.log(`Setting poll interval for namespace: ${namespace}`);
+
     pollIntervalMapRef.current[namespace] = setInterval(callback, delay);
   };
 

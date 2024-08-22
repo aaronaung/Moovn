@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const templates = await getTemplatesForContent(
     {
       contentId: content.id,
-      contentType: content.content_type,
+      contentType: content.type,
     },
     {
       client: supaServerClient(),
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         let publishedMediaIds = [];
-        switch (content.content_type) {
+        switch (content.type) {
           case ContentType.InstagramPost:
             if (toPublish.length > 1) {
               const resp = await fbClient.publishCarouselPost(
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             break;
           default:
             return Response.json(
-              { message: `Content type ${content.content_type} not supported` },
+              { message: `Content type ${content.type} not supported` },
               { status: 400 },
             );
         }

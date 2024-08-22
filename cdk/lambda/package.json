@@ -1,5 +1,5 @@
 {
-  "name": "delete-schedule",
+  "name": "schedule-content",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1672.0"
+    "@aws-sdk/types": "^3.609.0",
+    "aws-sdk": "^2.1672.0",
+    "lodash": "^4.17.21",
+    "@supabase/supabase-js": "^2.45.1",
+    "date-fns": "^3.6.0"
   }
 }

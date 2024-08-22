@@ -1,1 +1,0 @@
-alter table sources add column name text not null;

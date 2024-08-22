@@ -7,6 +7,7 @@ import { DateRange } from "react-day-picker";
 
 type InputDateRangePickerProps = ControlledRhfInputProps & {
   onChange?: (dateRange?: DateRange) => void;
+  disablePastDays?: boolean;
 };
 
 export default function InputDateRangePicker(props: InputDateRangePickerProps) {
@@ -20,6 +21,7 @@ export default function InputDateRangePicker(props: InputDateRangePickerProps) {
           onChange={props.onChange || handleDateChange}
           value={props.value || field?.value}
           className={cn("w-full", props.className)}
+          disablePastDays={props.disablePastDays}
         />
       </InputDecorator>
     );

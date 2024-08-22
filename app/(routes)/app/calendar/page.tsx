@@ -8,7 +8,11 @@ import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getContentSchedules } from "@/src/data/content";
 import { getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { desconstructContentKey, fromAtScheduleExpressionToDate } from "@/src/libs/content";
+import {
+  desconstructScheduleName,
+  fromAtScheduleExpressionToDate,
+  getContentPath,
+} from "@/src/libs/content";
 import { signUrl } from "@/src/libs/storage";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -34,7 +38,7 @@ export default function Calendar() {
         setIsLoadingCalendarEvents(true);
         const getEventPromises: Promise<CalendarEvent>[] = [];
         for (const schedule of contentSchedules ?? []) {
-          const { templateId } = desconstructContentKey(schedule.name);
+          const { range, templateId } = desconstructScheduleName(schedule.name);
           const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
 
           const template = (templates ?? []).find((template) => template.id === templateId);
@@ -46,7 +50,7 @@ export default function Calendar() {
                   const url = await signUrl({
                     bucket: BUCKETS.scheduledContent,
                     client: supaClientComponentClient,
-                    objectPath: `${template.owner_id}/${schedule.name}.jpeg`,
+                    objectPath: getContentPath(range, template),
                   });
                   resolve({
                     title: template.name,

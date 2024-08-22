@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 // Import Lambda L2 construct
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as lambdaNodeJS from "aws-cdk-lib/aws-lambda-nodejs";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { ConfigProps } from "../bin/cdk";
 import {
@@ -41,25 +42,34 @@ export class MoovnStack extends cdk.Stack {
     });
 
     /** ------------- Create the content publishing function ------------- */
-    const publishContentFunction = new lambda.Function(this, prependStage("publish-content"), {
-      runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
-      code: lambda.Code.fromAsset("lambda/publish-content"), // Points to the lambda directory
-      handler: "index.handler", // Points to the function file in the lambda directory
-      environment: {
-        SUPABASE_URL: props?.config.SUPABASE_URL!,
-        SUPABASE_SERVICE_ROLE_KEY: props?.config.SUPABASE_SERVICE_ROLE_KEY!,
+    const publishContentFunction = new lambdaNodeJS.NodejsFunction(
+      this,
+      prependStage("publish-content"),
+      {
+        runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
+        entry: "./lambda/publish-content/index.ts", // Points to the lambda directory
+        environment: {
+          SUPABASE_URL: props?.config.SUPABASE_URL!,
+          SUPABASE_SERVICE_ROLE_KEY: props?.config.SUPABASE_SERVICE_ROLE_KEY!,
+          FACEBOOK_APP_SECRET: props?.config.FACEBOOK_APP_SECRET!,
+          FACEBOOK_APP_ID: props?.config.FACEBOOK_APP_ID!,
+        },
+        functionName: prependStage("publish-content"),
+        timeout: cdk.Duration.seconds(120),
       },
-      functionName: prependStage("publish-content"),
-    });
+    );
     publishContentFunction.addToRolePolicy(cloudWatchLogPolicy);
 
     /** ------------- Create delete schedule function ------------- */
-    const deleteScheduleFunction = new lambda.Function(this, prependStage("delete-schedule"), {
-      runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
-      code: lambda.Code.fromAsset("lambda/delete-schedule"), // Points to the lambda directory
-      handler: "index.handler", // Points to the function file in the lambda directory
-      functionName: prependStage("delete-schedule"),
-    });
+    const deleteScheduleFunction = new lambdaNodeJS.NodejsFunction(
+      this,
+      prependStage("delete-schedule"),
+      {
+        runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
+        entry: "./lambda/delete-schedule/index.ts", // Points to the lambda directory
+        functionName: prependStage("delete-schedule"),
+      },
+    );
     deleteScheduleFunction.addToRolePolicy(cloudWatchLogPolicy);
     deleteScheduleFunction.addToRolePolicy(
       new PolicyStatement({
@@ -90,18 +100,21 @@ export class MoovnStack extends cdk.Stack {
     // Attach the policy to the role
     schedulerRole.attachInlinePolicy(invokeLambdaPolicy);
     // Define the scheduler function
-    const scheduleContentFunction = new lambda.Function(this, prependStage("schedule-content"), {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/schedule-content"),
-      handler: "index.handler",
-      environment: {
-        TARGET_FUNCTION_ARN: publishContentFunction.functionArn,
-        // Pass the role ARN to the scheduler function, so it can assume it to invoke the target function.
-        SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
+    const scheduleContentFunction = new lambdaNodeJS.NodejsFunction(
+      this,
+      prependStage("schedule-content"),
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        entry: "./lambda/schedule-content/index.ts",
+        environment: {
+          TARGET_FUNCTION_ARN: publishContentFunction.functionArn,
+          // Pass the role ARN to the scheduler function, so it can assume it to invoke the target function.
+          SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
+        },
+        functionName: prependStage("schedule-content"),
+        timeout: cdk.Duration.seconds(60),
       },
-      functionName: prependStage("schedule-content"),
-      timeout: cdk.Duration.seconds(60),
-    });
+    );
     scheduleContentFunction.addToRolePolicy(cloudWatchLogPolicy);
     scheduleContentFunction.addToRolePolicy(
       new PolicyStatement({
@@ -141,15 +154,19 @@ export class MoovnStack extends cdk.Stack {
       {
         restApiName: prependStage("content-scheduling-api"),
         proxy: false,
-        handler: new lambda.Function(this, prependStage("content-scheduling-api-default-fn"), {
-          code: lambda.Code.fromInline(`
+        handler: new lambdaNodeJS.NodejsFunction(
+          this,
+          prependStage("content-scheduling-api-default-fn"),
+          {
+            code: lambda.Code.fromInline(`
 exports.handler = function(event) { 
   return { statusCode: 404, body: 'Not found' };
 }`),
-          handler: "index.handler",
-          runtime: lambda.Runtime.NODEJS_20_X,
-          functionName: prependStage("content-scheduling-api-default-fn"),
-        }),
+            handler: "index.handler",
+            runtime: lambda.Runtime.NODEJS_20_X,
+            functionName: prependStage("content-scheduling-api-default-fn"),
+          },
+        ),
         cloudWatchRole: true,
         deployOptions: {
           stageName: stage,

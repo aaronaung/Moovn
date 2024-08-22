@@ -10,9 +10,11 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // 2. Define a TS Type to type the returned envs from our function below.
 export type ConfigProps = {
+  ENVIRONMENT: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  ENVIRONMENT: string;
+  FACEBOOK_APP_SECRET: string;
+  FACEBOOK_APP_ID: string;
 };
 
 const app = new cdk.App();
@@ -28,16 +30,20 @@ new MoovnStack(app, "moovn-prod", {
   // env: { account: '123456789012', region: 'us-east-1' },
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
   config: {
+    ENVIRONMENT: "prod",
     SUPABASE_URL: process.env.PROD_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!,
-    ENVIRONMENT: "prod",
+    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET!,
+    FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID!,
   },
 });
 
 new MoovnStack(app, "moovn-dev", {
   config: {
+    ENVIRONMENT: "dev",
     SUPABASE_URL: process.env.DEV_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.DEV_SUPABASE_SERVICE_ROLE_KEY!,
-    ENVIRONMENT: "dev",
+    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET!,
+    FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID!,
   },
 });

@@ -1,4 +1,4 @@
-import { DesignContainer } from "@/src/components/common/design-container";
+import { DESIGN_WIDTH, DesignContainer } from "@/src/components/common/design-container";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { renderCaption } from "@/src/libs/content";
 import { ScheduleData } from "@/src/libs/sources/common";
@@ -9,16 +9,16 @@ import { memo } from "react";
 
 export default memo(
   function InstagramContent({
-    contentKey,
+    contentPath,
     template,
     scheduleData,
   }: {
-    contentKey: string;
+    contentPath: string;
     template: Tables<"templates">;
     scheduleData: ScheduleData;
   }) {
     return (
-      <div className="w-fit rounded-md bg-secondary" key={contentKey}>
+      <div className="w-fit rounded-md bg-secondary" key={contentPath}>
         <div className="flex items-center gap-x-1 px-3 py-3">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -31,17 +31,17 @@ export default memo(
         </div>
         <div className={cn("flex flex-col items-center")}>
           <DesignContainer
-            contentKey={contentKey}
+            contentPath={contentPath}
             scheduleData={scheduleData}
             template={template}
           />
         </div>
         {!_.isEmpty(scheduleData) && template.ig_caption_template && (
-          <div className="overflow-scroll p-2">
-            <p className="overflow-scroll whitespace-pre-wrap text-sm">
-              {renderCaption(template.ig_caption_template || "", scheduleData as any)}
-            </p>
-          </div>
+          <p
+            className={`overflow-scroll whitespace-pre-wrap text-sm max-w-[${DESIGN_WIDTH}px] p-2`}
+          >
+            {renderCaption(template.ig_caption_template || "", scheduleData as any)}
+          </p>
         )}
       </div>
     );

@@ -165,13 +165,10 @@ export default function SaveContentForm({
   const handleOnFormSuccess = async (formValues: SaveContentFormSchemaType) => {
     if (user?.id) {
       _saveContent({
-        content: {
-          owner_id: user.id,
-          destination_id: destination.id,
-          ...(defaultValues?.id ? { id: defaultValues.id } : {}),
-          ..._.omit(formValues, "template_ids"),
-        },
-        templateIds: formValues.template_ids,
+        owner_id: user.id,
+        destination_id: destination.id,
+        ...(defaultValues?.id ? { id: defaultValues.id } : {}),
+        ..._.omit(formValues, "template_ids"),
       });
     }
   };

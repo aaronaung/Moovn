@@ -32,11 +32,11 @@ const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 export const DESIGN_WIDTH = 220;
 
 export const DesignContainer = ({
-  contentKey,
+  contentPath,
   template,
   scheduleData,
 }: {
-  contentKey: string;
+  contentPath: string;
   template: Tables<"templates">;
   scheduleData: ScheduleData;
 }) => {
@@ -55,7 +55,7 @@ export const DesignContainer = ({
     psdUrl?: string;
   }>();
   const designFromIndexedDb = useLiveQuery(async () => {
-    const design = await db.designs.get(contentKey);
+    const design = await db.designs.get(contentPath);
     if (!design) {
       return undefined;
     }
@@ -74,10 +74,7 @@ export const DesignContainer = ({
         setIsLoadingOverwrites(true);
         const result = await supaClientComponentClient.storage
           .from(BUCKETS.designOverwrites)
-          .createSignedUrls(
-            [`${template.owner_id}/${contentKey}.psd`, `${template.owner_id}/${contentKey}.jpg`],
-            24 * 60 * 60,
-          );
+          .createSignedUrls([`${contentPath}.psd`, `${contentPath}.jpg`], 24 * 60 * 60);
         if (!result.data) {
           console.log("failed to create signed url", result.error);
           return;
@@ -85,12 +82,12 @@ export const DesignContainer = ({
 
         for (const overwrite of result.data) {
           if (overwrite.signedUrl) {
-            if (overwrite.path === `${template.owner_id}/${contentKey}.psd`) {
+            if (overwrite.path === `${contentPath}.psd`) {
               setDesignOverwrite((prev) => ({
                 ...prev,
                 psdUrl: overwrite.signedUrl,
               }));
-            } else if (overwrite.path === `${template.owner_id}/${contentKey}.jpg`) {
+            } else if (overwrite.path === `${contentPath}.jpg`) {
               setDesignOverwrite((prev) => ({
                 ...prev,
                 jpgUrl: overwrite.signedUrl,
@@ -103,7 +100,7 @@ export const DesignContainer = ({
       }
     };
     fetchOverwrites();
-    generateDesignForSchedule(contentKey, template, scheduleData);
+    generateDesignForSchedule(contentPath, template, scheduleData);
   }, [template, scheduleData]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {
@@ -118,8 +115,8 @@ export const DesignContainer = ({
       return;
     }
     // upload overwrite content to storage.
-    const psdPath = `${template.owner_id}/${contentKey}.psd`;
-    const jpgPath = `${template.owner_id}/${contentKey}.jpg`;
+    const psdPath = `${contentPath}.psd`;
+    const jpgPath = `${contentPath}.jpg`;
 
     // Unfortunately, we have to remove the existing files before uploading the new ones, because
     // createSignedUploadUrl fails if the file already exists.
@@ -194,12 +191,9 @@ export const DesignContainer = ({
           onConfirm={async () => {
             await supaClientComponentClient.storage
               .from(BUCKETS.designOverwrites)
-              .remove([
-                `${template.owner_id}/${contentKey}.psd`,
-                `${template.owner_id}/${contentKey}.jpg`,
-              ]);
+              .remove([`${contentPath}.psd`, `${contentPath}.jpg`]);
             setDesignOverwrite(undefined);
-            generateDesignForSchedule(contentKey, template, scheduleData, true);
+            generateDesignForSchedule(contentPath, template, scheduleData, true);
           }}
           title={"Refresh design"}
           label={`You edited this design, overwriting the generated version. Refreshing will create a new design and remove edits. 
@@ -285,7 +279,7 @@ export const DesignContainer = ({
                   if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    generateDesignForSchedule(contentKey, template, scheduleData, true);
+                    generateDesignForSchedule(contentPath, template, scheduleData, true);
                   }
                 }}
               >

@@ -23,6 +23,7 @@ with check (auth.uid() = id);
 --------------------------------------------
 create table "public"."sources" (
   "id" uuid not null default gen_random_uuid(),
+  "name" text not null,
   "owner_id" uuid not null,
   "type" text not null,
   "settings" jsonb not null,
@@ -48,6 +49,8 @@ create table "public"."templates" (
   "owner_id" uuid not null,
   "source_data_view" text not null,
   "name" text not null,
+  "content_type" text not null,
+  "ig_caption_template" text,
   "created_at" timestamp with time zone default now(),
   "updated_at" timestamp with time zone default now()
 );

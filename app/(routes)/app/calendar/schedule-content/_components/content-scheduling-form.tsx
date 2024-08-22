@@ -7,44 +7,37 @@ import InputDateRangePicker from "../../../../../../src/components/ui/input/date
 import { CONTENT_TYPES_BY_DESTINATION_TYPE } from "@/src/consts/content";
 import ContentList from "./content-list";
 import InputMultiSelect from "@/src/components/ui/input/multi-select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Progress } from "@/src/components/ui/progress";
 import { toast } from "@/src/components/ui/use-toast";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { signUploadUrl } from "@/src/libs/storage";
+import { upsertObjectAtPath } from "@/src/libs/storage";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { isMobile } from "react-device-detect";
 import { cn } from "@/src/utils";
-import { scheduleContent as upsertSchedulesOnEventBridge } from "@/src/data/content";
+import {
+  saveContent,
+  saveContentSchedule,
+  scheduleContent as upsertSchedulesOnEventBridge,
+} from "@/src/data/content";
 import { atScheduleExpression, renderCaption } from "@/src/libs/content";
-import { useSupaQuery } from "@/src/hooks/use-supabase";
+import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
+import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
+import { differenceInDays } from "date-fns";
 
 const formSchema = z.object({
   source_id: z.string(),
   template_ids: z.array(z.string()),
   destination_id: z.string(),
-  schedule_range: z
-    .object({
-      from: z.date(),
-      to: z.date(),
-    })
-    .refine(
-      (data) => {
-        const diffInMonths =
-          (data.to.getFullYear() - data.from.getFullYear()) * 12 +
-          data.to.getMonth() -
-          data.from.getMonth();
-        return diffInMonths <= 1;
-      },
-      {
-        message: "Schedule range cannot exceed 1 month",
-      },
-    ),
+  schedule_range: z.object({
+    from: z.coerce.date(),
+    to: z.coerce.date(),
+  }),
 });
 
 export type ContentSchedulingFormSchema = z.infer<typeof formSchema>;
@@ -67,6 +60,8 @@ export default function ContentSchedulingForm({
   const {
     control,
     watch,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
     defaultValues: {
@@ -84,6 +79,18 @@ export default function ContentSchedulingForm({
   const templateIds = watch("template_ids");
   const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
+  useEffect(() => {
+    if (scheduleRange.to && scheduleRange.from) {
+      const diffInDays = differenceInDays(scheduleRange.to, scheduleRange.from);
+      if (diffInDays > 31) {
+        setError("schedule_range", {
+          message: "Schedule range cannot be more than 31 days",
+        });
+      } else {
+        clearErrors("schedule_range");
+      }
+    }
+  }, [scheduleRange]);
 
   const allowedDestinations = availableDestinations.filter((destination) => {
     return CONTENT_TYPES_BY_DESTINATION_TYPE[destination.type].includes(
@@ -99,18 +106,25 @@ export default function ContentSchedulingForm({
         id: sourceId,
         dateRange: scheduleRange,
       },
+      enabled: !errors.schedule_range,
     },
   );
+  const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
+  const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
-  const scheduleContent = async (contentKey: string, ownerId: string, publishDateTime: Date) => {
-    const design = await db.designs.get(contentKey);
+  const scheduleContent = async (
+    contentPath: string,
+    ownerId: string,
+    publishDateTime: Date,
+  ): Promise<ScheduleContentRequest[0] | null> => {
+    const design = await db.designs.get(contentPath);
     if (!design) {
-      console.error(`Design ${contentKey} not found in indexedDB`);
+      console.error(`Design ${contentPath} not found in indexedDB`);
       toast({
         variant: "destructive",
         title: `Design not found. Please contact support.`,
       });
-      return;
+      return null;
     }
     const template = availableTemplates.find((t) => t.id === design.templateId);
     if (!template) {
@@ -119,7 +133,7 @@ export default function ContentSchedulingForm({
         variant: "destructive",
         title: `Template not found. Please contact support.`,
       });
-      return;
+      return null;
     }
     if (!scheduleData) {
       console.error(`Schedule data not found for source ${sourceId}`);
@@ -127,45 +141,55 @@ export default function ContentSchedulingForm({
         variant: "destructive",
         title: `Schedule data not found. Please contact support.`,
       });
-      return;
+      return null;
     }
 
-    const objectPath = `${ownerId}/${contentKey}.jpeg`;
-    await supaClientComponentClient.storage.from(BUCKETS.scheduledContent).remove([objectPath]);
-    const { token } = await signUploadUrl({
+    await upsertObjectAtPath({
       bucket: BUCKETS.scheduledContent,
-      objectPath,
+      objectPath: contentPath,
+      content: design.jpg,
+      contentType: "image/jpeg",
       client: supaClientComponentClient,
     });
-    await supaClientComponentClient.storage
-      .from(BUCKETS.scheduledContent)
-      .uploadToSignedUrl(objectPath, token, design.jpg, {
-        contentType: "image/jpeg",
-      });
 
     const scheduleByRange = organizeScheduleDataByView(
       template.source_data_view,
       scheduleRange,
       scheduleData,
     );
-    const scheduleDataForRange = scheduleByRange[contentKey.split("/")[0]];
-    await supaClientComponentClient.from("content_schedules").upsert(
-      {
-        name: contentKey,
-        owner_id: ownerId,
-        schedule_expression: atScheduleExpression(publishDateTime),
-        content_type: template.content_type,
-        destination_id: destinationId,
-        ig_tags: design.instagramTags,
-        updated_at: new Date().toISOString(),
-        ...(template.ig_caption_template
-          ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
-          : {}),
-      },
-      {
-        onConflict: "name",
-      },
-    );
+
+    const scheduleExpression = atScheduleExpression(publishDateTime);
+    const scheduleDataForRange = scheduleByRange[contentPath.split("/")[0]];
+
+    const content = await _saveContent({
+      source_id: sourceId,
+      source_data_view: template.source_data_view,
+      type: template.content_type,
+      owner_id: ownerId,
+      template_id: template.id,
+      destination_id: destinationId,
+      ig_tags: [design.instagramTags], // In a carousel post we'll have multiple tag groups ordered by the order they appear in..
+      ...(template.ig_caption_template
+        ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
+        : {}),
+      updated_at: new Date().toISOString(),
+    });
+
+    const scheduleName = contentPath.replaceAll("/", "_"); // AWS EventBridge doesn't allow slashes in rule names.
+    await _saveContentSchedule({
+      content_id: content.id,
+      name: scheduleName,
+      owner_id: ownerId,
+      schedule_expression: scheduleExpression,
+      updated_at: new Date().toISOString(),
+    });
+
+    return {
+      contentId: content.id,
+      contentPath,
+      scheduleName,
+      scheduleExpression,
+    };
   };
 
   const handleScheduleForPublishing = async () => {
@@ -180,27 +204,22 @@ export default function ContentSchedulingForm({
       const schedules = [];
       while (doneCount < selectedContentItems.length) {
         if (schedulePromises.length === SCHEDULING_BATCH_SIZE) {
-          await Promise.all(schedulePromises);
+          schedules.push(...(await Promise.all(schedulePromises)));
           setSchedulingProgress((doneCount / selectedContentItems.length) * 100);
           schedulePromises = [];
         }
 
         const ownerId = availableTemplates[0].owner_id;
-        const contentKey = selectedContentItems[doneCount];
-        const publishDateTime = publishDateTimeMap[contentKey];
-
-        schedulePromises.push(scheduleContent(contentKey, ownerId, publishDateTime));
-        schedules.push({
-          contentKey: contentKey.replaceAll("/", "_"), // replace / with _ to comply with eventbridge naming restrictions.
-          scheduleExpression: atScheduleExpression(publishDateTime),
-        });
+        const contentPath = selectedContentItems[doneCount];
+        const publishDateTime = publishDateTimeMap[contentPath];
+        schedulePromises.push(scheduleContent(contentPath, ownerId, publishDateTime));
         doneCount++;
       }
 
       if (schedulePromises.length > 0) {
-        await Promise.all(schedulePromises);
+        schedules.push(...(await Promise.all(schedulePromises)));
       }
-      await upsertSchedulesOnEventBridge(schedules);
+      await upsertSchedulesOnEventBridge(schedules.filter(Boolean) as ScheduleContentRequest);
       toast({
         variant: "success",
         title: "Content scheduled successfully",
@@ -281,6 +300,7 @@ export default function ContentSchedulingForm({
             rhfKey="schedule_range"
             control={control}
             error={errors.schedule_range?.message}
+            disablePastDays
           />
         </div>
         <div className="flex gap-x-3">

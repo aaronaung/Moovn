@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 
 export default memo(
   function ContentListItem({
-    contentKey,
+    contentPath,
     scheduleData,
     template,
     isSelected,
@@ -18,7 +18,7 @@ export default memo(
     publishDateTime,
     onPublishDateTimeChange,
   }: {
-    contentKey: string;
+    contentPath: string;
     scheduleData: ScheduleData;
     template: Tables<"templates">;
     isSelected: boolean;
@@ -33,8 +33,8 @@ export default memo(
         case ContentType.InstagramStory:
           contentComp = (
             <InstagramContent
-              key={contentKey}
-              contentKey={contentKey}
+              key={contentPath}
+              contentPath={contentPath}
               scheduleData={scheduleData}
               template={template}
             />
@@ -82,7 +82,7 @@ export default memo(
   },
   (prev, next) => {
     return (
-      prev.contentKey === next.contentKey &&
+      prev.contentPath === next.contentPath &&
       prev.isSelected === next.isSelected &&
       prev.publishDateTime === next.publishDateTime &&
       prev.scheduleData === next.scheduleData

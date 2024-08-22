@@ -5,7 +5,9 @@ import { z } from "zod";
 const ScheduleContentRequestSchema = z
   .array(
     z.object({
-      contentKey: z.string(),
+      contentId: z.string(),
+      contentPath: z.string(),
+      scheduleName: z.string(),
       scheduleExpression: z.string(),
     }),
   )

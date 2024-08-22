@@ -13,11 +13,13 @@ export function DatePickerWithRange({
   value,
   onChange,
   className,
+  disablePastDays = false,
 }: {
   value: DateRange | undefined;
   onChange: (date: DateRange | undefined) => void;
   width?: string;
   className?: string;
+  disablePastDays?: boolean;
 }) {
   return (
     <div className={cn("grid gap-2", className)}>
@@ -54,6 +56,7 @@ export function DatePickerWithRange({
             selected={value}
             onSelect={onChange}
             numberOfMonths={2}
+            disablePastDays={disablePastDays}
           />
         </PopoverContent>
       </Popover>

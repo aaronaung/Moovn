@@ -1,7 +1,8 @@
 create table "public"."published_content" (
   "id" uuid primary key default gen_random_uuid(),
   "owner_id" uuid not null references "public"."users" ("id") on delete cascade,
-  "content_id" uuid references "public"."content" ("id") on delete set null,
+  "content_id" uuid not null references "public"."content" ("id") on delete set null,
+  "schedule_id" uuid references "public"."content_schedules" ("id") on delete set null, -- schedule_id null means it's published manually
   "ig_media_id" text,
   "published_at" timestamp with time zone default now()
 );

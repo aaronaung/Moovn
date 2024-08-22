@@ -28,8 +28,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "*.ts",
-    "playground.js",
-    "cdk/lambda/schedule-content/index.js"
+    "playground.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "cdk"]
 }

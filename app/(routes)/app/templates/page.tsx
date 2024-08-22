@@ -175,7 +175,7 @@ export default function TemplatesPage() {
       </div>
       <div
         className={cn(
-          "mt-8 flex gap-3 overflow-scroll",
+          "mt-4 flex gap-3 overflow-scroll",
           showCarousel ? "justify-center" : "flex-wrap",
         )}
       >

@@ -1,5 +1,9 @@
+import { Tables } from "@/types/db";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
+import { BUCKETS } from "../consts/storage";
+import { signUrl } from "./storage";
 
 export function renderCaption(template: string, schedule?: { [key: string]: string }): string {
   if (!schedule) {
@@ -46,11 +50,11 @@ export function renderCaption(template: string, schedule?: { [key: string]: stri
 }
 
 // scheduleRange is a string that represents the range of the schedule. e.g. "2022-01-01 - 2022-01-31" or "2022-01-01" if it's a single day.
-export const getContentKey = (scheduleRange: string, templateId: string) =>
-  `${scheduleRange}/${templateId}`;
+export const getContentPath = (scheduleRange: string, template: Tables<"templates">) =>
+  `${template.owner_id}/${scheduleRange}/${template.id}`;
 
-export const desconstructContentKey = (contentKey: string) => {
-  const [range, templateId] = contentKey.split("/");
+export const desconstructScheduleName = (scheduleName: string) => {
+  const [range, templateId] = scheduleName.split("_");
   return { range, templateId };
 };
 
@@ -61,3 +65,29 @@ export const fromAtScheduleExpressionToDate = (expression: string) => {
 
 export const atScheduleExpression = (date: Date) =>
   `at(${formatInTimeZone(date, "UTC", "yyyy-MM-dd'T'HH:mm:ss")})`; // toISOString() includes milli seconds which is not supported by eventbridge
+
+export const getContentPreviewUrls = async (contentPath: string, client: SupabaseClient) => {
+  const { data, error } = await client.storage.from(BUCKETS.scheduledContent).list(contentPath);
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (data.length === 0) {
+    // The content is a single image.
+    const signedUrl = await signUrl({
+      bucket: BUCKETS.scheduledContent,
+      client,
+      objectPath: contentPath,
+    });
+    return [signedUrl];
+  }
+  // The content is a directory.
+  return await Promise.all(
+    data.map(async (file) =>
+      signUrl({
+        bucket: BUCKETS.scheduledContent,
+        client,
+        objectPath: `${contentPath}/${file.name}`,
+      }),
+    ),
+  );
+};

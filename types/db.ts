@@ -11,36 +11,42 @@ export type Database = {
     Tables: {
       content: {
         Row: {
-          caption: string | null
-          content_type: string
           created_at: string | null
           destination_id: string
           id: string
+          ig_caption: string | null
+          ig_tags: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
+          template_id: string
+          type: string
           updated_at: string | null
         }
         Insert: {
-          caption?: string | null
-          content_type?: string
           created_at?: string | null
           destination_id: string
           id?: string
+          ig_caption?: string | null
+          ig_tags?: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
+          template_id: string
+          type: string
           updated_at?: string | null
         }
         Update: {
-          caption?: string | null
-          content_type?: string
           created_at?: string | null
           destination_id?: string
           id?: string
+          ig_caption?: string | null
+          ig_tags?: Json | null
           owner_id?: string
           source_data_view?: string
           source_id?: string
+          template_id?: string
+          type?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -65,40 +71,38 @@ export type Database = {
             referencedRelation: "sources"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "content_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
         ]
       }
       content_schedules: {
         Row: {
-          content_type: string
+          content_id: string
           created_at: string | null
-          destination_id: string
           id: string
-          ig_caption: string | null
-          ig_tags: Json | null
           name: string
           owner_id: string
           schedule_expression: string
           updated_at: string | null
         }
         Insert: {
-          content_type: string
+          content_id: string
           created_at?: string | null
-          destination_id: string
           id?: string
-          ig_caption?: string | null
-          ig_tags?: Json | null
           name: string
           owner_id: string
           schedule_expression: string
           updated_at?: string | null
         }
         Update: {
-          content_type?: string
+          content_id?: string
           created_at?: string | null
-          destination_id?: string
           id?: string
-          ig_caption?: string | null
-          ig_tags?: Json | null
           name?: string
           owner_id?: string
           schedule_expression?: string
@@ -106,10 +110,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "content_schedules_destination_id_fkey"
-            columns: ["destination_id"]
+            foreignKeyName: "content_schedules_content_id_fkey"
+            columns: ["content_id"]
             isOneToOne: false
-            referencedRelation: "destinations"
+            referencedRelation: "content"
             referencedColumns: ["id"]
           },
           {
@@ -203,25 +207,28 @@ export type Database = {
       }
       published_content: {
         Row: {
-          content_id: string | null
+          content_id: string
           id: string
           ig_media_id: string | null
           owner_id: string
           published_at: string | null
+          schedule_id: string | null
         }
         Insert: {
-          content_id?: string | null
+          content_id: string
           id?: string
           ig_media_id?: string | null
           owner_id: string
           published_at?: string | null
+          schedule_id?: string | null
         }
         Update: {
-          content_id?: string | null
+          content_id?: string
           id?: string
           ig_media_id?: string | null
           owner_id?: string
           published_at?: string | null
+          schedule_id?: string | null
         }
         Relationships: [
           {
@@ -236,6 +243,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_content_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "content_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -290,7 +304,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          content_type?: string
+          content_type: string
           created_at?: string | null
           id?: string
           ig_caption_template?: string | null

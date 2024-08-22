@@ -3,18 +3,13 @@ import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
+import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 
 export const saveContent = async (
-  {
-    content,
-    templateIds,
-  }: {
-    content: Partial<Tables<"content">>;
-    templateIds?: string[];
-  },
+  content: Partial<Tables<"content">>,
   { client }: SupabaseOptions,
 ) => {
-  const saved = await throwOrData<Tables<"content">>(
+  return throwOrData(
     client
       .from("content")
       .upsert(content as Tables<"content">)
@@ -22,17 +17,6 @@ export const saveContent = async (
       .limit(1)
       .single(),
   );
-
-  if (templateIds) {
-    try {
-      await client.rpc("set_content_template_links", {
-        arg_content_id: saved.id,
-        new_template_ids: templateIds,
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  }
 };
 
 export const deleteContent = async (id: string, { client }: SupabaseOptions) => {
@@ -84,12 +68,26 @@ export const publishContent = async ({ id, body }: { id: string; body: PublishCo
   ).json();
 };
 
-export const scheduleContent = async (
-  schedules: { contentKey: string; scheduleExpression: string }[],
+export const saveContentSchedule = async (
+  schedule: Partial<Tables<"content_schedules">>,
+  { client }: SupabaseOptions,
 ) => {
+  return throwOrData(
+    client
+      .from("content_schedules")
+      .upsert(schedule as Tables<"content_schedules">, {
+        onConflict: "name",
+      })
+      .select("id")
+      .limit(1)
+      .single(),
+  );
+};
+
+export const scheduleContent = async (req: ScheduleContentRequest) => {
   const resp = await fetch(`/api/content/schedule`, {
     method: "POST",
-    body: JSON.stringify(schedules),
+    body: JSON.stringify(req),
     headers: {
       "Content-Type": "application/json",
     },
@@ -101,5 +99,5 @@ export const scheduleContent = async (
 };
 
 export const getContentSchedules = async ({ client }: SupabaseOptions) => {
-  return throwOrData(client.from("content_schedules").select("*"));
+  return throwOrData(client.from("content_schedules").select("*, content:content(*)"));
 };
