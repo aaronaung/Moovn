@@ -1,5 +1,6 @@
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SupabaseOptions } from "../data/clients/types";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // NOTE: This function does something very specific. It constructs a supabase storage object url with the timestamp as the version attached to the url as query param. This is usually used to bust the cache on the image url.
 export const getTimestampedObjUrl = (
@@ -103,4 +104,35 @@ export const upsertObjectAtPath = async ({
   await client.storage.from(bucket).uploadToSignedUrl(objectPath, signedUrl.token, content, {
     contentType,
   });
+};
+
+// Returns path if it's not a directory, else returns all children paths.
+export const signUrlForPathOrChildPaths = async (
+  bucket: string,
+  path: string,
+  client: SupabaseClient,
+) => {
+  const { data, error } = await client.storage.from(bucket).list(path);
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (data.length === 0) {
+    // The content is a single image.
+    const signedUrl = await signUrl({
+      bucket,
+      client,
+      objectPath: path,
+    });
+    return [signedUrl];
+  }
+  // The content is a directory.
+  return await Promise.all(
+    data.map(async (file) =>
+      signUrl({
+        bucket,
+        client,
+        objectPath: `${path}/${file.name}`,
+      }),
+    ),
+  );
 };

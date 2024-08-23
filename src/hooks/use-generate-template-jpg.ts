@@ -2,6 +2,7 @@ import { Tables } from "@/types/db";
 import { usePhotopeaHeadless } from "../contexts/photopea-headless";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
+import { db } from "../libs/indexeddb/indexeddb";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,28 +10,35 @@ export const useGenerateTemplateJpg = () => {
   const { initialize } = usePhotopeaHeadless();
   const [templateJpg, setTemplateJpg] = useState<ArrayBuffer | null>(null);
 
-  const generateTemplateJpg = async (template: Tables<"templates">, templateData: ArrayBuffer) => {
-    try {
-      setIsLoading(true);
-
-      const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(template.id, photopeaEl, {
-        initialData: templateData,
-        onDesignExport: async (designExport) => {
-          if (designExport?.["jpg"]) {
-            setTemplateJpg(designExport["jpg"]);
-            if (document.body.contains(photopeaEl)) {
-              document.body.removeChild(photopeaEl);
-            }
+  const generateTemplateJpg = async ({
+    template,
+    templatePath,
+    templatePsd,
+  }: {
+    template: Tables<"templates">;
+    templatePath: string;
+    templatePsd: ArrayBuffer;
+  }) => {
+    setIsLoading(true);
+    const photopeaEl = addHeadlessPhotopeaToDom();
+    initialize(template.id, photopeaEl, {
+      initialData: templatePsd,
+      onDesignExport: async (designExport) => {
+        if (designExport?.["jpg"]) {
+          await db.templates.put({
+            key: templatePath,
+            jpg: designExport["jpg"],
+            psd: templatePsd,
+            templateId: template.id,
+            lastUpdated: new Date(),
+          });
+          if (document.body.contains(photopeaEl)) {
+            document.body.removeChild(photopeaEl);
           }
-        },
-      });
-    } catch (err) {
-      console.error("failed to generate design", err);
-      setError(err);
-    } finally {
-      setIsLoading(false);
-    }
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
   return {

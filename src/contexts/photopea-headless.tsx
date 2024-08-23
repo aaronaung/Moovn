@@ -248,7 +248,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     clearIntervalForNamespace(namespace);
   };
 
-  const initialize = (
+  const initialize = async (
     namespace: string,
     photopeaEl: HTMLIFrameElement,
     {
@@ -267,7 +267,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   ) => {
     // This ensures that we always starts with a clean slate.
     clear(namespace);
-    console.log("initializing photopea headless", namespace);
 
     setPhotopeaMap((prev) => ({ ...prev, [namespace]: photopeaEl }));
     if (designGenSteps) {

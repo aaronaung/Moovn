@@ -57,7 +57,7 @@ export default function TemplatesPage() {
   });
 
   if (isLoadingTemplates || !user) {
-    return <Spinner />;
+    return <Spinner className="mt-8" />;
   }
 
   const handleTemplateCreate = async (
@@ -82,9 +82,11 @@ export default function TemplatesPage() {
         content_type: metadataChanges.content_type,
         owner_id: user.id,
       });
+      const templatePath = `${user.id}/${saved.id}`;
 
       await Promise.all([
         db.templates.put({
+          key: templatePath,
           templateId: saved.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
@@ -92,7 +94,7 @@ export default function TemplatesPage() {
         }),
         upsertObjectAtPath({
           bucket: BUCKETS.designTemplates,
-          objectPath: `${user.id}/${saved.id}.psd`,
+          objectPath: templatePath,
           client: supaClientComponentClient,
           content: designExport["psd"],
           contentType: "image/vnd.adobe.photoshop",
@@ -191,6 +193,7 @@ export default function TemplatesPage() {
                   <TemplateContainer
                     key={template.id}
                     template={template}
+                    templatePath={`${template.owner_id}/${template.id}`}
                     onDeleteTemplate={() => {
                       setDeleteConfirmationDialogState({
                         isOpen: true,
@@ -209,6 +212,7 @@ export default function TemplatesPage() {
             <TemplateContainer
               key={template.id}
               template={template}
+              templatePath={`${template.owner_id}/${template.id}`}
               onDeleteTemplate={() => {
                 setDeleteConfirmationDialogState({
                   isOpen: true,

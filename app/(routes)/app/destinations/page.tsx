@@ -65,7 +65,7 @@ export default function DestinationsPage() {
   );
 
   if (isLoadingDestinations) {
-    return <Spinner />;
+    return <Spinner className="mt-8" />;
   }
 
   if (destinations && destinations.length === 0) {

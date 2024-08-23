@@ -59,7 +59,7 @@ export const deleteTemplate = async (
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
   await client.storage
     .from(BUCKETS.designTemplates)
-    .remove([`${template.owner_id}/${template.id}.psd`]);
+    .remove([`${template.owner_id}/${template.id}`]);
 
   return resp;
 };

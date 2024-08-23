@@ -27,6 +27,7 @@ import { db } from "@/src/libs/indexeddb/indexeddb";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import InputTextArea from "@/src/components/ui/input/textarea";
 import { ContentType } from "@/src/consts/content";
+import { useLiveQuery } from "dexie-react-hooks";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -34,82 +35,50 @@ export const TEMPLATE_WIDTH = 320;
 
 export const TemplateContainer = ({
   template,
+  templatePath,
   onDeleteTemplate,
 }: {
   template: Tables<"templates">;
+  templatePath: string;
   onDeleteTemplate: () => void;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
-  const {
-    generateTemplateJpg,
-    templateJpg: generatedTemplateJpg,
-    isLoading: isGeneratingTemplateJpg,
-  } = useGenerateTemplateJpg();
+  const { generateTemplateJpg, isLoading: isGeneratingTemplateJpg } = useGenerateTemplateJpg();
   const [isLoadingTemplateSignedUrl, setIsLoadingTemplateSignedUrl] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
   const [igCaption, setIgCaption] = useState<string>(template.ig_caption_template || "");
 
-  const [templateData, setTemplateData] = useState<{
-    psd?: ArrayBuffer;
-    jpg?: ArrayBuffer;
-  }>();
-
-  const jpgBlobUrl = templateData?.jpg
-    ? URL.createObjectURL(new Blob([templateData.jpg]))
-    : undefined;
-  const psdBlobUrl = templateData?.psd
-    ? URL.createObjectURL(new Blob([templateData.psd]))
-    : undefined;
-
-  useEffect(() => {
-    if (generatedTemplateJpg) {
-      setTemplateData((prev) => ({
-        ...prev,
-        jpg: generatedTemplateJpg,
-      }));
-      db.templates.update(template.id, { jpg: generatedTemplateJpg, lastUpdated: new Date() });
+  const templateFromIdb = useLiveQuery(async () => {
+    const template = await db.templates.get(templatePath);
+    if (!template) {
+      return undefined;
     }
-  }, [generatedTemplateJpg]);
+    return {
+      jpgUrl: URL.createObjectURL(new Blob([template.jpg], { type: "image/jpeg" })),
+      psdUrl: URL.createObjectURL(new Blob([template.psd], { type: "image/vnd.adobe.photoshop" })),
+      psd: template.psd,
+    };
+  });
 
   useEffect(() => {
-    const fetchTemplateSignedUrl = async () => {
+    const generateTemplate = async () => {
       try {
         setIsLoadingTemplateSignedUrl(true);
-
-        const templateFromIndexedDb = await db.templates.get(template.id);
-        if (
-          templateFromIndexedDb?.jpg &&
-          templateFromIndexedDb?.psd &&
-          templateFromIndexedDb.jpg.byteLength > 0 &&
-          templateFromIndexedDb.psd.byteLength > 0
-        ) {
-          setTemplateData({
-            jpg: templateFromIndexedDb.jpg,
-            psd: templateFromIndexedDb.psd,
-          });
-        } else {
-          const psdSignedUrl = await signUrl({
-            bucket: BUCKETS.designTemplates,
-            objectPath: `${template.owner_id}/${template.id}.psd`,
-            client: supaClientComponentClient,
-          });
-
-          const psd = await (await fetch(psdSignedUrl)).arrayBuffer();
-          generateTemplateJpg(template, psd);
-          setTemplateData((prev) => ({
-            ...prev,
-            psd,
-          }));
-          await db.templates.put({
-            templateId: template.id,
-            jpg: new ArrayBuffer(0), // We don't have the jpg yet, so just store an empty array buffer.
-            psd,
-            lastUpdated: new Date(),
-          });
+        const fromdb = await db.templates.get(templatePath);
+        if (fromdb?.jpg && fromdb?.psd) {
+          setIsLoadingTemplateSignedUrl(false);
+          return;
         }
+        const psdSignedUrl = await signUrl({
+          bucket: BUCKETS.designTemplates,
+          objectPath: `${template.owner_id}/${template.id}`,
+          client: supaClientComponentClient,
+        });
+        const psd = await (await fetch(psdSignedUrl)).arrayBuffer();
+        generateTemplateJpg({ template, templatePath, templatePsd: psd });
       } catch (err) {
-        console.error("Failed to get signed URL for template:", err);
+        console.error("Failed to generate template jpg:", err);
         toast({
           variant: "destructive",
           title: "Failed to load template. Please try again or contact support.",
@@ -119,7 +88,7 @@ export const TemplateContainer = ({
       }
     };
 
-    fetchTemplateSignedUrl();
+    generateTemplate();
   }, []);
 
   const handleUpdateIgCaption = async () => {
@@ -156,13 +125,14 @@ export const TemplateContainer = ({
     await Promise.all([
       upsertObjectAtPath({
         bucket: BUCKETS.designTemplates,
-        objectPath: `${template.owner_id}/${template.id}.psd`,
+        objectPath: `${template.owner_id}/${template.id}`,
         client: supaClientComponentClient,
         content: designExport["psd"],
         contentType: "image/vnd.adobe.photoshop",
       }),
       db.designs.where("templateId").equals(template.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templates.put({
+        key: templatePath,
         templateId: template.id,
         jpg: designExport["jpg"],
         psd: designExport["psd"],
@@ -185,12 +155,18 @@ export const TemplateContainer = ({
   };
 
   const renderTemplateContent = () => {
-    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !jpgBlobUrl) {
-      return <Spinner />;
+    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !templateFromIdb?.jpgUrl) {
+      return (
+        <div
+          className={`flex h-[${TEMPLATE_WIDTH}px] w-[${TEMPLATE_WIDTH}px] items-center justify-center`}
+        >
+          <Spinner />
+        </div>
+      );
     }
     return (
       <img
-        src={jpgBlobUrl}
+        src={templateFromIdb.jpgUrl}
         onClick={() => setIsImageViewerOpen(true)}
         alt="Template"
         className=" h-full w-full object-contain"
@@ -227,13 +203,15 @@ export const TemplateContainer = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex h-[300px] cursor-pointer items-center justify-center bg-secondary p-0">
+      <CardContent
+        className={`flex h-[320px] w-[320px] cursor-pointer items-center justify-center bg-secondary p-0`}
+      >
         {renderTemplateContent()}
-        {jpgBlobUrl && (
+        {templateFromIdb?.jpgUrl && (
           <ImageViewer
             visible={isImageViewerOpen}
             onMaskClick={() => setIsImageViewerOpen(false)}
-            images={[{ src: jpgBlobUrl, alt: "Template" }]}
+            images={[{ src: templateFromIdb.jpgUrl, alt: "Template" }]}
             onClose={() => setIsImageViewerOpen(false)}
           />
         )}
@@ -241,13 +219,13 @@ export const TemplateContainer = ({
 
       <CardFooter className="flex justify-center gap-2 py-3">
         <DropdownMenu>
-          <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateData}>
+          <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateFromIdb}>
             <Tooltip>
               <TooltipTrigger>
                 <Button
                   className="group"
                   variant="secondary"
-                  disabled={isLoadingTemplateSignedUrl || !templateData}
+                  disabled={isLoadingTemplateSignedUrl || !templateFromIdb}
                 >
                   <DownloadCloudIcon width={18} className="group-hover:text-primary" />
                 </Button>
@@ -256,21 +234,21 @@ export const TemplateContainer = ({
             </Tooltip>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {psdBlobUrl && (
+            {templateFromIdb?.psdUrl && (
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
-                  download(psdBlobUrl, `${template.name}.psd`);
+                  download(templateFromIdb.psdUrl, `${template.name}.psd`);
                 }}
               >
                 PSD
               </DropdownMenuItem>
             )}
-            {jpgBlobUrl && (
+            {templateFromIdb?.jpgUrl && (
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
-                  download(jpgBlobUrl, `${template.name}.jpg`);
+                  download(templateFromIdb.jpgUrl, `${template.name}.jpg`);
                 }}
               >
                 JPEG
@@ -284,16 +262,16 @@ export const TemplateContainer = ({
             <Button
               variant="secondary"
               className="group"
-              disabled={isLoadingTemplateSignedUrl || !templateData?.psd}
+              disabled={isLoadingTemplateSignedUrl || !templateFromIdb?.psd}
               onClick={async () => {
-                if (templateData?.psd) {
+                if (templateFromIdb?.psd) {
                   openPhotopeaEditor(
                     {
                       title: template.name || "Untitled",
                       source_data_view: template.source_data_view,
                       content_type: template.content_type,
                     },
-                    templateData.psd,
+                    templateFromIdb.psd,
                     {
                       onSave: handleTemplateSave,
                       isMetadataEditable: true,

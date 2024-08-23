@@ -80,7 +80,7 @@ export default function ContentSchedulingForm({
   const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
   useEffect(() => {
-    if (scheduleRange.to && scheduleRange.from) {
+    if (scheduleRange?.to && scheduleRange?.from) {
       const diffInDays = differenceInDays(scheduleRange.to, scheduleRange.from);
       if (diffInDays > 31) {
         setError("schedule_range", {
@@ -175,7 +175,7 @@ export default function ContentSchedulingForm({
       updated_at: new Date().toISOString(),
     });
 
-    const scheduleName = contentPath.replaceAll("/", "_"); // AWS EventBridge doesn't allow slashes in rule names.
+    const scheduleName = contentPath.split("/").slice(1, 3).join("_"); // AWS EventBridge doesn't allow slashes in rule names.
     await _saveContentSchedule({
       content_id: content.id,
       name: scheduleName,

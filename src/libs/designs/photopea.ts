@@ -132,8 +132,6 @@ function checkLayerTranslatesComplete() {
         } catch(e) {
             console.error("Error getting layers for translation", e)
         }
-       
-        console.log({ from, to })
 
         if (from && to) {
             // Calculate the center of the 'to' layer

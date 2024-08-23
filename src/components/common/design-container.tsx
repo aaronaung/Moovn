@@ -33,12 +33,14 @@ export const DESIGN_WIDTH = 220;
 
 export const DesignContainer = ({
   contentPath,
+  signedTemplateUrl,
   template,
-  scheduleData,
+  schedule,
 }: {
   contentPath: string;
+  signedTemplateUrl: string;
   template: Tables<"templates">;
-  scheduleData: ScheduleData;
+  schedule: ScheduleData;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const {
@@ -100,8 +102,8 @@ export const DesignContainer = ({
       }
     };
     fetchOverwrites();
-    generateDesignForSchedule(contentPath, template, scheduleData);
-  }, [template, scheduleData]);
+    generateDesignForSchedule({ contentPath, template, schedule, signedTemplateUrl });
+  }, [template, schedule]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {
     if (!designExport["psd"] || !designExport["jpg"]) {
@@ -165,7 +167,7 @@ export const DesignContainer = ({
     }
     if (isDesignNotReady || !designJpgUrl) {
       return (
-        <div className="flex h-[300px] w-full items-center justify-center">
+        <div className={`flex h-[220px] w-full items-center justify-center`}>
           <Spinner />
         </div>
       );
@@ -193,7 +195,13 @@ export const DesignContainer = ({
               .from(BUCKETS.designOverwrites)
               .remove([`${contentPath}.psd`, `${contentPath}.jpg`]);
             setDesignOverwrite(undefined);
-            generateDesignForSchedule(contentPath, template, scheduleData, true);
+            generateDesignForSchedule({
+              contentPath,
+              template,
+              schedule,
+              signedTemplateUrl,
+              forceRefresh: true,
+            });
           }}
           title={"Refresh design"}
           label={`You edited this design, overwriting the generated version. Refreshing will create a new design and remove edits. 
@@ -279,7 +287,13 @@ export const DesignContainer = ({
                   if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    generateDesignForSchedule(contentPath, template, scheduleData, true);
+                    generateDesignForSchedule({
+                      contentPath,
+                      template,
+                      signedTemplateUrl,
+                      schedule,
+                      forceRefresh: true,
+                    });
                   }
                 }}
               >

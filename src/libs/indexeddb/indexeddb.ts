@@ -2,7 +2,7 @@ import Dexie, { EntityTable } from "dexie";
 import { InstagramTag } from "../designs/photopea";
 
 export type Design = {
-  key: string; // for daily schedule, this is the date, for weekly schedule, this is "start - end"
+  key: string; // `${ownerId}/${range}/${templateId} for daily schedule, the range is the date, for weekly schedule, this is "start - end"
   templateId: string;
   psd: ArrayBuffer;
   jpg: ArrayBuffer;
@@ -12,6 +12,7 @@ export type Design = {
 };
 
 export type Template = {
+  key: string; // `${ownerId}/${templateId}`
   templateId: string;
   psd: ArrayBuffer;
   jpg: ArrayBuffer;
@@ -20,10 +21,10 @@ export type Template = {
 
 export const db = new Dexie("moovn") as Dexie & {
   designs: EntityTable<Design, "key">;
-  templates: EntityTable<Template, "templateId">;
+  templates: EntityTable<Template, "key">;
 };
 
 db.version(2).stores({
   designs: "key, templateId, psd, jpg, hash, instagramTags, lastUpdated",
-  templates: "templateId, psd, jpg, lastUpdated",
+  templates: "key, templateId, psd, jpg, lastUpdated",
 });

@@ -1,9 +1,6 @@
 import { Tables } from "@/types/db";
 import { usePhotopeaHeadless } from "../contexts/photopea-headless";
-import { getScheduleDataForSource } from "../data/sources";
-import { SourceDataView } from "../consts/sources";
 import { supaClientComponentClient } from "../data/clients/browser";
-import { signUrl } from "../libs/storage";
 import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
@@ -12,6 +9,7 @@ import { MD5 as hash } from "object-hash";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
 import { ScheduleData } from "../libs/sources/common";
+import { startOfToday } from "date-fns";
 
 export const useGenerateDesign = () => {
   const [isScheduleEmpty, setIsScheduleEmpty] = useState(false);
@@ -19,21 +17,28 @@ export const useGenerateDesign = () => {
   const [error, setError] = useState<unknown | null>(null);
   const { initialize } = usePhotopeaHeadless();
 
-  const generateDesignForSchedule = async (
-    contentPath: string,
-    template: Tables<"templates">,
-    schedule: ScheduleData,
-    forceRefresh: boolean = false,
-    signedTemplateUrl?: string,
-  ) => {
+  /**
+   * @description generateDesignForSchedule temporarily adds a headless photopea iframe to the document body,
+   * initializes it with a template, use the schedule data to determine what psd actions to take,
+   * then sends photopea commands to manipulate the template loaded in the iframe. Once the design is generated,
+   * it saves the design to indexeddb, and removes the iframe from the document body.
+   */
+  const generateDesignForSchedule = async ({
+    contentPath,
+    template,
+    schedule,
+    forceRefresh = false,
+    signedTemplateUrl,
+  }: {
+    contentPath: string;
+    template: Tables<"templates">;
+    schedule: ScheduleData;
+    forceRefresh?: boolean;
+    signedTemplateUrl: string;
+  }) => {
     try {
-      if (!signedTemplateUrl) {
-        signedTemplateUrl = await signUrl({
-          bucket: BUCKETS.designTemplates,
-          objectPath: `${template.owner_id}/${template.id}.psd`,
-          client: supaClientComponentClient,
-        });
-      }
+      setIsLoading(true);
+      await db.designs.where("lastUpdated").below(startOfToday()).delete();
       const designHash = hash({
         templateId: template.id,
         schedule,
@@ -44,9 +49,11 @@ export const useGenerateDesign = () => {
           console.info(
             `schedule data hasn't changed for template ${template.id} - skipping design generation`,
           );
+          setIsLoading(false);
           return;
         }
       }
+
       const designInIndexedDb = await db.designs.get(contentPath);
       if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
         // Schedule data has changed, delete the overwritten design.
@@ -58,6 +65,7 @@ export const useGenerateDesign = () => {
 
       if (Object.keys(schedule).length === 0) {
         setIsScheduleEmpty(true);
+        setIsLoading(false);
         return;
       }
 
@@ -88,61 +96,19 @@ export const useGenerateDesign = () => {
             if (document.body.contains(photopeaEl)) {
               document.body.removeChild(photopeaEl);
             }
+            setIsLoading(false);
           }
         },
       });
     } catch (err) {
       console.error("failed to generate design", err);
       setError(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   *
-   * @param template
-   * @description generateDesign temporarily adds a headless photopea iframe to the document body,
-   * initializes it with a template, use the schedule data to determine what psd actions to take,
-   * then sends photopea commands to manipulate the template loaded in the iframe. Once the design is generated,
-   * it saves the design to indexeddb, and removes the iframe from the document body.
-   * @returns
-   */
-  const generateDesign = async (
-    template: Tables<"templates">,
-    source: {
-      id: string;
-      view: SourceDataView;
-    },
-    forceRefresh: boolean = false,
-  ) => {
-    console.log("generating design for template", template.id);
-    try {
-      setIsLoading(true);
-      const [schedule, signedTemplateUrl] = await Promise.all([
-        getScheduleDataForSource({
-          id: source.id,
-          view: source.view as SourceDataView,
-        }),
-        signUrl({
-          bucket: BUCKETS.designTemplates,
-          objectPath: `${template.owner_id}/${template.id}.psd`,
-          client: supaClientComponentClient,
-        }),
-      ]);
-
-      await generateDesignForSchedule("", template, schedule, forceRefresh, signedTemplateUrl);
-    } catch (err) {
-      console.error("failed to generate design", err);
-      setError(err);
-    } finally {
       setIsLoading(false);
     }
   };
 
   return {
     generateDesignForSchedule,
-    generateDesign,
     isScheduleEmpty,
     isLoading,
     error,

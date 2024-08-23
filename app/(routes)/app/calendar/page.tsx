@@ -78,7 +78,7 @@ export default function Calendar() {
   }, [templates, contentSchedules]);
 
   if (isLoadingTemplates || isLoadingCalendarEvents || isLoadingContentSchedules) {
-    return <Spinner />;
+    return <Spinner className="mt-8" />;
   }
 
   return (

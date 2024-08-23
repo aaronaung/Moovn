@@ -351,7 +351,7 @@ const DesignSelectItem = ({
   onSelect: () => void;
   onViewDesign: (designUrl: string) => void;
 }) => {
-  const { generateDesign, isLoading, isScheduleEmpty } = useGenerateDesign();
+  const { isLoading, isScheduleEmpty } = useGenerateDesign();
   const designFromIndexedDb = useLiveQuery(async () => {
     const design = await db.designs.get(template.id);
     if (!design) {
@@ -396,10 +396,10 @@ const DesignSelectItem = ({
       }
     };
     fetchOverwrites();
-    generateDesign(template, {
-      id: sourceId,
-      view: template.source_data_view as SourceDataView,
-    });
+    // generateDesign(template, {
+    //   id: sourceId,
+    //   view: template.source_data_view as SourceDataView,
+    // });
   }, []);
 
   return (

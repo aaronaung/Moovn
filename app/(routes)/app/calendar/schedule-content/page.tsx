@@ -31,7 +31,7 @@ export default function ScheduleContent() {
   );
 
   if (isLoadingSources || isLoadingTemplates || isLoadingDestinations) {
-    return <Spinner />;
+    return <Spinner className="mt-8" />;
   }
   return (
     <div>
