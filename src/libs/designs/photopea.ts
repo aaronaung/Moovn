@@ -224,9 +224,9 @@ try {
 
             // Collect the instagramTag position
             instagramTags.push({
-                layerName: fromName,
-                instagramTag: instagramTag,
-                position: { x: instagramTagX, y: instagramTagY }
+                x: instagramTagX, 
+                y: instagramTagY,
+                username: instagramTag
             });
         }
     }
@@ -238,9 +238,9 @@ try {
 `;
 
 export type InstagramTag = {
-  layerName: string;
-  instagramTag: string;
-  position: { x: number; y: number };
+  username: string;
+  x: number;
+  y: number;
 };
 
 export const exportCmd = (namespace: string) => `

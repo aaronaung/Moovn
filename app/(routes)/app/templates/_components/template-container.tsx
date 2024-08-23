@@ -157,9 +157,7 @@ export const TemplateContainer = ({
   const renderTemplateContent = () => {
     if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !templateFromIdb?.jpgUrl) {
       return (
-        <div
-          className={`flex h-[${TEMPLATE_WIDTH}px] w-[${TEMPLATE_WIDTH}px] items-center justify-center`}
-        >
+        <div className={`flex h-[320px] w-[320px] items-center justify-center`}>
           <Spinner />
         </div>
       );
@@ -175,7 +173,7 @@ export const TemplateContainer = ({
   };
 
   return (
-    <Card className={`h-fit w-[${TEMPLATE_WIDTH}px] shrink-0`}>
+    <Card className={`h-fit w-[320px] shrink-0`}>
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex items-center">
           <div className="flex flex-col items-center gap-1">

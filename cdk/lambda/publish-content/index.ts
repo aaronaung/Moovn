@@ -5,7 +5,7 @@ import { isNumber } from "lodash";
 
 export const handler = async (event: any) => {
   try {
-    const { contentId, contentPath } = JSON.parse(event.body);
+    const { contentId, contentPath } = event;
     console.log("Publishing content", { contentId, contentPath });
 
     if (!contentId) {
@@ -172,6 +172,7 @@ export const handler = async (event: any) => {
 
     return success({ message: `Content ${content.id} published successfully` });
   } catch (err: any) {
+    console.log(err);
     return error(err.message, 500);
   }
 };

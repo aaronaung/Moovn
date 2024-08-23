@@ -354,11 +354,11 @@ const DesignImage = ({
         <div className={`absolute w-[${DESIGN_WIDTH}px]`}>
           {instagramTags.map((itp, i) => (
             <span
-              key={itp.instagramTag + i}
+              key={itp.username + i}
               className={`absolute`}
               style={{
-                top: `${itp.position.y * DESIGN_WIDTH}px`,
-                left: `${itp.position.x * DESIGN_WIDTH}px`,
+                top: `${itp.y * DESIGN_WIDTH}px`,
+                left: `${itp.x * DESIGN_WIDTH}px`,
                 transform: "translate(-50%, -50%)",
               }}
             >
@@ -366,7 +366,7 @@ const DesignImage = ({
                 <TooltipTrigger>
                   <div className="h-8 w-8"></div>
                 </TooltipTrigger>
-                <TooltipContent>{itp.instagramTag}</TooltipContent>
+                <TooltipContent>{itp.username}</TooltipContent>
               </Tooltip>
             </span>
           ))}
