@@ -1,7 +1,6 @@
 import * as supabase from "@supabase/supabase-js";
 import { success, error } from "../utils";
 import { FacebookGraphAPIClient } from "../libs/fb-client";
-import { isNumber } from "lodash";
 
 export const handler = async (event: any) => {
   try {
@@ -86,9 +85,10 @@ export const handler = async (event: any) => {
             if (signUrlErr) {
               throw new Error(signUrlErr.message);
             }
+            const tagsIndex = parseInt(f.name);
             toPublish.push({
               url: data.signedUrl,
-              ...(hasIgTags && isNumber(f.name) ? { tags: content.ig_tags[parseInt(f.name)] } : {}),
+              ...(hasIgTags && !isNaN(tagsIndex) ? { tags: content.ig_tags[tagsIndex] } : {}),
             });
           }
         }
