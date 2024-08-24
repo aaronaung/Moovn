@@ -50,7 +50,12 @@ export function renderCaption(template: string, schedule?: { [key: string]: stri
 export const getContentPath = (scheduleRange: string, template: Tables<"templates">) =>
   `${template.owner_id}/${scheduleRange}/${template.id}`;
 
-export const desconstructScheduleName = (scheduleName: string) => {
+export const deconstructContentPath = (contentPath: string) => {
+  const [ownerId, range, templateId] = contentPath.split("/");
+  return { ownerId, range, templateId };
+};
+
+export const deconstructScheduleName = (scheduleName: string) => {
   const [range, templateId] = scheduleName.split("_");
   return { range, templateId };
 };

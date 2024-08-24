@@ -143,7 +143,7 @@ export default function FullCalendarMonthlyView({
                   {eventsOnDay.length > 0 && (
                     <ol className="mt-2">
                       {eventsOnDay.slice(0, 2).map((event, index) => (
-                        <HoverCard openDelay={50} closeDelay={50}>
+                        <HoverCard key={index} openDelay={50} closeDelay={50}>
                           <HoverCardTrigger>
                             <li key={index}>
                               <div

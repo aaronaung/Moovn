@@ -9,11 +9,11 @@ import { getContentSchedules } from "@/src/data/content";
 import { getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import {
-  desconstructScheduleName,
+  deconstructScheduleName,
   fromAtScheduleExpressionToDate,
   getContentPath,
 } from "@/src/libs/content";
-import { signUrl } from "@/src/libs/storage";
+import { signUrlForPathOrChildPaths } from "@/src/libs/storage";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -38,7 +38,7 @@ export default function Calendar() {
         setIsLoadingCalendarEvents(true);
         const getEventPromises: Promise<CalendarEvent>[] = [];
         for (const schedule of contentSchedules ?? []) {
-          const { range, templateId } = desconstructScheduleName(schedule.name);
+          const { range, templateId } = deconstructScheduleName(schedule.name);
           const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
 
           const template = (templates ?? []).find((template) => template.id === templateId);
@@ -47,16 +47,16 @@ export default function Calendar() {
             getEventPromises.push(
               new Promise(async (resolve, reject) => {
                 try {
-                  const url = await signUrl({
-                    bucket: BUCKETS.scheduledContent,
-                    client: supaClientComponentClient,
-                    objectPath: getContentPath(range, template),
-                  });
+                  const signUrlData = await signUrlForPathOrChildPaths(
+                    BUCKETS.scheduledContent,
+                    getContentPath(range, template),
+                    supaClientComponentClient,
+                  );
                   resolve({
                     title: template.name,
                     start: scheduledDate,
                     contentType: template.content_type as ContentType,
-                    previewUrl: url,
+                    previewUrl: signUrlData.map((data) => data.url)[0],
                   });
                 } catch (err: any) {
                   reject(err.message);

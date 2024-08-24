@@ -80,8 +80,11 @@ export const InstagramTemplate = ({
         content: designExport["psd"],
         contentType: "image/vnd.adobe.photoshop",
       });
-      db.designs.where("templateId").equals(template.id).delete(); // Bust design cache since the template has changed, so we can regenerate the design.
     } else {
+      // Delete the old template and design in idb.
+      db.designs.where("templateId").equals(template.id).delete();
+      db.templates.where("templateId").equals(template.id).delete();
+
       templatePathForNew = `${templateObjects[0].path}/1`;
       await supaClientComponentClient.storage
         .from(BUCKETS.designTemplates)
@@ -95,6 +98,7 @@ export const InstagramTemplate = ({
         contentType: "image/vnd.adobe.photoshop",
       });
     }
+
     db.templates.put({
       key: templatePathForNew,
       templateId: template.id,

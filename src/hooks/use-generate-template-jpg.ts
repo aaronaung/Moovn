@@ -3,7 +3,6 @@ import { usePhotopeaHeadless } from "../contexts/photopea-headless";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
 import { db } from "../libs/indexeddb/indexeddb";
-import { readPsd } from "ag-psd";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,10 +21,9 @@ export const useGenerateTemplateJpg = () => {
   }) => {
     setIsLoading(true);
     const templateFile = await (await fetch(signedTemplateUrl)).arrayBuffer();
-    const psd = readPsd(templateFile);
 
     const photopeaEl = addHeadlessPhotopeaToDom();
-    initialize(template.id, photopeaEl, {
+    initialize(templatePath, photopeaEl, {
       initialData: templateFile,
       onDesignExport: async (designExport) => {
         if (designExport?.["jpg"]) {

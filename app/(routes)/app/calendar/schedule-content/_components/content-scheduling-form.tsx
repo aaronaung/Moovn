@@ -23,7 +23,7 @@ import {
   saveContentSchedule,
   scheduleContent as upsertSchedulesOnEventBridge,
 } from "@/src/data/content";
-import { atScheduleExpression, renderCaption } from "@/src/libs/content";
+import { atScheduleExpression, deconstructContentPath, renderCaption } from "@/src/libs/content";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
@@ -112,23 +112,25 @@ export default function ContentSchedulingForm({
   const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
   const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
+  // IMPORTANT - RIGHT NOW WE CAN"T SCHEDULE MULTIPLE DESIGNS OF THE SAME TEMPLATE ON THE SAME DAY,
+  // IT"LL OVERWRITE THE PREVIOUS DESIGN. WE NEED TO FIX THIS.
   const scheduleContent = async (
     contentPath: string,
-    ownerId: string,
     publishDateTime: Date,
   ): Promise<ScheduleContentRequest[0] | null> => {
-    const design = await db.designs.get(contentPath);
-    if (!design) {
-      console.error(`Design ${contentPath} not found in indexedDB`);
+    const { ownerId, templateId, range } = deconstructContentPath(contentPath);
+    const designs = await db.designs.where("key").startsWith(contentPath).toArray();
+    if (designs.length === 0) {
+      console.error(`No designs for content path ${contentPath} found in indexedDB`);
       toast({
         variant: "destructive",
-        title: `Design not found. Please contact support.`,
+        title: `Designs not found. Please contact support.`,
       });
       return null;
     }
-    const template = availableTemplates.find((t) => t.id === design.templateId);
+    const template = availableTemplates.find((t) => t.id === templateId);
     if (!template) {
-      console.error(`Template ${design.templateId} not found in available templates`);
+      console.error(`Template ${templateId} not found in available templates`);
       toast({
         variant: "destructive",
         title: `Template not found. Please contact support.`,
@@ -144,22 +146,35 @@ export default function ContentSchedulingForm({
       return null;
     }
 
-    await upsertObjectAtPath({
-      bucket: BUCKETS.scheduledContent,
-      objectPath: contentPath,
-      content: design.jpg,
-      contentType: "image/jpeg",
-      client: supaClientComponentClient,
-    });
+    if (designs.length === 1) {
+      await upsertObjectAtPath({
+        bucket: BUCKETS.scheduledContent,
+        objectPath: contentPath,
+        content: designs[0].jpg,
+        contentType: "image/jpeg",
+        client: supaClientComponentClient,
+      });
+    } else {
+      await Promise.all(
+        designs.map((d) =>
+          upsertObjectAtPath({
+            bucket: BUCKETS.scheduledContent,
+            objectPath: d.key,
+            content: d.jpg,
+            contentType: "image/jpeg",
+            client: supaClientComponentClient,
+          }),
+        ),
+      );
+    }
 
     const scheduleByRange = organizeScheduleDataByView(
       template.source_data_view,
       scheduleRange,
       scheduleData,
     );
-
     const scheduleExpression = atScheduleExpression(publishDateTime);
-    const scheduleDataForRange = scheduleByRange[contentPath.split("/")[0]];
+    const scheduleDataForRange = scheduleByRange[range];
 
     const content = await _saveContent({
       source_id: sourceId,
@@ -168,7 +183,7 @@ export default function ContentSchedulingForm({
       owner_id: ownerId,
       template_id: template.id,
       destination_id: destinationId,
-      ig_tags: [design.instagramTags], // In a carousel post we'll have multiple tag groups ordered by the order they appear in..
+      ig_tags: designs.map((d) => d.instagramTags), // In a carousel post we'll have multiple tag groups ordered by the order they appear in..
       ...(template.ig_caption_template
         ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
         : {}),
@@ -209,10 +224,9 @@ export default function ContentSchedulingForm({
           schedulePromises = [];
         }
 
-        const ownerId = availableTemplates[0].owner_id;
         const contentPath = selectedContentItems[doneCount];
         const publishDateTime = publishDateTimeMap[contentPath];
-        schedulePromises.push(scheduleContent(contentPath, ownerId, publishDateTime));
+        schedulePromises.push(scheduleContent(contentPath, publishDateTime));
         doneCount++;
       }
 
