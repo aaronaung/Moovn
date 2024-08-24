@@ -7,7 +7,7 @@ import { deleteTemplate, getTemplatesForAuthUser, saveTemplate } from "@/src/dat
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
-import { TEMPLATE_WIDTH, TemplateContainer } from "./_components/template-container";
+import { TEMPLATE_WIDTH, InstagramTemplate } from "./_components/instagram-template";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { toast } from "@/src/components/ui/use-toast";
@@ -48,7 +48,6 @@ export default function TemplatesPage() {
       invalidate: [["getTemplatesForAuthUser"]],
     },
   );
-
   const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
@@ -190,10 +189,9 @@ export default function TemplatesPage() {
             <CarouselContent>
               {templates.map((template) => (
                 <CarouselItem className="basis-[1/5]" key={template.id}>
-                  <TemplateContainer
+                  <InstagramTemplate
                     key={template.id}
                     template={template}
-                    templatePath={`${template.owner_id}/${template.id}`}
                     onDeleteTemplate={() => {
                       setDeleteConfirmationDialogState({
                         isOpen: true,
@@ -209,10 +207,9 @@ export default function TemplatesPage() {
           </Carousel>
         ) : (
           templates.map((template) => (
-            <TemplateContainer
+            <InstagramTemplate
               key={template.id}
               template={template}
-              templatePath={`${template.owner_id}/${template.id}`}
               onDeleteTemplate={() => {
                 setDeleteConfirmationDialogState({
                   isOpen: true,

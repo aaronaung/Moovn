@@ -111,7 +111,7 @@ export const signUrlForPathOrChildPaths = async (
   bucket: string,
   path: string,
   client: SupabaseClient,
-) => {
+): Promise<{ url: string; path: string }[]> => {
   const { data, error } = await client.storage.from(bucket).list(path);
   if (error) {
     throw new Error(error.message);
@@ -123,16 +123,25 @@ export const signUrlForPathOrChildPaths = async (
       client,
       objectPath: path,
     });
-    return [signedUrl];
+    return [
+      {
+        url: signedUrl,
+        path,
+      },
+    ];
   }
   // The content is a directory.
   return await Promise.all(
-    data.map(async (file) =>
-      signUrl({
-        bucket,
-        client,
-        objectPath: `${path}/${file.name}`,
-      }),
-    ),
+    data.map(async (file) => {
+      const objectPath = `${path}/${file.name}`;
+      return {
+        url: await signUrl({
+          bucket,
+          client,
+          objectPath,
+        }),
+        path: objectPath,
+      };
+    }),
   );
 };

@@ -5,7 +5,7 @@ import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn } from "@/src/utils";
 import { SIDEBAR_WIDTH } from "../../../_components/dashboard-layout";
-import { DESIGN_WIDTH } from "@/src/components/common/design-container";
+import { DESIGN_WIDTH } from "@/app/(routes)/app/calendar/schedule-content/_components/design-container";
 import { isMobile } from "react-device-detect";
 import ContentListItem from "./content-list-item";
 import { ScheduleData } from "@/src/libs/sources/common";

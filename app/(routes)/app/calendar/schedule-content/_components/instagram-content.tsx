@@ -1,4 +1,7 @@
-import { DESIGN_WIDTH, DesignContainer } from "@/src/components/common/design-container";
+import {
+  DESIGN_WIDTH,
+  DesignContainer,
+} from "@/app/(routes)/app/calendar/schedule-content/_components/design-container";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import {
   Carousel,
@@ -7,16 +10,13 @@ import {
   CarouselItem,
 } from "@/src/components/ui/carousel";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
-import { toast } from "@/src/components/ui/use-toast";
-import { BUCKETS } from "@/src/consts/storage";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { renderCaption } from "@/src/libs/content";
 import { ScheduleData } from "@/src/libs/sources/common";
-import { signUrlForPathOrChildPaths } from "@/src/libs/storage";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import _ from "lodash";
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 
 export default memo(
   function InstagramContent({
@@ -28,37 +28,10 @@ export default memo(
     template: Tables<"templates">;
     scheduleData: ScheduleData;
   }) {
-    const [templateUrls, setTemplateUrls] = useState<string[]>([]);
-    const [isLoadingTemplateUrls, setIsLoadingTemplateUrls] = useState(true);
-
-    useEffect(() => {
-      // Some templates - specifically instagram templates can have multiple child design templates for Carousel type posts.
-      // We need to fetch the signed urls for all the child templates.
-      const fetchTemplateUrls = async () => {
-        try {
-          setIsLoadingTemplateUrls(true);
-          const signedUrls = await signUrlForPathOrChildPaths(
-            BUCKETS.designTemplates,
-            `${template.owner_id}/${template.id}`,
-            supaClientComponentClient,
-          );
-          setTemplateUrls(signedUrls);
-        } catch (e) {
-          toast({
-            title: "Error",
-            variant: "destructive",
-            description: "Failed to load templates",
-          });
-        } finally {
-          setIsLoadingTemplateUrls(false);
-        }
-      };
-
-      fetchTemplateUrls();
-    }, []);
+    const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
 
     const renderDesignContainer = () => {
-      if (isLoadingTemplateUrls) {
+      if (isLoadingTemplateObjects) {
         return (
           <div
             className={`flex h-[${DESIGN_WIDTH}px] w-[${DESIGN_WIDTH}px] items-center justify-center`}
@@ -67,39 +40,39 @@ export default memo(
           </div>
         );
       }
-      if (templateUrls.length === 0) {
+      if (templateObjects.length === 0) {
         return <p className="text-sm text-muted-foreground">Template not found.</p>;
       }
-      if (templateUrls.length === 1) {
+      if (templateObjects.length === 1) {
         return (
           <DesignContainer
             contentPath={contentPath}
             schedule={scheduleData}
             template={template}
-            signedTemplateUrl={templateUrls[0]}
+            signedTemplateUrl={templateObjects[0].url}
           />
         );
       }
       return (
-        <Carousel className="w-[300px]">
+        <Carousel className="w-[220px]">
           <CarouselContent>
-            {templateUrls.map((url) => (
+            {templateObjects.map((obj) => (
               <CarouselItem
-                key={url}
+                key={obj.path}
                 className={cn(
                   "flex max-h-full min-h-[250px] max-w-full cursor-pointer items-center justify-center hover:bg-secondary",
                 )}
               >
                 <DesignContainer
-                  contentPath={contentPath}
+                  contentPath={`${contentPath}/${obj.path.split("/").pop()}`}
                   schedule={scheduleData}
                   template={template}
-                  signedTemplateUrl={url}
+                  signedTemplateUrl={obj.url}
                 />
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselDots className="mt-4" />
+          <CarouselDots className="mb-4 mt-2" />
         </Carousel>
       );
     };
