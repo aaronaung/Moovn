@@ -47,17 +47,18 @@ export function renderCaption(template: string, schedule?: { [key: string]: stri
 }
 
 // scheduleRange is a string that represents the range of the schedule. e.g. "2022-01-01 - 2022-01-31" or "2022-01-01" if it's a single day.
-export const getContentPath = (scheduleRange: string, template: Tables<"templates">) =>
+export const getContentIdbKey = (scheduleRange: string, template: Tables<"templates">) =>
   `${template.owner_id}/${scheduleRange}/${template.id}`;
 
-export const deconstructContentPath = (contentPath: string) => {
-  const [ownerId, range, templateId] = contentPath.split("/");
+export const deconstructContentIdbKey = (contentIdbKey: string) => {
+  const [ownerId, range, templateId] = contentIdbKey.split("/");
   return { ownerId, range, templateId };
 };
 
+export const getScheduleName = (range: string, contentId: string) => `${range}_${contentId}`; // AWS EventBridge doesn't allow slashes in rule names.
 export const deconstructScheduleName = (scheduleName: string) => {
-  const [range, templateId] = scheduleName.split("_");
-  return { range, templateId };
+  const [range, contentId] = scheduleName.split("_");
+  return { range, contentId };
 };
 
 export const fromAtScheduleExpressionToDate = (expression: string) => {

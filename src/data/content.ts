@@ -1,7 +1,6 @@
 import { Tables } from "@/types/db";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
-import { getAuthUser } from "./users";
 import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 
@@ -23,17 +22,11 @@ export const deleteContent = async (id: string, { client }: SupabaseOptions) => 
   return throwOrData(client.from("content").delete().eq("id", id).single());
 };
 
-export const getContentForAuthUser = async ({ client }: SupabaseOptions) => {
-  const user = await getAuthUser({ client });
-
-  if (!user) {
-    return [];
-  }
+export const getContentsForAuthUser = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("content")
-      .select("*, destination:destinations(*)")
-      .eq("owner_id", user.id)
+      .select("*, destination:destinations(*), template:templates(*)")
       .order("created_at", { ascending: false }),
   );
 };

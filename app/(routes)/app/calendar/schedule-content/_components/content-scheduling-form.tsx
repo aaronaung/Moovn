@@ -23,12 +23,18 @@ import {
   saveContentSchedule,
   scheduleContent as upsertSchedulesOnEventBridge,
 } from "@/src/data/content";
-import { atScheduleExpression, deconstructContentPath, renderCaption } from "@/src/libs/content";
+import {
+  atScheduleExpression,
+  deconstructContentIdbKey,
+  getScheduleName,
+  renderCaption,
+} from "@/src/libs/content";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { differenceInDays } from "date-fns";
+import { generateDesignHash } from "@/src/libs/designs/util";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -112,16 +118,14 @@ export default function ContentSchedulingForm({
   const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
   const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
-  // IMPORTANT - RIGHT NOW WE CAN"T SCHEDULE MULTIPLE DESIGNS OF THE SAME TEMPLATE ON THE SAME DAY,
-  // IT"LL OVERWRITE THE PREVIOUS DESIGN. WE NEED TO FIX THIS.
   const scheduleContent = async (
-    contentPath: string,
+    contentIdbKey: string,
     publishDateTime: Date,
   ): Promise<ScheduleContentRequest[0] | null> => {
-    const { ownerId, templateId, range } = deconstructContentPath(contentPath);
-    const designs = await db.designs.where("key").startsWith(contentPath).toArray();
+    const { ownerId, templateId, range } = deconstructContentIdbKey(contentIdbKey);
+    const designs = await db.designs.where("key").startsWith(contentIdbKey).toArray();
     if (designs.length === 0) {
-      console.error(`No designs for content path ${contentPath} found in indexedDB`);
+      console.error(`No designs for content idb key ${contentIdbKey} found in indexedDB`);
       toast({
         variant: "destructive",
         title: `Designs not found. Please contact support.`,
@@ -146,28 +150,6 @@ export default function ContentSchedulingForm({
       return null;
     }
 
-    if (designs.length === 1) {
-      await upsertObjectAtPath({
-        bucket: BUCKETS.scheduledContent,
-        objectPath: contentPath,
-        content: designs[0].jpg,
-        contentType: "image/jpeg",
-        client: supaClientComponentClient,
-      });
-    } else {
-      await Promise.all(
-        designs.map((d) =>
-          upsertObjectAtPath({
-            bucket: BUCKETS.scheduledContent,
-            objectPath: d.key,
-            content: d.jpg,
-            contentType: "image/jpeg",
-            client: supaClientComponentClient,
-          }),
-        ),
-      );
-    }
-
     const scheduleByRange = organizeScheduleDataByView(
       template.source_data_view,
       scheduleRange,
@@ -187,13 +169,42 @@ export default function ContentSchedulingForm({
       ...(template.ig_caption_template
         ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
         : {}),
+      data_hash: generateDesignHash(template.id, scheduleDataForRange),
       updated_at: new Date().toISOString(),
     });
 
-    const scheduleName = contentPath.split("/").slice(1, 3).join("_"); // AWS EventBridge doesn't allow slashes in rule names.
+    try {
+      if (designs.length === 1) {
+        await upsertObjectAtPath({
+          bucket: BUCKETS.scheduledContent,
+          objectPath: `${ownerId}/${content.id}`,
+          content: designs[0].jpg,
+          contentType: "image/jpeg",
+          client: supaClientComponentClient,
+        });
+      } else {
+        await Promise.all(
+          designs.map((d) =>
+            upsertObjectAtPath({
+              bucket: BUCKETS.scheduledContent,
+              objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
+              content: d.jpg,
+              contentType: "image/jpeg",
+              client: supaClientComponentClient,
+            }),
+          ),
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      await supaClientComponentClient.from("content").delete().eq("id", content.id);
+      throw new Error(`Failed to upload content to storage`);
+    }
+
+    const scheduleName = getScheduleName(range, content.id);
     await _saveContentSchedule({
       content_id: content.id,
-      name: scheduleName,
+      name: getScheduleName(range, content.id),
       owner_id: ownerId,
       schedule_expression: scheduleExpression,
       updated_at: new Date().toISOString(),
@@ -201,7 +212,7 @@ export default function ContentSchedulingForm({
 
     return {
       contentId: content.id,
-      contentPath,
+      contentPath: `${ownerId}/${content.id}`,
       scheduleName,
       scheduleExpression,
     };
@@ -224,9 +235,9 @@ export default function ContentSchedulingForm({
           schedulePromises = [];
         }
 
-        const contentPath = selectedContentItems[doneCount];
-        const publishDateTime = publishDateTimeMap[contentPath];
-        schedulePromises.push(scheduleContent(contentPath, publishDateTime));
+        const contentIdbKey = selectedContentItems[doneCount];
+        const publishDateTime = publishDateTimeMap[contentIdbKey];
+        schedulePromises.push(scheduleContent(contentIdbKey, publishDateTime));
         doneCount++;
       }
 

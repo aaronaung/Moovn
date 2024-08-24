@@ -5,21 +5,16 @@ import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-c
 import { ContentType } from "@/src/consts/content";
 import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { getContentSchedules } from "@/src/data/content";
-import { getTemplatesForAuthUser } from "@/src/data/templates";
+import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
-import {
-  deconstructScheduleName,
-  fromAtScheduleExpressionToDate,
-  getContentPath,
-} from "@/src/libs/content";
+import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
 import { signUrlForPathOrChildPaths } from "@/src/libs/storage";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Calendar() {
   const router = useRouter();
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
+  const { data: contents, isLoading: isLoadingContents } = useSupaQuery(getContentsForAuthUser, {
     queryKey: ["getTemplatesForAuthUser"],
   });
   const { data: contentSchedules, isLoading: isLoadingContentSchedules } = useSupaQuery(
@@ -38,24 +33,23 @@ export default function Calendar() {
         setIsLoadingCalendarEvents(true);
         const getEventPromises: Promise<CalendarEvent>[] = [];
         for (const schedule of contentSchedules ?? []) {
-          const { range, templateId } = deconstructScheduleName(schedule.name);
+          const { contentId } = deconstructScheduleName(schedule.name);
           const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
+          const content = contents?.find((c) => c.id === contentId);
 
-          const template = (templates ?? []).find((template) => template.id === templateId);
-
-          if (template && scheduledDate) {
+          if (content && scheduledDate) {
             getEventPromises.push(
               new Promise(async (resolve, reject) => {
                 try {
                   const signUrlData = await signUrlForPathOrChildPaths(
                     BUCKETS.scheduledContent,
-                    getContentPath(range, template),
+                    `${content.owner_id}/${content.id}`,
                     supaClientComponentClient,
                   );
                   resolve({
-                    title: template.name,
+                    title: content.template?.name ?? "Untitled",
                     start: scheduledDate,
-                    contentType: template.content_type as ContentType,
+                    contentType: content.type as ContentType,
                     previewUrl: signUrlData.map((data) => data.url)[0],
                   });
                 } catch (err: any) {
@@ -72,12 +66,12 @@ export default function Calendar() {
         setIsLoadingCalendarEvents(false);
       }
     };
-    if (templates && contentSchedules) {
+    if (contents && contentSchedules) {
       loadCalendarEvents();
     }
-  }, [templates, contentSchedules]);
+  }, [contents, contentSchedules]);
 
-  if (isLoadingTemplates || isLoadingCalendarEvents || isLoadingContentSchedules) {
+  if (isLoadingContents || isLoadingCalendarEvents || isLoadingContentSchedules) {
     return <Spinner className="mt-8" />;
   }
 

@@ -1,6 +1,7 @@
 import { Psd, Layer } from "ag-psd";
 import { format } from "date-fns";
 import { ScheduleData } from "../sources/common";
+import { MD5 as hash } from "object-hash";
 
 export enum PSDActionType {
   EditText = "editText",
@@ -104,3 +105,5 @@ export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActio
   }
   return psdActions;
 };
+
+export const generateDesignHash = (templateId: string, data: any) => hash({ templateId, data });

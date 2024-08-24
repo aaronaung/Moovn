@@ -5,11 +5,11 @@ import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { db } from "../libs/indexeddb/indexeddb";
-import { MD5 as hash } from "object-hash";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
 import { ScheduleData } from "../libs/sources/common";
 import { startOfToday } from "date-fns";
+import { generateDesignHash } from "../libs/designs/util";
 
 export const useGenerateDesign = () => {
   const [isScheduleEmpty, setIsScheduleEmpty] = useState(false);
@@ -24,13 +24,13 @@ export const useGenerateDesign = () => {
    * it saves the design to indexeddb, and removes the iframe from the document body.
    */
   const generateDesignForSchedule = async ({
-    contentPath,
+    contentIdbKey,
     template,
     schedule,
     forceRefresh = false,
     signedTemplateUrl,
   }: {
-    contentPath: string;
+    contentIdbKey: string;
     template: Tables<"templates">;
     schedule: ScheduleData;
     forceRefresh?: boolean;
@@ -39,12 +39,9 @@ export const useGenerateDesign = () => {
     try {
       setIsLoading(true);
       await db.designs.where("lastUpdated").below(startOfToday()).delete();
-      const designHash = hash({
-        templateId: template.id,
-        schedule,
-      });
+      const designHash = generateDesignHash(template.id, schedule);
       if (!forceRefresh) {
-        const design = await db.designs.get(contentPath);
+        const design = await db.designs.get(contentIdbKey);
         if (design?.hash === designHash) {
           console.info(
             `schedule data hasn't changed for template ${template.id} - skipping design generation`,
@@ -54,13 +51,13 @@ export const useGenerateDesign = () => {
         }
       }
 
-      const designInIndexedDb = await db.designs.get(contentPath);
+      const designInIndexedDb = await db.designs.get(contentIdbKey);
       if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
         // Schedule data has changed, delete the overwritten design.
-        await db.designs.delete(contentPath);
+        await db.designs.delete(contentIdbKey);
         await supaClientComponentClient.storage
           .from(BUCKETS.designOverwrites)
-          .remove([`${contentPath}.psd`, `${contentPath}.jpg`]);
+          .remove([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`]);
       }
 
       if (Object.keys(schedule).length === 0) {
@@ -74,7 +71,7 @@ export const useGenerateDesign = () => {
       const designGenSteps = determineDesignGenSteps(schedule, psd);
 
       const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(contentPath, photopeaEl, {
+      initialize(contentIdbKey, photopeaEl, {
         initialData: templateFile,
         designGenSteps,
         onTimeout: () => {
@@ -85,7 +82,7 @@ export const useGenerateDesign = () => {
         onDesignExport: async (designExport) => {
           if (designExport?.["psd"] && designExport?.["jpg"]) {
             await db.designs.put({
-              key: contentPath,
+              key: contentIdbKey,
               templateId: template.id,
               jpg: designExport["jpg"],
               psd: designExport["psd"],

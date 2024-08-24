@@ -1,0 +1,1 @@
+alter table content add column data_hash text;

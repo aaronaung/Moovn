@@ -20,11 +20,11 @@ import { memo } from "react";
 
 export default memo(
   function InstagramContent({
-    contentPath,
+    contentIdbKey,
     template,
     scheduleData,
   }: {
-    contentPath: string;
+    contentIdbKey: string;
     template: Tables<"templates">;
     scheduleData: ScheduleData;
   }) {
@@ -46,7 +46,7 @@ export default memo(
       if (templateObjects.length === 1) {
         return (
           <DesignContainer
-            contentPath={contentPath}
+            contentIdbKey={contentIdbKey}
             schedule={scheduleData}
             template={template}
             signedTemplateUrl={templateObjects[0].url}
@@ -64,7 +64,7 @@ export default memo(
                 )}
               >
                 <DesignContainer
-                  contentPath={`${contentPath}/${obj.path.split("/").pop()}`}
+                  contentIdbKey={`${contentIdbKey}/${obj.path.split("/").pop()}`}
                   schedule={scheduleData}
                   template={template}
                   signedTemplateUrl={obj.url}
@@ -78,7 +78,7 @@ export default memo(
     };
 
     return (
-      <div className="w-fit rounded-md bg-secondary" key={contentPath}>
+      <div className="w-fit rounded-md bg-secondary" key={contentIdbKey}>
         <div className="flex items-center gap-x-1 px-3 py-3">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -90,9 +90,9 @@ export default memo(
           </div>
         </div>
         <div className={cn("flex flex-col items-center")}>
-          {/** if contentpath is a folder, then we render multiple design containers in a carousel
-           * overwrite contentPath: user_id/schedule_range/template_id/0,1,2.jpg and psd
-           * generated design contentPath:  user_id/schedule_range/template_id/0,1,2 this is only stored in indexedDB
+          {/** if contentidbkey is a folder, then we render multiple design containers in a carousel
+           * overwrite contentIdbKey: user_id/schedule_range/template_id/0,1,2.jpg and psd
+           * generated design contentIdbKey:  user_id/schedule_range/template_id/0,1,2 this is only stored in indexedDB
            * DesignContainer will take care of whether to render overwrite or generated design
            */}
           {renderDesignContainer()}

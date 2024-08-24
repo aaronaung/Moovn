@@ -12,6 +12,7 @@ export type Database = {
       content: {
         Row: {
           created_at: string | null
+          data_hash: string | null
           destination_id: string
           id: string
           ig_caption: string | null
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          data_hash?: string | null
           destination_id: string
           id?: string
           ig_caption?: string | null
@@ -38,6 +40,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          data_hash?: string | null
           destination_id?: string
           id?: string
           ig_caption?: string | null

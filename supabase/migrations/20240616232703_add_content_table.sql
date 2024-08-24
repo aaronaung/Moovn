@@ -23,53 +23,6 @@ to authenticated
 using (auth.uid() = owner_id)
 with check (auth.uid() = owner_id);
 
-create table "public"."content_templates" (
-  "content_id" uuid not null,
-  "template_id" uuid not null,
-  "position" integer not null default 0,
-  "created_at" timestamp with time zone default now()
-);
-create unique index if not exists content_templates_pkey on public."content_templates" using btree (content_id, template_id);
-alter table "public"."content_templates" add constraint "content_templates_pkey" primary key using index "content_templates_pkey";
-alter table "public"."content_templates" add constraint "content_templates_content_id_foreign" foreign key ("content_id") references "public"."content" ("id") on delete cascade;
-alter table "public"."content_templates" add constraint "content_templates_template_id_foreign" foreign key ("template_id") references "public"."templates" ("id") on delete cascade;
-
-alter table "public"."content_templates" enable row level security;
-create policy "Enable owner access to content_templates"
-on "public"."content_templates"
-as permissive
-for all
-to authenticated
-using (auth.uid() = (select owner_id from content where id = content_id))
-with check (auth.uid() = (select owner_id from content where id = content_id));
-
-
-/* 
-unnest(new_template_ids) converts the array new_template_ids into a set of rows, one for each element in the array.
-WITH ORDINALITY adds a column that provides a unique row number for each element in the set of rows produced by unnest. This row number starts at 1 and increments by 1 for each element.
-AS t(template_id, idx) gives an alias t to the result set and assigns names to the columns. In this case:
-template_id corresponds to the elements of the array.
-idx corresponds to the ordinality (the row number).
-So, t(template_id, idx) names the columns of the result set, making it clear which values are the template IDs and which are the corresponding indices. This naming allows you to refer to these columns in the SELECT clause for insertion into the content_templates table.
-*/
-CREATE OR REPLACE FUNCTION set_content_template_links(
-    arg_content_id UUID,
-    new_template_ids UUID[]
-) RETURNS VOID AS $$
-BEGIN
-    -- Remove all existing links for the given content_id
-    DELETE FROM content_templates WHERE content_id = arg_content_id;
-    
-    -- Insert new links for the new_template_ids with position
-    IF array_length(new_template_ids, 1) IS NOT NULL THEN
-        INSERT INTO content_templates (content_id, template_id, position)
-        SELECT arg_content_id, template_id, idx - 1
-        FROM unnest(new_template_ids) WITH ORDINALITY AS t(template_id, idx);
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-
 insert into storage.buckets
   (id, name)
 values
