@@ -2,6 +2,8 @@ import { Psd, Layer } from "ag-psd";
 import { format } from "date-fns";
 import { ScheduleData } from "../sources/common";
 import { MD5 as hash } from "object-hash";
+import { supaClientComponentClient } from "@/src/data/clients/browser";
+import { BUCKETS } from "@/src/consts/storage";
 
 export enum PSDActionType {
   EditText = "editText",
@@ -107,3 +109,32 @@ export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActio
 };
 
 export const generateDesignHash = (templateId: string, data: any) => hash({ templateId, data });
+
+export const getDesignOverwrites = async (contentIdbKey: string) => {
+  const design: { psdUrl?: string; jpgUrl?: string } = {};
+  // const signedUrls = await signUrlForPathOrChildPaths(
+  //   BUCKETS.designOverwrites,
+  //   contentIdbKey,
+  //   supaClientComponentClient,
+  // );
+  // console.log({ signedUrls });
+
+  const result = await supaClientComponentClient.storage
+    .from(BUCKETS.designOverwrites)
+    .createSignedUrls([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`], 24 * 60 * 60);
+  if (!result.data) {
+    console.log("failed to create signed url", result.error);
+    return {};
+  }
+
+  for (const overwrite of result.data) {
+    if (overwrite.signedUrl) {
+      if (overwrite.path === `${contentIdbKey}.psd`) {
+        design.psdUrl = overwrite.signedUrl;
+      } else if (overwrite.path === `${contentIdbKey}.jpg`) {
+        design.jpgUrl = overwrite.signedUrl;
+      }
+    }
+  }
+  return design;
+};

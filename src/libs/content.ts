@@ -1,5 +1,5 @@
 import { Tables } from "@/types/db";
-import { format, parseISO } from "date-fns";
+import { format, parse, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 export function renderCaption(template: string, schedule?: { [key: string]: string }): string {
@@ -54,6 +54,9 @@ export const deconstructContentIdbKey = (contentIdbKey: string) => {
   const [ownerId, range, templateId] = contentIdbKey.split("/");
   return { ownerId, range, templateId };
 };
+
+export const getRangeStart = (range: string) =>
+  parse(range.split(" - ")[0], "yyyy-MM-dd", new Date());
 
 export const getScheduleName = (range: string, contentId: string) =>
   `${range.replaceAll(" ", "")}_${contentId}`; // AWS EventBridge doesn't allow slashes in rule names.

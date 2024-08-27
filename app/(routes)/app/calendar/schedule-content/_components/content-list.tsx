@@ -12,9 +12,9 @@ import { ScheduleData } from "@/src/libs/sources/common";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
 import { TimePicker } from "@/src/components/ui/time-picker";
-import { parse, startOfDay } from "date-fns";
+import { startOfDay } from "date-fns";
 import { Tables } from "@/types/db";
-import { getContentIdbKey } from "@/src/libs/content";
+import { getContentIdbKey, getRangeStart } from "@/src/libs/content";
 import _ from "lodash";
 
 export default function ContentList({
@@ -103,7 +103,7 @@ const ContentListForTemplate = ({
 
   useEffect(() => {
     for (const range in scheduleDataByRange) {
-      const date = parse(range.split(" - ")[0], "yyyy-MM-dd", new Date());
+      const date = getRangeStart(range);
       setPublishDateTimeMap((prev) => {
         const contentIdbKey = getContentIdbKey(range, template);
         return {

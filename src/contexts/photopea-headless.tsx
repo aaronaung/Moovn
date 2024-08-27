@@ -195,9 +195,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
 
   const validateLayerUpdates = (namespace: string, psd: Psd) => {
-    for (const layerUpdates of designGenStepsMap[namespace].layerUpdates[
+    for (const layerUpdates of designGenStepsMap[namespace]?.layerUpdates[
       LayerUpdateType.EditText
-    ]) {
+    ] ?? []) {
       for (const child of psd.children || []) {
         if (child.name === layerUpdates.name && child.text?.text !== layerUpdates.value) {
           console.error("layer update error: layer text wasn't updated correctly", {

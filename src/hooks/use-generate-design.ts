@@ -8,14 +8,26 @@ import { db } from "../libs/indexeddb/indexeddb";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
 import { ScheduleData } from "../libs/sources/common";
-import { startOfToday } from "date-fns";
+import { isBefore, startOfToday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
+import { deconstructContentIdbKey, getRangeStart } from "../libs/content";
 
 export const useGenerateDesign = () => {
   const [isScheduleEmpty, setIsScheduleEmpty] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const { initialize } = usePhotopeaHeadless();
+
+  const cleanupOldDesigns = async () => {
+    const designs = await db.designs.toArray();
+    for (const design of designs) {
+      const { range } = deconstructContentIdbKey(design.key);
+      const rangeStart = getRangeStart(range);
+      if (isBefore(rangeStart, startOfToday())) {
+        await db.designs.delete(design.key);
+      }
+    }
+  };
 
   /**
    * @description generateDesignForSchedule temporarily adds a headless photopea iframe to the document body,
@@ -38,11 +50,13 @@ export const useGenerateDesign = () => {
   }) => {
     try {
       setIsLoading(true);
-      await db.designs.where("lastUpdated").below(startOfToday()).delete();
+      await cleanupOldDesigns();
+
       const designHash = generateDesignHash(template.id, schedule);
+      const designInIndexedDb = await db.designs.get(contentIdbKey);
+
       if (!forceRefresh) {
-        const design = await db.designs.get(contentIdbKey);
-        if (design?.hash === designHash) {
+        if (designInIndexedDb?.hash === designHash) {
           console.info(
             `schedule data hasn't changed for template ${template.id} - skipping design generation`,
           );
@@ -51,7 +65,6 @@ export const useGenerateDesign = () => {
         }
       }
 
-      const designInIndexedDb = await db.designs.get(contentIdbKey);
       if (designInIndexedDb && designInIndexedDb.hash !== designHash) {
         // Schedule data has changed, delete the overwritten design.
         await db.designs.delete(contentIdbKey);

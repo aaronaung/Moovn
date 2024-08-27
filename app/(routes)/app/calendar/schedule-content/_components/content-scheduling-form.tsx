@@ -159,8 +159,9 @@ export default function ContentSchedulingForm({
       scheduleRange,
       scheduleData,
     );
-    const scheduleExpression = atScheduleExpression(publishDateTime);
     const scheduleDataForRange = scheduleByRange[range];
+
+    const scheduleExpression = atScheduleExpression(publishDateTime);
 
     const content = await _saveContent({
       source_id: sourceId,
@@ -177,26 +178,63 @@ export default function ContentSchedulingForm({
       updated_at: new Date().toISOString(),
     });
 
-    if (designs.length === 1) {
-      await upsertObjectAtPath({
-        bucket: BUCKETS.scheduledContent,
-        objectPath: `${ownerId}/${content.id}`,
-        content: designs[0].jpg,
-        contentType: "image/jpeg",
-        client: supaClientComponentClient,
-      });
+    const { data: singleJpgOverwriteExists, error } = await supaClientComponentClient.storage
+      .from(BUCKETS.designOverwrites)
+      .exists(contentIdbKey + ".jpg");
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (singleJpgOverwriteExists) {
+      await supaClientComponentClient.storage
+        .from(BUCKETS.designOverwrites)
+        .copy(`${contentIdbKey}.jpg`, `${ownerId}/${content.id}`, {
+          destinationBucket: BUCKETS.scheduledContent,
+        });
     } else {
-      await Promise.all(
-        designs.map((d) =>
-          upsertObjectAtPath({
+      const { data: carouselOverwrite, error } = await supaClientComponentClient.storage
+        .from(BUCKETS.designOverwrites)
+        .list(contentIdbKey);
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (carouselOverwrite) {
+        for (const overwrite of carouselOverwrite) {
+          if (overwrite.name.endsWith(".jpg")) {
+            await supaClientComponentClient.storage
+              .from(BUCKETS.designOverwrites)
+              .copy(
+                `${contentIdbKey}/${overwrite.name}`,
+                `${ownerId}/${content.id}/${overwrite.name.replaceAll(".jpg", "")}`,
+                {
+                  destinationBucket: BUCKETS.scheduledContent,
+                },
+              );
+          }
+        }
+      } else {
+        // If no overwrite exists, upload the design from indexedDB
+        if (designs.length === 1) {
+          await upsertObjectAtPath({
             bucket: BUCKETS.scheduledContent,
-            objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
-            content: d.jpg,
+            objectPath: `${ownerId}/${content.id}`,
+            content: designs[0].jpg,
             contentType: "image/jpeg",
             client: supaClientComponentClient,
-          }),
-        ),
-      );
+          });
+        } else {
+          await Promise.all(
+            designs.map((d) =>
+              upsertObjectAtPath({
+                bucket: BUCKETS.scheduledContent,
+                objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
+                content: d.jpg,
+                contentType: "image/jpeg",
+                client: supaClientComponentClient,
+              }),
+            ),
+          );
+        }
+      }
     }
 
     const scheduleName = getScheduleName(range, content.id);
@@ -220,6 +258,7 @@ export default function ContentSchedulingForm({
     if (availableTemplates.length === 0) {
       return;
     }
+
     const schedules = [];
     try {
       setIsScheduling(true);
@@ -256,7 +295,7 @@ export default function ContentSchedulingForm({
         if (schedule) {
           await supaClientComponentClient.from("content").delete().eq("id", schedule.contentId);
           await supaClientComponentClient
-            .from("content_schedule")
+            .from("content_schedules")
             .delete()
             .eq("name", schedule.scheduleName);
         }

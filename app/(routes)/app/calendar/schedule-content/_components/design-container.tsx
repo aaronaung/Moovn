@@ -26,6 +26,7 @@ import { db } from "@/src/libs/indexeddb/indexeddb";
 import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { InstagramTag } from "@/src/libs/designs/photopea";
 import { ScheduleData } from "@/src/libs/sources/common";
+import { getDesignOverwrites } from "@/src/libs/designs/util";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -74,28 +75,13 @@ export const DesignContainer = ({
     const fetchOverwrites = async () => {
       try {
         setIsLoadingOverwrites(true);
-        const result = await supaClientComponentClient.storage
-          .from(BUCKETS.designOverwrites)
-          .createSignedUrls([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`], 24 * 60 * 60);
-        if (!result.data) {
-          console.log("failed to create signed url", result.error);
-          return;
-        }
+        const designOverwrites = await getDesignOverwrites(contentIdbKey);
 
-        for (const overwrite of result.data) {
-          if (overwrite.signedUrl) {
-            if (overwrite.path === `${contentIdbKey}.psd`) {
-              setDesignOverwrite((prev) => ({
-                ...prev,
-                psdUrl: overwrite.signedUrl,
-              }));
-            } else if (overwrite.path === `${contentIdbKey}.jpg`) {
-              setDesignOverwrite((prev) => ({
-                ...prev,
-                jpgUrl: overwrite.signedUrl,
-              }));
-            }
-          }
+        if (designOverwrites.jpgUrl && designOverwrites.psdUrl) {
+          setDesignOverwrite({
+            psdUrl: designOverwrites.psdUrl,
+            jpgUrl: designOverwrites.jpgUrl,
+          });
         }
       } finally {
         setIsLoadingOverwrites(false);
