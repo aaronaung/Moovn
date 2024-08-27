@@ -55,7 +55,8 @@ export const deconstructContentIdbKey = (contentIdbKey: string) => {
   return { ownerId, range, templateId };
 };
 
-export const getScheduleName = (range: string, contentId: string) => `${range}_${contentId}`; // AWS EventBridge doesn't allow slashes in rule names.
+export const getScheduleName = (range: string, contentId: string) =>
+  `${range.replaceAll(" ", "")}_${contentId}`; // AWS EventBridge doesn't allow slashes in rule names.
 export const deconstructScheduleName = (scheduleName: string) => {
   const [range, contentId] = scheduleName.split("_");
   return { range, contentId };

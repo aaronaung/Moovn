@@ -37,7 +37,7 @@ export const InstagramTemplate = ({
   template: Tables<"templates">;
   onDeleteTemplate: () => void;
 }) => {
-  const { open: openPhotopeaEditor } = usePhotopeaEditor();
+  const { open: openPhotopeaEditor, close: closePhotopeaEditor } = usePhotopeaEditor();
   const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
   const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
   const [igCaption, setIgCaption] = useState<string>(template.ig_caption_template || "");
@@ -70,42 +70,57 @@ export const InstagramTemplate = ({
       return;
     }
 
-    let templatePathForNew;
-    if (templateObjects.length > 1) {
-      templatePathForNew = `${template.owner_id}/${template.id}/${templateObjects.length}`;
-      await upsertObjectAtPath({
-        bucket: BUCKETS.designTemplates,
-        objectPath: templatePathForNew,
-        client: supaClientComponentClient,
-        content: designExport["psd"],
-        contentType: "image/vnd.adobe.photoshop",
+    try {
+      let templatePathForNew;
+      if (templateObjects.length > 1) {
+        templatePathForNew = `${template.owner_id}/${template.id}/${templateObjects.length}`;
+        await upsertObjectAtPath({
+          bucket: BUCKETS.designTemplates,
+          objectPath: templatePathForNew,
+          client: supaClientComponentClient,
+          content: designExport["psd"],
+          contentType: "image/vnd.adobe.photoshop",
+        });
+      } else {
+        templatePathForNew = `${templateObjects[0].path}/1`;
+        // Delete the old template and design in idb.
+        await Promise.all([
+          db.designs.where("templateId").equals(template.id).delete(),
+          db.templates.where("templateId").equals(template.id).delete(),
+
+          supaClientComponentClient.storage
+            .from(BUCKETS.designTemplates)
+            .move(templateObjects[0].path, `${templateObjects[0].path}/0`),
+
+          upsertObjectAtPath({
+            bucket: BUCKETS.designTemplates,
+            objectPath: templatePathForNew,
+            client: supaClientComponentClient,
+            content: designExport["psd"],
+            contentType: "image/vnd.adobe.photoshop",
+          }),
+
+          db.templates.put({
+            key: templatePathForNew,
+            templateId: template.id,
+            jpg: designExport["jpg"],
+            psd: designExport["psd"],
+            lastUpdated: new Date(),
+          }),
+        ]);
+      }
+      toast({
+        variant: "success",
+        title: `Carousel template saved.`,
       });
-    } else {
-      // Delete the old template and design in idb.
-      db.designs.where("templateId").equals(template.id).delete();
-      db.templates.where("templateId").equals(template.id).delete();
-
-      templatePathForNew = `${templateObjects[0].path}/1`;
-      await supaClientComponentClient.storage
-        .from(BUCKETS.designTemplates)
-        .move(templateObjects[0].path, `${templateObjects[0].path}/0`);
-
-      await upsertObjectAtPath({
-        bucket: BUCKETS.designTemplates,
-        objectPath: templatePathForNew,
-        client: supaClientComponentClient,
-        content: designExport["psd"],
-        contentType: "image/vnd.adobe.photoshop",
+      closePhotopeaEditor();
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support.",
       });
     }
-
-    db.templates.put({
-      key: templatePathForNew,
-      templateId: template.id,
-      jpg: designExport["jpg"],
-      psd: designExport["psd"],
-      lastUpdated: new Date(),
-    });
   };
 
   const renderTemplateContainer = () => {
@@ -148,7 +163,7 @@ export const InstagramTemplate = ({
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselDots className="mb-4 mt-2" />
+        <CarouselDots className="bg-secondary pb-4" />
       </Carousel>
     );
   };

@@ -35,6 +35,7 @@ import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { differenceInDays } from "date-fns";
 import { generateDesignHash } from "@/src/libs/designs/util";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -62,6 +63,7 @@ export default function ContentSchedulingForm({
   const [publishDateTimeMap, setPublishDateTimeMap] = useState<{ [key: string]: Date }>({});
   const [isScheduling, setIsScheduling] = useState(false);
   const [schedulingProgress, setSchedulingProgress] = useState(0);
+  const router = useRouter();
 
   const {
     control,
@@ -115,7 +117,9 @@ export default function ContentSchedulingForm({
       enabled: !errors.schedule_range,
     },
   );
-  const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
+  const { mutateAsync: _saveContent } = useSupaMutation(saveContent, {
+    invalidate: [["getContentsForAuthUser"]],
+  });
   const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
   const scheduleContent = async (
@@ -173,32 +177,26 @@ export default function ContentSchedulingForm({
       updated_at: new Date().toISOString(),
     });
 
-    try {
-      if (designs.length === 1) {
-        await upsertObjectAtPath({
-          bucket: BUCKETS.scheduledContent,
-          objectPath: `${ownerId}/${content.id}`,
-          content: designs[0].jpg,
-          contentType: "image/jpeg",
-          client: supaClientComponentClient,
-        });
-      } else {
-        await Promise.all(
-          designs.map((d) =>
-            upsertObjectAtPath({
-              bucket: BUCKETS.scheduledContent,
-              objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
-              content: d.jpg,
-              contentType: "image/jpeg",
-              client: supaClientComponentClient,
-            }),
-          ),
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      await supaClientComponentClient.from("content").delete().eq("id", content.id);
-      throw new Error(`Failed to upload content to storage`);
+    if (designs.length === 1) {
+      await upsertObjectAtPath({
+        bucket: BUCKETS.scheduledContent,
+        objectPath: `${ownerId}/${content.id}`,
+        content: designs[0].jpg,
+        contentType: "image/jpeg",
+        client: supaClientComponentClient,
+      });
+    } else {
+      await Promise.all(
+        designs.map((d) =>
+          upsertObjectAtPath({
+            bucket: BUCKETS.scheduledContent,
+            objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
+            content: d.jpg,
+            contentType: "image/jpeg",
+            client: supaClientComponentClient,
+          }),
+        ),
+      );
     }
 
     const scheduleName = getScheduleName(range, content.id);
@@ -222,12 +220,12 @@ export default function ContentSchedulingForm({
     if (availableTemplates.length === 0) {
       return;
     }
-
+    const schedules = [];
     try {
       setIsScheduling(true);
       let schedulePromises = [];
       let doneCount = 0;
-      const schedules = [];
+
       while (doneCount < selectedContentItems.length) {
         if (schedulePromises.length === SCHEDULING_BATCH_SIZE) {
           schedules.push(...(await Promise.all(schedulePromises)));
@@ -251,8 +249,18 @@ export default function ContentSchedulingForm({
       });
       setSelectedContentItems([]);
       setPublishDateTimeMap({});
+      router.push("/app/calendar");
     } catch (err) {
       console.error(err);
+      for (const schedule of schedules) {
+        if (schedule) {
+          await supaClientComponentClient.from("content").delete().eq("id", schedule.contentId);
+          await supaClientComponentClient
+            .from("content_schedule")
+            .delete()
+            .eq("name", schedule.scheduleName);
+        }
+      }
       toast({
         variant: "destructive",
         title: "Failed to schedule content",

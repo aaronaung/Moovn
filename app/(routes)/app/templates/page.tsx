@@ -19,14 +19,6 @@ import { SourceDataView } from "@/src/consts/sources";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { ContentType } from "@/src/consts/content";
 import { SIDEBAR_WIDTH } from "../_components/dashboard-layout";
-import { isMobile } from "react-device-detect";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/src/components/ui/carousel";
 import { cn } from "@/src/utils";
 
 export default function TemplatesPage() {
@@ -115,7 +107,6 @@ export default function TemplatesPage() {
     });
   };
   const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / TEMPLATE_WIDTH;
-  const showCarousel = (templates || []).length >= carouselCount && !isMobile;
 
   return (
     <div>
@@ -174,50 +165,28 @@ export default function TemplatesPage() {
           {isSavingTemplate ? <Spinner /> : "Create template"}
         </Button>
       </div>
-      <div
-        className={cn(
-          "mt-4 flex gap-3 overflow-scroll",
-          showCarousel ? "justify-center" : "flex-wrap",
-        )}
-      >
+      <div className={cn("mt-4 flex flex-wrap gap-3 overflow-scroll")}>
         {!templates || templates.length === 0 ? (
           <p className="mt-16 w-full text-center text-muted-foreground">
             No templates found. Create one to get started.
           </p>
-        ) : showCarousel ? (
-          <Carousel className="w-[calc(100%_-_100px)]">
-            <CarouselContent>
-              {templates.map((template) => (
-                <CarouselItem className="basis-[1/5]" key={template.id}>
-                  <InstagramTemplate
-                    key={template.id}
-                    template={template}
-                    onDeleteTemplate={() => {
-                      setDeleteConfirmationDialogState({
-                        isOpen: true,
-                        template,
-                      });
-                    }}
-                  />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
         ) : (
-          templates.map((template) => (
-            <InstagramTemplate
-              key={template.id}
-              template={template}
-              onDeleteTemplate={() => {
-                setDeleteConfirmationDialogState({
-                  isOpen: true,
-                  template,
-                });
-              }}
-            />
-          ))
+          <div className="xs:columns-1 gap-3 space-y-3 sm:columns-2 lg:columns-4">
+            {templates.map((template) => (
+              <div className="break-inside-avoid">
+                <InstagramTemplate
+                  key={template.id}
+                  template={template}
+                  onDeleteTemplate={() => {
+                    setDeleteConfirmationDialogState({
+                      isOpen: true,
+                      template,
+                    });
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

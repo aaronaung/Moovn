@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 export default function Calendar() {
   const router = useRouter();
   const { data: contents, isLoading: isLoadingContents } = useSupaQuery(getContentsForAuthUser, {
-    queryKey: ["getTemplatesForAuthUser"],
+    queryKey: ["getContentsForAuthUser"],
   });
   const { data: contentSchedules, isLoading: isLoadingContentSchedules } = useSupaQuery(
     getContentSchedules,

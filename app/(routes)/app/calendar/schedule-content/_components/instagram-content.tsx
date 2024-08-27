@@ -84,7 +84,7 @@ export default memo(
             <div className="flex items-center gap-2">
               <InstagramIcon className="h-4 w-4 fill-purple-600 text-secondary-foreground" />
               <p className="text-xs font-medium text-pink-600">
-                {template.content_type.split(" ")[1]}
+                {template.content_type?.split(" ")[1]}
               </p>
             </div>
           </div>
