@@ -152,13 +152,13 @@ function checkLayerTranslatesComplete() {
 
             // Check if the current position of 'from' matches the 'to' position
             if (Math.abs(fromCenterX - toCenterX) > 2 || Math.abs(fromCenterY - toCenterY) > 2) {
-                console.log("not translated", {
+                console.log("no need to translate - position already close enough to the target position", {
                     fromCenterX,
                     toCenterX,
                     fromCenterY,
                     toCenterY
                 })
-                return;
+                continue;
             } else {
                 from.name = to.name;
                 to.remove();

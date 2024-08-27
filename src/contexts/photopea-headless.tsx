@@ -9,7 +9,8 @@ import {
   translateLayersCmd,
   updateLayersCmd,
 } from "../libs/designs/photopea";
-import { DesignGenSteps } from "../libs/designs/photoshop-v2";
+import { DesignGenSteps, LayerUpdateType } from "../libs/designs/photoshop-v2";
+import { readPsd, Psd } from "ag-psd";
 
 export type DesignExport = {
   jpg: ArrayBuffer | null;
@@ -76,6 +77,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       if (_.isString(e.data)) {
         if (e.data.startsWith("layer_updates_complete")) {
           // layer_updates_complete:namespace-123
+          console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (pollIntervalMapRef.current[namespace]) {
             clearIntervalForNamespace(namespace);
@@ -104,7 +106,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         }
         if (e.data.startsWith("layer_translates_complete")) {
           // layer_translates_complete:namespace-123
-          console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (pollIntervalMapRef.current[namespace]) {
             clearIntervalForNamespace(namespace);
@@ -114,6 +115,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           }
         }
         if (e.data.startsWith("export_file")) {
+          console.log(e.data);
           // export_file:namespace-123:jpg
           const [_, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
@@ -153,22 +155,83 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   }, [processEventFromPhotopea]);
 
   useEffect(() => {
-    if (exportMetadataQueue.length > 0 && exportQueue.length > 0) {
-      for (const exportMetadata of exportMetadataQueue) {
-        const mostRecentExport = getMostRecentExport(exportMetadata.namespace);
-        if (
-          mostRecentExport?.jpg &&
-          mostRecentExport?.psd &&
-          onDesignExportMap[exportMetadata.namespace]
-        ) {
-          onDesignExportMap[exportMetadata.namespace](mostRecentExport);
-          clear(exportMetadata.namespace);
-          return;
+    const exportDesign = async () => {
+      if (exportMetadataQueue.length > 0 && exportQueue.length > 0) {
+        for (const exportMetadata of exportMetadataQueue) {
+          const namespace = exportMetadata.namespace;
+          const mostRecentExport = getMostRecentExport(namespace);
+          if (mostRecentExport?.jpg && mostRecentExport?.psd && onDesignExportMap[namespace]) {
+            const psd = readPsd(mostRecentExport.psd);
+
+            const isValid = validateLayerUpdates(namespace, psd);
+            if (!isValid) {
+              console.log(
+                "bad layer update - clearing exports and rerunning layer updates",
+                namespace,
+              );
+              startLayerUpdates(namespace, photopeaMap[namespace], designGenStepsMap[namespace]);
+              // If the PSD is not valid, we should clear the exports for the namespace and rerun the layer updates.
+              setExportMetadataQueue((prev) => prev.filter((e) => e.namespace !== namespace));
+              setExportQueue((prev) =>
+                prev.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace),
+              );
+              sendRawPhotopeaCmd(
+                namespace,
+                photopeaMap[namespace],
+                updateLayersCmd(designGenStepsMap[namespace].layerUpdates),
+              );
+              return;
+            }
+
+            onDesignExportMap[namespace](mostRecentExport);
+            clear(namespace);
+            return;
+          }
+        }
+      }
+    };
+    exportDesign();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
+
+  const validateLayerUpdates = (namespace: string, psd: Psd) => {
+    for (const layerUpdates of designGenStepsMap[namespace].layerUpdates[
+      LayerUpdateType.EditText
+    ]) {
+      for (const child of psd.children || []) {
+        if (child.name === layerUpdates.name && child.text?.text !== layerUpdates.value) {
+          console.error("layer update error: layer text wasn't updated correctly", {
+            layer_name: child.name,
+            layer_text: child.text,
+            required_value: layerUpdates.value,
+            required_name: layerUpdates.name,
+          });
+          return false;
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
+    return true;
+  };
+
+  const startLayerUpdates = (
+    namespace: string,
+    photopeaEl: HTMLIFrameElement,
+    designGenSteps: DesignGenSteps,
+  ) => {
+    sendRawPhotopeaCmd(namespace, photopeaEl, updateLayersCmd(designGenSteps.layerUpdates)); // Start the layer updates complete check.
+
+    setIntervalForNamespace(
+      namespace,
+      () => {
+        sendRawPhotopeaCmd(
+          namespace,
+          photopeaEl,
+          checkLayerUpdatesComplete(namespace, designGenSteps),
+        );
+      },
+      LAYER_CHECK_INTERVAL,
+    );
+  };
 
   const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
     clearIntervalForNamespace(namespace);
@@ -281,19 +344,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
         if (designGenSteps) {
           // Start design gen
-          sendRawPhotopeaCmd(namespace, photopeaEl, updateLayersCmd(designGenSteps.layerUpdates)); // Start the layer updates complete check.
-
-          setIntervalForNamespace(
-            namespace,
-            () => {
-              sendRawPhotopeaCmd(
-                namespace,
-                photopeaEl,
-                checkLayerUpdatesComplete(namespace, designGenSteps),
-              );
-            },
-            LAYER_CHECK_INTERVAL,
-          );
+          startLayerUpdates(namespace, photopeaEl, designGenSteps);
         } else {
           console.log("no design gen steps, exporting design", namespace);
           // No design gen steps, just export the design.
