@@ -112,12 +112,6 @@ export const generateDesignHash = (templateId: string, data: any) => hash({ temp
 
 export const getDesignOverwrites = async (contentIdbKey: string) => {
   const design: { psdUrl?: string; jpgUrl?: string } = {};
-  // const signedUrls = await signUrlForPathOrChildPaths(
-  //   BUCKETS.designOverwrites,
-  //   contentIdbKey,
-  //   supaClientComponentClient,
-  // );
-  // console.log({ signedUrls });
 
   const result = await supaClientComponentClient.storage
     .from(BUCKETS.designOverwrites)

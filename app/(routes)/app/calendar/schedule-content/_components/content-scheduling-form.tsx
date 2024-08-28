@@ -35,7 +35,8 @@ import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { differenceInDays } from "date-fns";
 import { generateDesignHash } from "@/src/libs/designs/util";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatInTimeZone } from "date-fns-tz";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -69,6 +70,7 @@ export default function ContentSchedulingForm({
     control,
     watch,
     setError,
+    setValue,
     clearErrors,
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
@@ -87,6 +89,48 @@ export default function ContentSchedulingForm({
   const templateIds = watch("template_ids");
   const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
+
+  const queryParams = useSearchParams();
+
+  useEffect(() => {
+    // On initial load, set the values from query params
+    const sourceId = queryParams.get("source_id");
+    if (sourceId) {
+      setValue("source_id", sourceId);
+    }
+    const templateIds = queryParams.get("template_ids");
+    if (templateIds) {
+      setValue("template_ids", templateIds.split(","));
+    }
+    const destinationId = queryParams.get("destination_id");
+    if (destinationId) {
+      setValue("destination_id", destinationId);
+    }
+    const scheduleRange = queryParams.get("schedule_range");
+    if (scheduleRange) {
+      const [from, to] = scheduleRange.split("_");
+      setValue("schedule_range", {
+        from: new Date(formatInTimeZone(from, "UTC", "yyyy-MM-dd'T'HH:mm:ss")),
+        to: new Date(formatInTimeZone(to ?? from, "UTC", "yyyy-MM-dd'T'HH:mm:ss")),
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    // On change of source, update the query params
+    const urlParams = new URLSearchParams();
+    urlParams.set("source_id", sourceId);
+    urlParams.set("template_ids", templateIds.join(","));
+    urlParams.set("destination_id", destinationId);
+    urlParams.set(
+      "schedule_range",
+      `${scheduleRange.from.toISOString().split("T")[0]}_${
+        scheduleRange.to.toISOString().split("T")[0]
+      }`,
+    );
+    router.replace(`${window.location.pathname}?${urlParams.toString()}`);
+  }, [sourceId, templateIds, destinationId, scheduleRange]);
+
   useEffect(() => {
     if (scheduleRange?.to && scheduleRange?.from) {
       const diffInDays = differenceInDays(scheduleRange.to, scheduleRange.from);
@@ -178,6 +222,7 @@ export default function ContentSchedulingForm({
       updated_at: new Date().toISOString(),
     });
 
+    const overwrittenDesigns: string[] = [];
     const { data: singleJpgOverwriteExists, error } = await supaClientComponentClient.storage
       .from(BUCKETS.designOverwrites)
       .exists(contentIdbKey + ".jpg");
@@ -191,6 +236,7 @@ export default function ContentSchedulingForm({
         .copy(`${contentIdbKey}.jpg`, `${ownerId}/${content.id}`, {
           destinationBucket: BUCKETS.scheduledContent,
         });
+      overwrittenDesigns.push(contentIdbKey);
     } else {
       const { data: carouselOverwrite, error } = await supaClientComponentClient.storage
         .from(BUCKETS.designOverwrites)
@@ -202,41 +248,47 @@ export default function ContentSchedulingForm({
       if (carouselOverwrite && carouselOverwrite.length > 0) {
         for (const overwrite of carouselOverwrite) {
           if (overwrite.name.endsWith(".jpg")) {
+            const overwritePath = `${contentIdbKey}/${overwrite.name}`;
             await supaClientComponentClient.storage
               .from(BUCKETS.designOverwrites)
               .copy(
-                `${contentIdbKey}/${overwrite.name}`,
+                overwritePath,
                 `${ownerId}/${content.id}/${overwrite.name.replaceAll(".jpg", "")}`,
                 {
                   destinationBucket: BUCKETS.scheduledContent,
                 },
               );
+            overwrittenDesigns.push(overwritePath.replaceAll(".jpg", ""));
           }
         }
-      } else {
-        // If no overwrite exists, upload the design from indexedDB
-        if (designs.length === 1) {
-          await upsertObjectAtPath({
-            bucket: BUCKETS.scheduledContent,
-            objectPath: `${ownerId}/${content.id}`,
-            content: designs[0].jpg,
-            contentType: "image/jpeg",
-            client: supaClientComponentClient,
-          });
-        } else {
-          await Promise.all(
-            designs.map((d) =>
-              upsertObjectAtPath({
-                bucket: BUCKETS.scheduledContent,
-                objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
-                content: d.jpg,
-                contentType: "image/jpeg",
-                client: supaClientComponentClient,
-              }),
-            ),
-          );
-        }
       }
+    }
+
+    // Upload the non-overwritten design(s) from indexedDB
+    if (designs.length === 1) {
+      if (overwrittenDesigns.indexOf(designs[0].key) === -1) {
+        await upsertObjectAtPath({
+          bucket: BUCKETS.scheduledContent,
+          objectPath: `${ownerId}/${content.id}`,
+          content: designs[0].jpg,
+          contentType: "image/jpeg",
+          client: supaClientComponentClient,
+        });
+      }
+    } else {
+      await Promise.all(
+        designs
+          .filter((d) => overwrittenDesigns.indexOf(d.key) === -1)
+          .map((d) =>
+            upsertObjectAtPath({
+              bucket: BUCKETS.scheduledContent,
+              objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
+              content: d.jpg,
+              contentType: "image/jpeg",
+              client: supaClientComponentClient,
+            }),
+          ),
+      );
     }
 
     const scheduleName = getScheduleName(range, content.id);

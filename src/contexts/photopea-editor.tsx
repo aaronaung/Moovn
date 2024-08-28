@@ -135,7 +135,6 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         }
         designTemplates[download.scheduleRange][download.contentType].push(download);
       }
-      console.log({ designTemplates });
       setFreeDesignTemplates(designTemplates);
     };
     fetchFreeDesignTemplates();

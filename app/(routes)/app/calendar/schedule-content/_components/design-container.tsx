@@ -339,7 +339,6 @@ export const DesignImageWithIGTags = ({
   onClick?: () => void;
   className?: string;
 }) => {
-  console.log({ instagramTags });
   if (url) {
     return (
       <div className="relative h-auto" onClick={onClick}>

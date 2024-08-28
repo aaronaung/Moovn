@@ -106,7 +106,19 @@ export const deleteContentSchedule = async (
 ) => {
   await throwOrData(client.from("content_schedules").delete().eq("name", scheduleName));
   await throwOrData(client.from("content").delete().eq("id", contentId));
-  await client.storage.from(BUCKETS.scheduledContent).remove([`${ownerId}/${contentId}`]);
+
+  let toRemove = [`${ownerId}/${contentId}`];
+  const { data, error } = await client.storage
+    .from(BUCKETS.scheduledContent)
+    .list(`${ownerId}/${contentId}`);
+  if (error) {
+    console.error(error);
+    throw new Error(error.message);
+  }
+  if (data.length > 0) {
+    toRemove = [...toRemove, ...data.map((d) => `${ownerId}/${contentId}/${d.name}`)];
+  }
+  await client.storage.from(BUCKETS.scheduledContent).remove(toRemove);
   await fetch(`/api/content/delete-schedule`, {
     method: "POST",
     body: JSON.stringify({ scheduleName }),
