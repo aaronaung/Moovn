@@ -16,8 +16,9 @@ import { CalendarEvent } from "./full-calendar";
 import { ClockIcon } from "@heroicons/react/24/outline";
 
 import { useState } from "react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "../hover-card";
 import dynamic from "next/dynamic";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
+import Image from "../image";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -49,11 +50,13 @@ export default function FullCalendarMonthlyView({
   selectedDay,
   onDaySelect,
   events,
+  onEventClick,
 }: {
   month: string;
   selectedDay: Date;
   onDaySelect: (day: Date) => void;
   events: CalendarEvent[];
+  onEventClick?: (event: CalendarEvent) => void;
 }) {
   const firstDayCurrentMonth = parse(month, "MMM-yyyy", new Date());
   const days = getCalendarDays(firstDayCurrentMonth);
@@ -127,7 +130,7 @@ export default function FullCalendarMonthlyView({
                       isSameMonth(day, firstDayCurrentMonth)
                         ? "bg-slate-200 dark:bg-neutral-800"
                         : "bg-slate-50  text-secondary-foreground dark:bg-neutral-600",
-                      "group relative cursor-pointer px-3 py-2",
+                      "group relative cursor-pointer px-2 py-2",
                     )}
                   >
                     <time
@@ -146,51 +149,46 @@ export default function FullCalendarMonthlyView({
                       {formattedDay.split("-").pop()?.replace(/^0/, "")}
                     </time>
                     {eventsOnDay.length > 0 && (
-                      <ol className="mt-2">
-                        {eventsOnDay.slice(0, 2).map((event, index) => (
-                          <HoverCard key={index} openDelay={50} closeDelay={50}>
-                            <HoverCardTrigger>
-                              <li key={index}>
-                                <div
-                                  className={`group flex bg-${
-                                    event.color ?? "secondary"
-                                  } cursor-pointer rounded-full px-2`}
+                      <ol className="mt-2 space-y-1">
+                        {eventsOnDay.slice(0, 3).map((event, index) => {
+                          const time = event.start.toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          });
+                          return (
+                            <Tooltip key={index}>
+                              <TooltipTrigger className="w-full">
+                                <li
+                                  className="group/event-li w-full"
+                                  key={index}
+                                  onClick={() => onEventClick?.(event)}
                                 >
-                                  <p className="flex-auto truncate font-medium text-secondary-foreground group-hover:text-indigo-600">
-                                    {event.title}
-                                  </p>
-                                  <time
-                                    dateTime={event.start.toISOString()}
-                                    className="ml-3 hidden flex-none text-secondary-foreground group-hover:text-indigo-600 xl:block"
+                                  <div
+                                    className={`flex w-full bg-${
+                                      event.color ?? "secondary"
+                                    } cursor-pointer rounded-full px-1`}
                                   >
-                                    {event.start.toLocaleTimeString([], {
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    })}
-                                  </time>
-                                </div>
-                              </li>
-                            </HoverCardTrigger>
-                            <HoverCardContent
-                              className="cursor-pointer"
-                              onClick={() => {
-                                setImageViewerState({
-                                  isOpen: true,
-                                  previewUrl: event.previewUrl,
-                                });
-                              }}
-                            >
-                              {event.previewUrl ? (
-                                <img className={"w-[350px]"} src={event.previewUrl} />
-                              ) : (
-                                "No preview available"
-                              )}
-                            </HoverCardContent>
-                          </HoverCard>
-                        ))}
-                        {eventsOnDay.length > 2 && (
+                                    <p className="line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600">
+                                      {event.title}
+                                    </p>
+                                    <time
+                                      dateTime={event.start.toISOString()}
+                                      className="ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block"
+                                    >
+                                      {time}
+                                    </time>
+                                  </div>
+                                </li>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="w-full cursor-pointer">
+                                {event.title} {time}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                        {eventsOnDay.length > 3 && (
                           <li className="text-secondary-foreground">
-                            + {eventsOnDay.length - 2} more
+                            + {eventsOnDay.length - 3} more
                           </li>
                         )}
                       </ol>
@@ -257,23 +255,22 @@ export default function FullCalendarMonthlyView({
             </div>
           </div>
         </div>
-        <div className="w-full py-4 lg:ml-4 lg:w-[300px] lg:py-0">
+        <div className="w-full shrink-0 py-4 lg:ml-4 lg:w-[220px] lg:py-0">
           <p className="mb-4 font-medium">{format(selectedDay, "MMM, do")}</p>
           {eventsOnSelectedDay.length > 0 ? (
-            <ol className="divide-y divide-slate-200 overflow-hidden rounded-lg bg-secondary text-sm shadow ring-1 ring-black ring-opacity-5 dark:divide-gray-600">
+            <ol className="divide-y divide-slate-200 overflow-hidden rounded-lg bg-secondary text-sm shadow ring-1 ring-black ring-opacity-5 dark:divide-gray-600 lg:text-xs">
               {eventsOnSelectedDay.map((event, index) => (
                 <li
                   key={index}
                   onClick={() => {
-                    setImageViewerState({
-                      isOpen: true,
-                      previewUrl: event.previewUrl,
-                    });
+                    onEventClick?.(event);
                   }}
-                  className="group flex cursor-pointer p-4 pr-6 focus-within:bg-secondary hover:bg-secondary"
+                  className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
                 >
                   <div className="flex-auto">
-                    <p className="font-semibold text-secondary-foreground">{event.title}</p>
+                    <p className="line-clamp-2 font-semibold text-secondary-foreground">
+                      {event.title}
+                    </p>
                     <time
                       dateTime={event.start.toISOString()}
                       className="mt-2 flex items-center text-secondary-foreground"
@@ -284,6 +281,15 @@ export default function FullCalendarMonthlyView({
                         minute: "2-digit",
                       })}
                     </time>
+                  </div>
+                  <div>
+                    {event.previewUrls && event.previewUrls.length > 0 && (
+                      <Image
+                        className="h-[50px] w-[50px] rounded-lg bg-cover"
+                        src={event.previewUrls[0]}
+                        alt={"preview"}
+                      />
+                    )}
                   </div>
                 </li>
               ))}

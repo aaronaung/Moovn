@@ -173,7 +173,7 @@ export default function TemplatesPage() {
         ) : (
           <div className="xs:columns-1 gap-3 space-y-3 sm:columns-2 lg:columns-4">
             {templates.map((template) => (
-              <div className="break-inside-avoid">
+              <div className="break-inside-avoid" key={template.id}>
                 <InstagramTemplate
                   key={template.id}
                   template={template}

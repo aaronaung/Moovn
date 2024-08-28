@@ -17,20 +17,24 @@ enum CalendarView {
 }
 
 export type CalendarEvent = {
+  contentId: string;
+  scheduleName: string;
   title: string;
   start: Date;
   end?: Date;
   color?: string;
   contentType: ContentType;
-  previewUrl?: string;
+  previewUrls?: string[];
 };
 
 export default function FullCalendar({
   actionButtons,
   events = [],
+  onEventClick,
 }: {
   actionButtons?: React.ReactNode[];
   events?: CalendarEvent[];
+  onEventClick?: (event: CalendarEvent) => void;
 }) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = useState<Date>(today);
@@ -99,6 +103,7 @@ export default function FullCalendar({
             month={currentMonth}
             selectedDay={selectedDay}
             onDaySelect={(day) => setSelectedDay(day)}
+            onEventClick={onEventClick}
           />
         );
     }

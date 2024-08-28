@@ -14,7 +14,7 @@ import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { download } from "@/src/utils";
+import { cn, download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
 
@@ -27,6 +27,7 @@ import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { InstagramTag } from "@/src/libs/designs/photopea";
 import { ScheduleData } from "@/src/libs/sources/common";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
+import Image from "@/src/components/ui/image";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -160,7 +161,7 @@ export const DesignContainer = ({
     }
 
     return (
-      <DesignImage
+      <DesignImageWithIGTags
         url={designJpgUrl}
         instagramTags={designFromIndexedDb?.instagramTags || []}
         onClick={() => setIsImageViewerOpen(true)}
@@ -325,26 +326,31 @@ export const DesignContainer = ({
   );
 };
 
-const DesignImage = ({
+export const DesignImageWithIGTags = ({
+  width = DESIGN_WIDTH,
   url,
   instagramTags,
   onClick,
+  className,
 }: {
+  width?: number;
   url?: string;
   instagramTags: InstagramTag[];
-  onClick: () => void;
+  onClick?: () => void;
+  className?: string;
 }) => {
+  console.log({ instagramTags });
   if (url) {
     return (
       <div className="relative h-auto" onClick={onClick}>
-        <div className={`absolute w-[${DESIGN_WIDTH}px]`}>
+        <div className={`absolute w-[${width}px]`}>
           {instagramTags.map((itp, i) => (
             <span
               key={itp.username + i}
               className={`absolute`}
               style={{
-                top: `${itp.y * DESIGN_WIDTH}px`,
-                left: `${itp.x * DESIGN_WIDTH}px`,
+                top: `${itp.y * width}px`,
+                left: `${itp.x * width}px`,
                 transform: "translate(-50%, -50%)",
               }}
             >
@@ -357,7 +363,12 @@ const DesignImage = ({
             </span>
           ))}
         </div>
-        <img src={url} onClick={onClick} alt="Design" className={`w-[${DESIGN_WIDTH}px]`} />
+        <Image
+          src={url}
+          onClick={onClick}
+          alt="Design"
+          className={cn(`w-[${width}px]`, className)}
+        />
       </div>
     );
   }

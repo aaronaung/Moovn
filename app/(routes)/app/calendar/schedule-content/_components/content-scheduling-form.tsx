@@ -182,7 +182,8 @@ export default function ContentSchedulingForm({
       .from(BUCKETS.designOverwrites)
       .exists(contentIdbKey + ".jpg");
     if (error) {
-      throw new Error(error.message);
+      // Exists throw an error when it doesn't exist.
+      console.error(error);
     }
     if (singleJpgOverwriteExists) {
       await supaClientComponentClient.storage
@@ -195,9 +196,10 @@ export default function ContentSchedulingForm({
         .from(BUCKETS.designOverwrites)
         .list(contentIdbKey);
       if (error) {
-        throw new Error(error.message);
+        // Exists throw an error when it doesn't exist.
+        console.error(error);
       }
-      if (carouselOverwrite) {
+      if (carouselOverwrite && carouselOverwrite.length > 0) {
         for (const overwrite of carouselOverwrite) {
           if (overwrite.name.endsWith(".jpg")) {
             await supaClientComponentClient.storage

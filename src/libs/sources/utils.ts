@@ -149,7 +149,7 @@ export const organizeScheduleDataByView = (
           weekIndex++;
           lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
         }
-        const weeklyKey = `${format(weeklyRanges[weekIndex].start, "yyyy-MM-dd")} - ${format(
+        const weeklyKey = `${format(weeklyRanges[weekIndex].start, "yyyy-MM-dd")}_${format(
           weeklyRanges[weekIndex].end,
           "yyyy-MM-dd",
         )}`;

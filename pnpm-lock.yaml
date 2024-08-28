@@ -108,8 +108,8 @@ dependencies:
     specifier: ^0.4.5
     version: 0.4.5(@supabase/supabase-js@2.45.2)
   '@supabase/postgrest-js':
-    specifier: 1.8.5
-    version: 1.8.5
+    specifier: 1.15.8
+    version: 1.15.8
   '@supabase/ssr':
     specifier: ^0.5.0
     version: 0.5.0(@supabase/supabase-js@2.45.2)
@@ -4238,13 +4238,6 @@ packages:
       '@supabase/node-fetch': 2.6.15
     dev: false
 
-  /@supabase/node-fetch@2.6.14:
-    resolution: {integrity: sha512-w/Tsd22e/5fAeoxqQ4P2MX6EyF+iM6rc9kmlMVFkHuG0rAltt2TLhFbDJfemnHbtvnazWaRfy5KnFU/SYT37dQ==}
-    engines: {node: 4.x || >=6.0.0}
-    dependencies:
-      whatwg-url: 5.0.0
-    dev: false
-
   /@supabase/node-fetch@2.6.15:
     resolution: {integrity: sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ==}
     engines: {node: 4.x || >=6.0.0}
@@ -4256,12 +4249,6 @@ packages:
     resolution: {integrity: sha512-YunjXpoQjQ0a0/7vGAvGZA2dlMABXFdVI/8TuVKtlePxyT71sl6ERl6ay1fmIeZcqxiuFQuZw/LXUuStUG9bbg==}
     dependencies:
       '@supabase/node-fetch': 2.6.15
-    dev: false
-
-  /@supabase/postgrest-js@1.8.5:
-    resolution: {integrity: sha512-XvoqN5e5Z4TsQOYWLQYLW0HIlZtFSzwAcwiuToaSBSTpLOGCg4NaZ7au5GfBzCQJZdZPY5vk5FvwthfDsQK/Jw==}
-    dependencies:
-      '@supabase/node-fetch': 2.6.14
     dev: false
 
   /@supabase/realtime-js@2.10.2:

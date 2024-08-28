@@ -3,6 +3,7 @@ import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
+import { BUCKETS } from "../consts/storage";
 
 export const saveContent = async (
   content: Partial<Tables<"content">>,
@@ -93,4 +94,24 @@ export const scheduleContent = async (req: ScheduleContentRequest) => {
 
 export const getContentSchedules = async ({ client }: SupabaseOptions) => {
   return throwOrData(client.from("content_schedules").select("*, content:content(*)"));
+};
+
+export const deleteContentSchedule = async (
+  {
+    ownerId,
+    contentId,
+    scheduleName,
+  }: { ownerId: string; contentId: string; scheduleName: string },
+  { client }: SupabaseOptions,
+) => {
+  await throwOrData(client.from("content_schedules").delete().eq("name", scheduleName));
+  await throwOrData(client.from("content").delete().eq("id", contentId));
+  await client.storage.from(BUCKETS.scheduledContent).remove([`${ownerId}/${contentId}`]);
+  await fetch(`/api/content/delete-schedule`, {
+    method: "POST",
+    body: JSON.stringify({ scheduleName }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };

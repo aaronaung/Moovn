@@ -9,8 +9,10 @@ import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content"
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
 import { signUrlForPathOrChildPaths } from "@/src/libs/storage";
+import { Tables } from "@/types/db";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import EventDialog from "./_components/event-dialog";
 
 export default function Calendar() {
   const router = useRouter();
@@ -26,7 +28,13 @@ export default function Calendar() {
 
   const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-
+  const [eventDialog, setEventDialog] = useState<{
+    isOpen: boolean;
+    content?: Tables<"content"> & { template: Tables<"templates"> | null };
+    event?: CalendarEvent;
+  }>({
+    isOpen: false,
+  });
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
@@ -47,10 +55,12 @@ export default function Calendar() {
                     supaClientComponentClient,
                   );
                   resolve({
+                    contentId: content.id,
+                    scheduleName: schedule.name,
                     title: content.template?.name ?? "Untitled",
                     start: scheduledDate,
                     contentType: content.type as ContentType,
-                    previewUrl: signUrlData.map((data) => data.url)[0],
+                    previewUrls: signUrlData.map((data) => data.url),
                   });
                 } catch (err: any) {
                   reject(err.message);
@@ -77,8 +87,24 @@ export default function Calendar() {
 
   return (
     <div className="h-[calc(100vh_-_100px)]">
+      {eventDialog.content && eventDialog.event && (
+        <EventDialog
+          isOpen={eventDialog.isOpen}
+          onClose={() => setEventDialog((prev) => ({ ...prev, isOpen: false }))}
+          content={eventDialog.content}
+          event={eventDialog.event}
+        />
+      )}
       <FullCalendar
         events={calendarEvents}
+        onEventClick={(event) => {
+          const content = contents?.find((c) => c.id === event.contentId);
+          setEventDialog({
+            isOpen: true,
+            content,
+            event,
+          });
+        }}
         actionButtons={[
           <Button
             key={"schedule-content"}
