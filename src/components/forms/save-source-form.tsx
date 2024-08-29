@@ -8,17 +8,19 @@ import InputSelect from "../ui/input/select";
 
 import { SourceTypes } from "@/src/consts/sources";
 import { useAuthUser } from "@/src/contexts/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { saveSource } from "@/src/data/sources";
 import { toast } from "../ui/use-toast";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required." }),
   type: z.string().min(1, { message: "Type is required." }),
-  settings: z.object({
-    url: z.string().url({ message: "Must be a valid url." }).optional(),
-  }),
+  settings: z
+    .object({
+      url: z.string().url({ message: "Must be a valid url." }).optional(),
+    })
+    .optional(),
 });
 
 export type SaveSourceFormSchemaType = z.infer<typeof formSchema> & {
@@ -32,13 +34,12 @@ type SaveSourceFormProps = {
 };
 
 export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourceFormProps) {
-  const queryClient = useQueryClient();
-
   const {
     register,
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SaveSourceFormSchemaType>({
     defaultValues: {
@@ -48,6 +49,16 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     resolver: zodResolver(formSchema),
   });
   const selectedSourceType = watch("type");
+
+  useEffect(() => {
+    if (selectedSourceType === SourceTypes.Pike13) {
+      setValue("settings", {
+        url: "",
+      });
+    } else {
+      setValue("settings", {});
+    }
+  }, [selectedSourceType]);
 
   const { user } = useAuthUser();
   const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(saveSource, {
@@ -86,6 +97,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
             error={(errors.settings as any)?.url?.message}
           />
         );
+
       default:
         return null;
     }
@@ -102,7 +114,12 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
   };
 
   return (
-    <form className="flex flex-col gap-y-3" onSubmit={handleSubmit(handleOnFormSuccess)}>
+    <form
+      className="flex flex-col gap-y-3"
+      onSubmit={handleSubmit(handleOnFormSuccess, (err) => {
+        console.log(errors);
+      })}
+    >
       <InputText
         label="Name"
         rhfKey="name"

@@ -1,5 +1,6 @@
 export enum SourceTypes {
   Pike13 = "Pike13",
+  Mindbody = "Mindbody",
 }
 
 export enum SourceDataView {

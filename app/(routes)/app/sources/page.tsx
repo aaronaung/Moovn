@@ -12,6 +12,7 @@ import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import { SourceSelectItem } from "./_components/source-select-item";
 import DataView from "./_components/data-view";
+import { MindbodySourceSettings } from "@/src/libs/sources/mindbody";
 
 export default function SourcesPage() {
   const [sourceDialogState, setSourceDialogState] = useState<{
@@ -57,6 +58,35 @@ export default function SourcesPage() {
       },
     },
   );
+
+  const renderSourceDetails = () => {
+    if (!selectedSource) {
+      return (
+        <p className="text-sm text-muted-foreground">
+          Select a source to see what your data looks like.
+        </p>
+      );
+    }
+
+    switch (selectedSource.type) {
+      case "Pike13":
+        return <DataView selectedSource={selectedSource} />;
+      case "Mindbody":
+        const sourceSettings = selectedSource.settings as MindbodySourceSettings;
+        if (
+          !sourceSettings?.site_id ||
+          !sourceSettings?.access_token ||
+          !sourceSettings?.refresh_token
+        ) {
+          return (
+            <p className="mb-2 text-sm text-muted-foreground">Mindbody account not connected.</p>
+          );
+        }
+        return <DataView selectedSource={selectedSource} />;
+      default:
+        return <></>;
+    }
+  };
 
   if (isLoadingSources) {
     return <Spinner className="mt-8" />;
@@ -154,15 +184,7 @@ export default function SourcesPage() {
           />
         ))}
       </div>
-      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-        {selectedSource ? (
-          <DataView selectedSource={selectedSource} />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Select a source to see what your data looks like.
-          </p>
-        )}
-      </div>
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">{renderSourceDetails()}</div>
     </div>
   );
 }

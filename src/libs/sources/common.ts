@@ -3,7 +3,7 @@ import { supaServerClient } from "@/src/data/clients/server";
 import { getSourceById } from "@/src/data/sources";
 import { Pike13Client, Pike13SourceSettings } from "./pike13";
 import { env } from "@/env.mjs";
-import { transformScheduleV2 } from "./utils";
+import { flattenSchedule } from "./utils";
 
 export type ScheduleData = {
   [key: string]: any;
@@ -28,7 +28,7 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
         businessUrl: sourceSettings.url,
       });
 
-      return transformScheduleV2(await pike13Client.getScheduleData(from, to));
+      return flattenSchedule(await pike13Client.getScheduleData(from, to));
     default:
       return null;
   }

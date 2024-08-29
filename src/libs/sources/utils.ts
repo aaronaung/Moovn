@@ -71,7 +71,7 @@ export const transformSchedule = (input?: ScheduleData) => {
   return internalTransform(input, "schedules");
 };
 
-export const transformScheduleV2 = (input?: ScheduleData) => {
+export const flattenSchedule = (input?: ScheduleData) => {
   if (!input) {
     return {};
   }
