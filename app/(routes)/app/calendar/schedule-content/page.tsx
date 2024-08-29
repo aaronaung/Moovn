@@ -66,7 +66,7 @@ export default function ScheduleContent() {
     (destination) => destination.linked_ig_user_id && destination.long_lived_token,
   );
 
-  let missingDetails = null;
+  let missingDetails: any = null;
 
   if ((connectedDestinations ?? []).length === 0)
     missingDetails = MISSING_DETAILS.connectedDestinations;
