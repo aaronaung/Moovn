@@ -27,6 +27,8 @@ import { DesignExport } from "@/src/contexts/photopea-headless";
 import { upsertObjectAtPath } from "@/src/libs/storage";
 import { BUCKETS } from "@/src/consts/storage";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { useSupaMutation } from "@/src/hooks/use-supabase";
+import { saveTemplate } from "@/src/data/templates";
 
 export const TEMPLATE_WIDTH = 320;
 
@@ -42,14 +44,16 @@ export const InstagramTemplate = ({
   const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
   const [igCaption, setIgCaption] = useState<string>(template.ig_caption_template || "");
 
+  const { mutateAsync: _saveTemplate } = useSupaMutation(saveTemplate, {
+    invalidate: [["getTemplatesForAuthUser"]],
+  });
+
   const handleUpdateIgCaption = async () => {
     try {
-      await supaClientComponentClient
-        .from("templates")
-        .update({
-          ig_caption_template: igCaption,
-        })
-        .eq("id", template.id);
+      await _saveTemplate({
+        ...template,
+        ig_caption_template: igCaption,
+      } as Tables<"templates">);
     } catch (err) {
       toast({
         variant: "destructive",

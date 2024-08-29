@@ -85,7 +85,7 @@ export default function EventDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="min-h-[calc(100vh_-_100px)] min-w-[550px] ">
+      <DialogContent className="max-h-[calc(100vh_-_50px)] max-w-[calc(100vw_-_20px)] ">
         <div className="flex flex-col ">
           <Header2 title={content.template?.name ?? "Untitled"} />
           <p className="my-4 text-sm">
