@@ -23,11 +23,11 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { useGenerateDesign } from "@/src/hooks/use-generate-design";
 import { InstagramTag } from "@/src/libs/designs/photopea";
 import { ScheduleData } from "@/src/libs/sources/common";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
 import Image from "@/src/components/ui/image";
+import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -45,11 +45,7 @@ export const DesignContainer = ({
   schedule: ScheduleData;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
-  const {
-    generateDesignForSchedule,
-    isLoading: isGeneratingDesign,
-    isScheduleEmpty,
-  } = useGenerateDesign();
+  const { addJob, isJobInProgress, isJobWaitingInQueue } = useDesignGenQueue();
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
@@ -89,7 +85,7 @@ export const DesignContainer = ({
       }
     };
     fetchOverwrites();
-    generateDesignForSchedule({ contentIdbKey, template, schedule, signedTemplateUrl });
+    addJob({ idbKey: contentIdbKey, template, schedule, templateUrl: signedTemplateUrl });
   }, [template, schedule]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {
@@ -146,12 +142,10 @@ export const DesignContainer = ({
     });
   };
 
+  const isGeneratingDesign = isJobInProgress(contentIdbKey) || isJobWaitingInQueue(contentIdbKey);
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
-    if (isScheduleEmpty && !designJpgUrl) {
-      return <p className="text-sm text-muted-foreground">Nothing scheduled for today!</p>;
-    }
     if (isDesignNotReady || !designJpgUrl) {
       return (
         <div className={`flex h-[220px] w-full items-center justify-center`}>
@@ -182,11 +176,11 @@ export const DesignContainer = ({
               .from(BUCKETS.designOverwrites)
               .remove([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`]);
             setDesignOverwrite(undefined);
-            generateDesignForSchedule({
-              contentIdbKey,
+            addJob({
+              idbKey: contentIdbKey,
               template,
               schedule,
-              signedTemplateUrl,
+              templateUrl: signedTemplateUrl,
               forceRefresh: true,
             });
           }}
@@ -269,15 +263,15 @@ export const DesignContainer = ({
               <Button
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary "
-                disabled={isDesignNotReady || (!designJpgUrl && !isScheduleEmpty)}
+                disabled={isDesignNotReady || !designJpgUrl}
                 onClick={async () => {
                   if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    generateDesignForSchedule({
-                      contentIdbKey,
+                    addJob({
+                      idbKey: contentIdbKey,
                       template,
-                      signedTemplateUrl,
+                      templateUrl: signedTemplateUrl,
                       schedule,
                       forceRefresh: true,
                     });
@@ -295,7 +289,7 @@ export const DesignContainer = ({
                 type="button"
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary"
-                disabled={isDesignNotReady || !designPsdUrl || isScheduleEmpty}
+                disabled={isDesignNotReady || !designPsdUrl}
                 onClick={async () => {
                   if (designPsdUrl) {
                     const ab = await (await fetch(designPsdUrl)).arrayBuffer();
