@@ -54,7 +54,16 @@ export function DatePickerWithRange({
             mode="range"
             defaultMonth={value?.from}
             selected={value}
-            onSelect={onChange}
+            onSelect={(dateRange) => {
+              if (!dateRange) {
+                onChange({ from: new Date(), to: new Date() });
+              } else {
+                onChange({
+                  from: dateRange.from ?? new Date(),
+                  to: dateRange.to ?? dateRange.from ?? new Date(),
+                });
+              }
+            }}
             numberOfMonths={2}
             disablePastDays={disablePastDays}
           />

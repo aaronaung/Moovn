@@ -31,6 +31,7 @@ type DesignGenQueueContextType = {
 };
 
 const MAX_JOBS_IN_PROGRESS = 5;
+const MAX_DESIGNS_IN_IDB = 50;
 
 const DesignGenQueueContext = createContext<DesignGenQueueContextType | null>(null);
 
@@ -49,14 +50,27 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
     setQueuedJobs((prevJobs) => prevJobs.filter((job) => job.idbKey !== idbKey));
   }, []);
 
-  const cleanupOldDesigns = async () => {
-    const designs = await db.designs.toArray();
+  const cleanupIdb = async () => {
+    let designs = await db.designs.toArray();
+    const oldDesigns = [];
     for (const design of designs) {
       const { range } = deconstructContentIdbKey(design.key);
       const rangeStart = getRangeStart(range);
       if (isBefore(rangeStart, startOfToday())) {
-        await db.designs.delete(design.key);
+        oldDesigns.push(design);
       }
+    }
+    await Promise.all(oldDesigns.map((d) => db.designs.delete(d.key)));
+
+    designs = await db.designs.toArray();
+    designs.sort((a, b) => {
+      const { range: aRange } = deconstructContentIdbKey(a.key);
+      const { range: bRange } = deconstructContentIdbKey(b.key);
+      return getRangeStart(aRange).getTime() - getRangeStart(bRange).getTime();
+    });
+    if (designs.length > 50) {
+      const designsToDelete = designs.slice(0, designs.length - MAX_DESIGNS_IN_IDB);
+      await Promise.all(designsToDelete.map((d) => db.designs.delete(d.key)));
     }
   };
 
@@ -78,7 +92,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
 
         const { template, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
         try {
-          await cleanupOldDesigns();
+          await cleanupIdb();
 
           const designHash = generateDesignHash(template.id, schedule);
           const designInIdb = await db.designs.get(idbKey);

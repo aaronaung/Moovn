@@ -19,21 +19,20 @@ export class MindbodyClient implements SourceClient {
     urlParams.set("startDateTime", from);
     urlParams.set("endDateTime", to);
 
-    return (
-      await fetch(
-        `https://api.mindbodyonline.com/public/v6/class/classes?${urlParams.toString()}`,
-        {
-          headers: {
-            "API-Key": this.apiKey,
-            siteId: this.siteId,
-          },
+    const resp = await fetch(
+      `https://api.mindbodyonline.com/public/v6/class/classes?${urlParams.toString()}`,
+      {
+        headers: {
+          "API-Key": this.apiKey,
+          siteId: this.siteId,
         },
-      )
-    ).json();
+      },
+    );
+    return resp.json();
   }
 
   private groupEventsByDay(events: any[]) {
-    if (events.length === 0) {
+    if ((events ?? []).length === 0) {
       return [];
     }
     // Convert the start_at to the same date format using date-fns

@@ -66,6 +66,26 @@ export default function ContentSchedulingForm({
   const [schedulingProgress, setSchedulingProgress] = useState(0);
   const router = useRouter();
 
+  const queryParams = useSearchParams();
+  const qSourceId = queryParams.get("source_id");
+  const qTemplateIds = queryParams.get("template_ids")?.split(",");
+  const qDestinationId = queryParams.get("destination_id");
+  const qScheduleRangeSplit = queryParams.get("schedule_range")?.split("_");
+  const qScheduleRange = qScheduleRangeSplit
+    ? {
+        from: new Date(
+          formatInTimeZone(qScheduleRangeSplit[0] ?? new Date(), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+        ),
+        to: new Date(
+          formatInTimeZone(
+            qScheduleRangeSplit[1] ?? qScheduleRangeSplit[0] ?? new Date(),
+            "UTC",
+            "yyyy-MM-dd'T'HH:mm:ss",
+          ),
+        ),
+      }
+    : undefined;
+
   const {
     control,
     watch,
@@ -75,46 +95,21 @@ export default function ContentSchedulingForm({
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
     defaultValues: {
-      source_id: availableSources?.[0].id || "123",
-      destination_id: availableDestinations?.[0].id || "",
-      template_ids: availableTemplates?.[0].id ? [availableTemplates?.[0].id] : [],
-      schedule_range: {
+      source_id: qSourceId || availableSources?.[0].id || "",
+      destination_id: qDestinationId || availableDestinations?.[0].id || "",
+      template_ids: qTemplateIds || availableTemplates?.[0].id ? [availableTemplates?.[0].id] : [],
+      schedule_range: qScheduleRange ?? {
         from: new Date(),
         to: new Date(),
       },
     },
     resolver: zodResolver(formSchema),
   });
-  const queryParams = useSearchParams();
 
   const sourceId = watch("source_id");
   const templateIds = watch("template_ids");
   const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
-
-  useEffect(() => {
-    // On initial load, set the values from query params if it exists
-    const sourceId = queryParams.get("source_id");
-    if (sourceId) {
-      setValue("source_id", sourceId);
-    }
-    const templateIds = queryParams.get("template_ids");
-    if (templateIds) {
-      setValue("template_ids", templateIds.split(","));
-    }
-    const destinationId = queryParams.get("destination_id");
-    if (destinationId) {
-      setValue("destination_id", destinationId);
-    }
-    const scheduleRange = queryParams.get("schedule_range");
-    if (scheduleRange) {
-      const [from, to] = scheduleRange.split("_");
-      setValue("schedule_range", {
-        from: new Date(formatInTimeZone(from, "UTC", "yyyy-MM-dd'T'HH:mm:ss")),
-        to: new Date(formatInTimeZone(to ?? from, "UTC", "yyyy-MM-dd'T'HH:mm:ss")),
-      });
-    }
-  }, [queryParams]);
 
   useEffect(() => {
     // On change of source, update the query params
@@ -124,8 +119,8 @@ export default function ContentSchedulingForm({
     urlParams.set("destination_id", destinationId);
     urlParams.set(
       "schedule_range",
-      `${scheduleRange.from.toISOString().split("T")[0]}_${
-        scheduleRange.to.toISOString().split("T")[0]
+      `${(scheduleRange?.from ?? new Date()).toISOString().split("T")[0]}_${
+        (scheduleRange?.to ?? scheduleRange?.from ?? new Date()).toISOString().split("T")[0]
       }`,
     );
     router.replace(`${window.location.pathname}?${urlParams.toString()}`);
@@ -404,9 +399,9 @@ export default function ContentSchedulingForm({
           e.preventDefault();
         }}
       >
-        <div className="block gap-x-4 md:flex">
+        <div className="flex flex-col gap-x-4 gap-y-3 md:flex-row">
           <InputSelect
-            label="Schedule source"
+            label="Source"
             className="w-full md:w-[300px]"
             rhfKey={"source_id"}
             options={availableSources.map((source) => ({
@@ -419,7 +414,6 @@ export default function ContentSchedulingForm({
               placeholder: "Select a schedule source",
             }}
           />
-          {/** TODO: DATE RANGE VALIDATOR NOT WORKING */}
           <InputDateRangePicker
             label="Schedule range"
             className="w-full md:w-[300px]"
@@ -427,22 +421,6 @@ export default function ContentSchedulingForm({
             control={control}
             error={errors.schedule_range?.message}
             disablePastDays
-          />
-        </div>
-        <div className="flex gap-x-3">
-          <InputMultiSelect
-            label="Templates"
-            rhfKey={"template_ids"}
-            className="w-full md:w-[620px]"
-            options={availableTemplates.map((template) => ({
-              value: template.id,
-              label: template.name,
-            }))}
-            control={control}
-            error={errors.template_ids?.message}
-            inputProps={{
-              placeholder: "Select one or more templates",
-            }}
           />
         </div>
         <InputSelect
@@ -459,6 +437,21 @@ export default function ContentSchedulingForm({
             placeholder: "Select a destination",
           }}
         />
+        <InputMultiSelect
+          label="Templates"
+          rhfKey={"template_ids"}
+          className="w-full md:w-[620px]"
+          options={availableTemplates.map((template) => ({
+            value: template.id,
+            label: template.name,
+          }))}
+          control={control}
+          error={errors.template_ids?.message}
+          inputProps={{
+            placeholder: "Select one or more templates",
+          }}
+        />
+
         {isLoadingScheduleData ? (
           <Spinner />
         ) : (

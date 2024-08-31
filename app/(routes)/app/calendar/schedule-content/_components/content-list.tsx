@@ -49,7 +49,7 @@ export default function ContentList({
   return (
     <div className="relative mb-8">
       <div className="flex">
-        <p className="mb-4 mt-1 flex-1 text-sm text-muted-foreground">
+        <p className="mb-4 mt-1 hidden flex-1 text-sm text-muted-foreground lg:block">
           Schedule one or more generated designs for publication on any desired date. If a design is
           incorrect, you can refresh or edit it.
         </p>
@@ -146,9 +146,6 @@ const ContentListForTemplate = ({
       <div className="mb-2 flex min-h-[40px] flex-wrap items-center gap-3 rounded-md p-2">
         <div className="flex flex-1 items-center gap-2">
           <p className="font-semibold">{template.name}</p>
-          <p className="rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
-            {template.source_data_view} schedule
-          </p>
         </div>
         {!_.isEmpty(scheduleDataByRange) && (
           <>
@@ -176,8 +173,8 @@ const ContentListForTemplate = ({
               />
               <Label htmlFor={`select-all-${template.id}`}>Select all</Label>
             </div>
-            <div className="flex min-h-[40px] items-center gap-2 rounded-md bg-secondary px-4">
-              <Label htmlFor="publish-date shrink-0">Set publish time for all</Label>
+            <div className="flex min-h-[40px] w-full items-center justify-center gap-2 rounded-md bg-secondary px-4 sm:w-fit">
+              <Label htmlFor="publish-date shrink-0">Publish time for all</Label>
               <TimePicker
                 hideSeconds
                 date={timeForAll ?? startOfDay(new Date())}

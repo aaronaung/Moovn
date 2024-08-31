@@ -11,17 +11,19 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.Daily);
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
-    getScheduleDataForSource,
-    {
-      queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
-      arg: {
-        id: selectedSource?.id,
-        view: selectedView,
-      },
-      enabled: !!selectedSource,
+  const {
+    data: scheduleData,
+    isLoading: isLoadingScheduleData,
+    isRefetching,
+  } = useSupaQuery(getScheduleDataForSource, {
+    queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
+    arg: {
+      id: selectedSource?.id,
+      view: selectedView,
     },
-  );
+    enabled: !!selectedSource,
+    refetchOnWindowFocus: false,
+  });
 
   const handleTabSelect = (tab: SourceDataView) => {
     setSelectedView(tab);
@@ -31,7 +33,7 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     if (!selectedSource) {
       return <p className="text-sm text-muted-foreground">Please select a source first.</p>;
     }
-    if (isLoadingScheduleData) {
+    if (isLoadingScheduleData || isRefetching) {
       return <Spinner className="mt-4" />;
     }
 

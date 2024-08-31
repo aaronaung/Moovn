@@ -76,7 +76,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       if (_.isString(e.data)) {
         if (e.data.startsWith("layer_updates_complete")) {
           // layer_updates_complete:namespace-123
-          console.log(e.data);
           const [_, namespace] = e.data.split(":");
           if (pollIntervalMapRef.current[namespace]) {
             clearIntervalForNamespace(namespace);
@@ -114,7 +113,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           }
         }
         if (e.data.startsWith("export_file")) {
-          console.log(e.data);
           // export_file:namespace-123:jpg
           const [_, namespace, format] = e.data.split(":");
           setExportMetadataQueue((prev) => [...prev, { namespace, format }]);
@@ -180,6 +178,13 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 updateLayersCmd(designGenStepsMap[namespace].layerUpdates),
               );
               return;
+            } else {
+              console.log(`${namespace}: exporting design`, {
+                jpg: mostRecentExport.jpg,
+                psd: mostRecentExport.psd,
+                exportQueue,
+                exportMetadataQueue,
+              });
             }
 
             onDesignExportMap[namespace](mostRecentExport);
@@ -234,14 +239,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
   const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
     clearIntervalForNamespace(namespace);
-    console.log(`Setting poll interval for namespace: ${namespace}`);
-
     pollIntervalMapRef.current[namespace] = setInterval(callback, delay);
   };
 
   const clearIntervalForNamespace = (namespace: string) => {
     if (pollIntervalMapRef.current[namespace]) {
-      console.log(`Clearing poll interval for namespace: ${namespace}`);
       clearInterval(pollIntervalMapRef.current[namespace]);
       delete pollIntervalMapRef.current[namespace];
     }

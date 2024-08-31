@@ -60,7 +60,7 @@ export default memo(
                   date: publishDateTime,
                   hasTime: true,
                 }}
-                className="h-[32px] w-[185px] min-w-0 rounded-md px-3"
+                className="h-[32px] w-full min-w-0 rounded-md px-3 "
                 onChange={(dateTime) => {
                   onPublishDateTimeChange(dateTime.date);
                 }}

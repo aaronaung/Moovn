@@ -58,7 +58,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
 
   const { user } = useAuthUser();
   const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(saveSource, {
-    invalidate: [["getSourcesForAuthUser"]],
+    invalidate: [["getSourcesForAuthUser"], ["getScheduleDataForSource", defaultValues?.id ?? ""]],
     onSuccess: () => {
       onSubmitted();
     },
