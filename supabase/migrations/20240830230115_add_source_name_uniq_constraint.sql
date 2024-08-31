@@ -1,0 +1,1 @@
+alter table "public"."sources" add constraint "sources_name_unique" unique ("name", "owner_id");

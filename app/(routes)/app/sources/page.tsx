@@ -12,7 +12,6 @@ import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import { SourceSelectItem } from "./_components/source-select-item";
 import DataView from "./_components/data-view";
-import { MindbodySourceSettings } from "@/src/libs/sources/mindbody";
 
 export default function SourcesPage() {
   const [sourceDialogState, setSourceDialogState] = useState<{
@@ -67,25 +66,7 @@ export default function SourcesPage() {
         </p>
       );
     }
-
-    switch (selectedSource.type) {
-      case "Pike13":
-        return <DataView selectedSource={selectedSource} />;
-      case "Mindbody":
-        const sourceSettings = selectedSource.settings as MindbodySourceSettings;
-        if (
-          !sourceSettings?.site_id ||
-          !sourceSettings?.access_token ||
-          !sourceSettings?.refresh_token
-        ) {
-          return (
-            <p className="mb-2 text-sm text-muted-foreground">Mindbody account not connected.</p>
-          );
-        }
-        return <DataView selectedSource={selectedSource} />;
-      default:
-        return <></>;
-    }
+    return <DataView selectedSource={selectedSource} />;
   };
 
   if (isLoadingSources) {
@@ -96,6 +77,7 @@ export default function SourcesPage() {
     return (
       <>
         <SaveSourceDialog
+          initFormValues={sourceDialogState.source as any}
           isOpen={sourceDialogState.isOpen}
           onClose={() => {
             setSourceDialogState({
@@ -123,7 +105,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div className="mt-2 flex h-[calc(100vh-110px)] flex-col">
+    <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={"All designs created from this source will be deleted. Are you sure?"}
@@ -172,7 +154,7 @@ export default function SourcesPage() {
           Create source
         </Button>
       </div>
-      <div className="flex gap-x-2">
+      <div className="flex gap-x-2 overflow-scroll">
         {(sources || []).map((source) => (
           <SourceSelectItem
             key={source.id}

@@ -22,15 +22,15 @@ export default function InputText(props: InputTextProps) {
         {props.prefix}
         <input
           {...props.inputProps}
+          {...(props.value ? { value: props.value } : {})}
+          {...(props.onChange ? { onChange: props.onChange } : {})}
+          {...(props.defaultValue ? { defaultValue: props.defaultValue } : {})}
           {...(props.register && props.rhfKey
             ? props.register(props.rhfKey, {
                 ...props.registerOptions,
                 ...(props.disableValidation ? { validate: () => true } : {}),
               })
             : {})}
-          {...(props.value ? { value: props.value } : {})}
-          {...(props.onChange ? { onChange: props.onChange } : {})}
-          {...(props.defaultValue ? { defaultValue: props.defaultValue } : {})}
           disabled={props.disabled}
           name={props.rhfKey}
           id={props.rhfKey}

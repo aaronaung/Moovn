@@ -8,7 +8,7 @@ import {
   StorageType,
 } from "@adobe/photoshop-apis";
 import { adobeAuthConfig } from "@/src/consts/adobe";
-import { ScheduleData } from "../sources/common";
+import { ScheduleData } from "../sources";
 import { determinePSDActions, PSDActionType } from "./util";
 
 const photoshop = new PhotoshopClient(adobeAuthConfig);

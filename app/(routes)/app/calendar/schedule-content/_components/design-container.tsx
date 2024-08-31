@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { InstagramTag } from "@/src/libs/designs/photopea";
-import { ScheduleData } from "@/src/libs/sources/common";
+import { ScheduleData } from "@/src/libs/sources";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
 import Image from "@/src/components/ui/image";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";

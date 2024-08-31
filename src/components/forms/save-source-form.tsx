@@ -19,6 +19,7 @@ const formSchema = z.object({
   settings: z
     .object({
       url: z.string().url({ message: "Must be a valid url." }).optional(),
+      siteId: z.string().min(1, { message: "Site ID is required." }).optional(),
     })
     .optional(),
 });
@@ -40,6 +41,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     control,
     watch,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<SaveSourceFormSchemaType>({
     defaultValues: {
@@ -51,13 +53,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
   const selectedSourceType = watch("type");
 
   useEffect(() => {
-    if (selectedSourceType === SourceTypes.Pike13) {
-      setValue("settings", {
-        url: "",
-      });
-    } else {
-      setValue("settings", {});
-    }
+    setValue("settings", {});
   }, [selectedSourceType]);
 
   const { user } = useAuthUser();
@@ -71,39 +67,52 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
       toast({
         title: "Failed to save changes",
         variant: "destructive",
-        description: "Please try again or contact support.",
+        description: "Make sure the Source name is unique. Please try again or contact support.",
       });
     },
   });
 
   const renderSourceSettings = () => {
-    switch (selectedSourceType) {
-      case SourceTypes.Pike13:
-        return (
-          <InputText
-            label="Pike13 URL"
-            rhfKey="settings.url"
-            register={register}
-            registerOptions={{
-              validate: (value) => {
-                if (selectedSourceType === SourceTypes.Pike13 && !value) {
-                  return "URL is required.";
-                }
-              },
-            }}
-            inputProps={{
-              placeholder: "Enter your Pike13 business URL",
-            }}
-            error={(errors.settings as any)?.url?.message}
-          />
-        );
+    return (
+      <>
+        <InputText
+          label="Pike13 URL"
+          rhfKey="settings.url"
+          className={selectedSourceType !== SourceTypes.Pike13 ? "hidden" : ""}
+          register={register}
+          inputProps={{
+            placeholder: "Enter your Pike13 business URL",
+          }}
+          error={(errors.settings as any)?.url?.message}
+        />
 
-      default:
-        return null;
-    }
+        <InputText
+          label="Site ID"
+          rhfKey="settings.siteId"
+          className={selectedSourceType !== SourceTypes.Mindbody ? "hidden" : ""}
+          register={register}
+          inputProps={{
+            placeholder: "Enter your Mindbody Site ID",
+          }}
+          error={(errors.settings as any)?.siteId?.message}
+        />
+      </>
+    );
   };
 
   const handleOnFormSuccess = async (formValues: SaveSourceFormSchemaType) => {
+    if (formValues.type === SourceTypes.Pike13 && !formValues.settings.url) {
+      setError("settings.url", {
+        message: "Pike13 URL is required.",
+      });
+      return;
+    }
+    if (formValues.type === SourceTypes.Mindbody && !formValues.settings.siteId) {
+      setError("settings.siteId", {
+        message: "Site ID is required.",
+      });
+      return;
+    }
     if (user?.id) {
       _saveSource({
         ...(defaultValues?.id ? { id: defaultValues.id } : {}),
@@ -117,7 +126,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     <form
       className="flex flex-col gap-y-3"
       onSubmit={handleSubmit(handleOnFormSuccess, (err) => {
-        console.log(errors);
+        console.log(err);
       })}
     >
       <InputText
@@ -130,6 +139,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
         error={errors.name?.message}
       />
       <InputSelect
+        disabled={defaultValues?.id !== undefined}
         rhfKey="type"
         options={Object.values(SourceTypes).map((st) => ({
           label: st,
@@ -137,7 +147,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
         }))}
         control={control}
         error={errors.type?.message}
-        description="Select the platfrom from which you want to pull data."
+        description="The platfrom from which you want to pull data. Not editable after creation"
         label="Data source"
       />
       {renderSourceSettings()}

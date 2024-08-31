@@ -3,7 +3,7 @@ import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
-import { ScheduleData } from "../libs/sources/common";
+import { ScheduleData } from "../libs/sources";
 import {
   addDays,
   endOfDay,
@@ -97,7 +97,7 @@ export const getScheduleDataForSourceByTimeRange = async ({
   dateRange: { from: Date; to: Date };
 }): Promise<ScheduleData> => {
   const from = format(startOfDay(dateRange.from), "yyyy-MM-dd");
-  const to = format(startOfDay(addDays(dateRange.to, 1)), "yyyy-MM-dd");
+  const to = format(startOfDay(dateRange.to), "yyyy-MM-dd");
 
   const resp = await fetch(`/api/sources/${id}/schedules?from=${from}&to=${to}`);
   return resp.json();

@@ -1,5 +1,5 @@
 import { ContentType } from "@/src/consts/content";
-import { ScheduleData } from "@/src/libs/sources/common";
+import { ScheduleData } from "@/src/libs/sources";
 import { Tables } from "@/types/db";
 import InstagramContent from "./instagram-content";
 import { Checkbox } from "@/src/components/ui/checkbox";

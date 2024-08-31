@@ -1,4 +1,4 @@
-import { getScheduleDataFromSource } from "@/src/libs/sources/common";
+import { getScheduleDataFromSource } from "@/src/libs/sources";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {

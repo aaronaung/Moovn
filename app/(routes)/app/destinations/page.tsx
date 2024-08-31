@@ -155,7 +155,7 @@ export default function DestinationsPage() {
           Create destination
         </Button>
       </div>
-      <div className="flex gap-x-2">
+      <div className="flex gap-x-2 overflow-scroll">
         {(destinations || []).map((destination) => (
           <DestinationSelectItem
             key={destination.id}

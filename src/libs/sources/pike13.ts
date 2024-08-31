@@ -1,4 +1,5 @@
-import { ScheduleData } from "./common";
+import { env } from "@/env.mjs";
+import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
 
@@ -6,12 +7,12 @@ export type Pike13SourceSettings = {
   url: string;
 };
 
-export class Pike13Client {
+export class Pike13Client implements SourceClient {
   private clientId: string;
   private businessUrl: string;
 
-  constructor({ clientId, businessUrl }: { clientId: string; businessUrl: string }) {
-    this.clientId = clientId;
+  constructor(businessUrl: string) {
+    this.clientId = env.PIKE13_CLIENT_ID;
     this.businessUrl = businessUrl;
   }
 
@@ -24,15 +25,15 @@ export class Pike13Client {
     return resp.json();
   }
 
-  async getRawEventOcurrences(from: string, to: string) {
+  private async getRawEventOcurrences(from: string, to: string) {
     const urlParams = new URLSearchParams();
     if (from === to) {
       urlParams.set("from", from);
     } else {
-      urlParams.set("from", from);
-      urlParams.set("to", to);
+      urlParams.set("from", `${from}T00:00:00`);
+      urlParams.set("to", `${to}T23:59:59`);
     }
-    console.log(urlParams.toString());
+    console.log("pike13 urlParams", urlParams.toString());
     const resp = await this.get(`/api/v2/front/event_occurrences`, urlParams.toString());
     return resp.event_occurrences || [];
   }
@@ -70,7 +71,6 @@ export class Pike13Client {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          timezone: eventsByDay[0].timezone,
           event: (eventsByDay || []).map((event: any) => ({
             staff: (event.staff_members || [])
               .filter((s: any) => Boolean(staffMembersById[s.id]))

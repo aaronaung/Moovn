@@ -2,8 +2,12 @@ import { SourceTypes } from "@/src/consts/sources";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getSourceById } from "@/src/data/sources";
 import { Pike13Client, Pike13SourceSettings } from "./pike13";
-import { env } from "@/env.mjs";
 import { flattenSchedule } from "./utils";
+import { MindbodyClient, MindbodySourceSettings } from "./mindbody";
+
+export interface SourceClient {
+  getScheduleData(from: string, to: string): Promise<ScheduleData>;
+}
 
 export type ScheduleData = {
   [key: string]: any;
@@ -17,18 +21,24 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
     return null;
   }
 
+  let sourceSettings;
   switch (source.type) {
     case SourceTypes.Pike13:
-      const sourceSettings = source.settings as Pike13SourceSettings;
+      sourceSettings = source.settings as Pike13SourceSettings;
       if (!sourceSettings?.url) {
         return null;
       }
-      const pike13Client = new Pike13Client({
-        clientId: env.PIKE13_CLIENT_ID,
-        businessUrl: sourceSettings.url,
-      });
+      const pike13Client = new Pike13Client(sourceSettings.url);
 
       return flattenSchedule(await pike13Client.getScheduleData(from, to));
+    case SourceTypes.Mindbody:
+      sourceSettings = source.settings as MindbodySourceSettings;
+      if (!sourceSettings?.siteId) {
+        return null;
+      }
+      const mindbodyClient = new MindbodyClient(sourceSettings.siteId);
+
+      return flattenSchedule(await mindbodyClient.getScheduleData(from, to));
     default:
       return null;
   }

@@ -1,7 +1,7 @@
 "use client";
 import { Tables } from "@/types/db";
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { ScheduleData } from "../libs/sources/common";
+import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
 import { deconstructContentIdbKey, getRangeStart } from "../libs/content";
 import { isBefore, startOfToday } from "date-fns";

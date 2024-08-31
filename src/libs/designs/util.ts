@@ -1,6 +1,6 @@
 import { Psd, Layer } from "ag-psd";
 import { format } from "date-fns";
-import { ScheduleData } from "../sources/common";
+import { ScheduleData } from "../sources";
 import { MD5 as hash } from "object-hash";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { BUCKETS } from "@/src/consts/storage";

@@ -7,7 +7,7 @@ import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { db } from "../libs/indexeddb/indexeddb";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
-import { ScheduleData } from "../libs/sources/common";
+import { ScheduleData } from "../libs/sources";
 import { isBefore, startOfToday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
 import { deconstructContentIdbKey, getRangeStart } from "../libs/content";

@@ -75,7 +75,7 @@ export default function ContentSchedulingForm({
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
     defaultValues: {
-      source_id: availableSources?.[0].id || "",
+      source_id: availableSources?.[0].id || "123",
       destination_id: availableDestinations?.[0].id || "",
       template_ids: availableTemplates?.[0].id ? [availableTemplates?.[0].id] : [],
       schedule_range: {
@@ -85,15 +85,15 @@ export default function ContentSchedulingForm({
     },
     resolver: zodResolver(formSchema),
   });
+  const queryParams = useSearchParams();
+
   const sourceId = watch("source_id");
   const templateIds = watch("template_ids");
   const destinationId = watch("destination_id");
   const scheduleRange = watch("schedule_range");
 
-  const queryParams = useSearchParams();
-
   useEffect(() => {
-    // On initial load, set the values from query params
+    // On initial load, set the values from query params if it exists
     const sourceId = queryParams.get("source_id");
     if (sourceId) {
       setValue("source_id", sourceId);
@@ -114,7 +114,7 @@ export default function ContentSchedulingForm({
         to: new Date(formatInTimeZone(to ?? from, "UTC", "yyyy-MM-dd'T'HH:mm:ss")),
       });
     }
-  }, []);
+  }, [queryParams]);
 
   useEffect(() => {
     // On change of source, update the query params

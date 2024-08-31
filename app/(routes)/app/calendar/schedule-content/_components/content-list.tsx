@@ -8,7 +8,7 @@ import { SIDEBAR_WIDTH } from "../../../_components/dashboard-layout";
 import { DESIGN_WIDTH } from "@/app/(routes)/app/calendar/schedule-content/_components/design-container";
 import { isMobile } from "react-device-detect";
 import ContentListItem from "./content-list-item";
-import { ScheduleData } from "@/src/libs/sources/common";
+import { ScheduleData } from "@/src/libs/sources";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
 import { TimePicker } from "@/src/components/ui/time-picker";

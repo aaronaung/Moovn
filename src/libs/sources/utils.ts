@@ -1,5 +1,5 @@
 import { addWeeks, endOfWeek, format, isAfter, isBefore, min, startOfWeek } from "date-fns";
-import { ScheduleData } from "./common";
+import { ScheduleData } from ".";
 import { isArray, isPlainObject } from "lodash";
 import { SourceDataView } from "@/src/consts/sources";
 

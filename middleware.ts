@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { match } from "path-to-regexp";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-const excludedPaths = ["/api/stripe/webhook", "/api/facebook/auth/callback", "/api/auth/callback"];
+const excludedPaths = [
+  "/api/stripe/webhook",
+  "/api/auth/callback",
+  "/api/auth/facebook/callback",
+  "/api/auth/mindbody/callback",
+];
 
 export async function middleware(req: NextRequest) {
   try {

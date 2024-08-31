@@ -12,7 +12,7 @@ import {
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { renderCaption } from "@/src/libs/content";
-import { ScheduleData } from "@/src/libs/sources/common";
+import { ScheduleData } from "@/src/libs/sources";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import _ from "lodash";
