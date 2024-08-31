@@ -70,7 +70,10 @@ export const useGenerateDesign = () => {
         await db.designs.delete(contentIdbKey);
         await supaClientComponentClient.storage
           .from(BUCKETS.designOverwrites)
-          .remove([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`]);
+          .remove([
+            `${template.owner_id}/${contentIdbKey}.psd`,
+            `${template.owner_id}/${contentIdbKey}.jpg`,
+          ]);
       }
 
       if (Object.keys(schedule).length === 0) {

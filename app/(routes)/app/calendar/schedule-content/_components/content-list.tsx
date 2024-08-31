@@ -18,6 +18,7 @@ import { getContentIdbKey, getRangeStart } from "@/src/libs/content";
 import _ from "lodash";
 
 export default function ContentList({
+  sourceId,
   templateIds,
   scheduleRange,
   scheduleData,
@@ -26,6 +27,7 @@ export default function ContentList({
   publishDateTimeMap,
   setPublishDateTimeMap,
 }: {
+  sourceId: string;
   templateIds: string[];
   scheduleRange: {
     from: Date;
@@ -57,6 +59,7 @@ export default function ContentList({
       {templates.map((template, index) => (
         <div key={template.id}>
           <ContentListForTemplate
+            sourceId={sourceId}
             template={template}
             scheduleRange={scheduleRange}
             scheduleData={scheduleData}
@@ -75,6 +78,7 @@ export default function ContentList({
 }
 
 const ContentListForTemplate = ({
+  sourceId,
   template,
   scheduleRange,
   scheduleData,
@@ -83,6 +87,7 @@ const ContentListForTemplate = ({
   publishDateTimeMap,
   setPublishDateTimeMap,
 }: {
+  sourceId: string;
   template: Tables<"templates">;
   scheduleRange: {
     from: Date;
@@ -105,7 +110,7 @@ const ContentListForTemplate = ({
     for (const range in scheduleDataByRange) {
       const date = getRangeStart(range);
       setPublishDateTimeMap((prev) => {
-        const contentIdbKey = getContentIdbKey(range, template);
+        const contentIdbKey = getContentIdbKey(sourceId, range, template);
         return {
           ...prev,
           [contentIdbKey]: date,
@@ -153,11 +158,11 @@ const ContentListForTemplate = ({
               <Checkbox
                 id={`select-all-${template.id}`}
                 checked={Object.keys(scheduleDataByRange)
-                  .map((scheduleRange) => getContentIdbKey(scheduleRange, template))
+                  .map((scheduleRange) => getContentIdbKey(sourceId, scheduleRange, template))
                   .every((contentIdbKey) => selectedContentItems.includes(contentIdbKey))}
                 onCheckedChange={(checked: boolean) => {
                   const contentIdbKeys = Object.keys(scheduleDataByRange).map((scheduleRange) =>
-                    getContentIdbKey(scheduleRange, template),
+                    getContentIdbKey(sourceId, scheduleRange, template),
                   );
                   if (checked) {
                     setSelectedContentItems((prev) => [
@@ -183,7 +188,7 @@ const ContentListForTemplate = ({
                   setTimeForAll(d);
                   Object.keys(scheduleDataByRange).forEach((scheduleRange) => {
                     setPublishDateTimeMap((prev) => {
-                      const contentIdbKey = getContentIdbKey(scheduleRange, template);
+                      const contentIdbKey = getContentIdbKey(sourceId, scheduleRange, template);
                       const prevDate = prev[contentIdbKey];
                       const newDate = new Date(d.getTime());
                       newDate.setDate(prevDate.getDate());
@@ -210,7 +215,7 @@ const ContentListForTemplate = ({
       {!_.isEmpty(scheduleDataByRange) && (
         <div className={cn("flex flex-wrap gap-3 overflow-scroll")}>
           {Object.entries(scheduleDataByRange).map(([scheduleRange, schedule]) =>
-            renderContentListItem(getContentIdbKey(scheduleRange, template), schedule),
+            renderContentListItem(getContentIdbKey(sourceId, scheduleRange, template), schedule),
           )}
         </div>
       )}

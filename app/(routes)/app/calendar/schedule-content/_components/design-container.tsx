@@ -72,7 +72,7 @@ export const DesignContainer = ({
     const fetchOverwrites = async () => {
       try {
         setIsLoadingOverwrites(true);
-        const designOverwrites = await getDesignOverwrites(contentIdbKey);
+        const designOverwrites = await getDesignOverwrites(template.owner_id, contentIdbKey);
 
         if (designOverwrites.jpgUrl && designOverwrites.psdUrl) {
           setDesignOverwrite({
@@ -100,8 +100,8 @@ export const DesignContainer = ({
       return;
     }
     // upload overwrite content to storage.
-    const psdPath = `${contentIdbKey}.psd`;
-    const jpgPath = `${contentIdbKey}.jpg`;
+    const psdPath = `${template.owner_id}/${contentIdbKey}.psd`;
+    const jpgPath = `${template.owner_id}/${contentIdbKey}.jpg`;
 
     // Unfortunately, we have to remove the existing files before uploading the new ones, because
     // createSignedUploadUrl fails if the file already exists.
@@ -174,7 +174,10 @@ export const DesignContainer = ({
           onConfirm={async () => {
             await supaClientComponentClient.storage
               .from(BUCKETS.designOverwrites)
-              .remove([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`]);
+              .remove([
+                `${template.owner_id}/${contentIdbKey}.psd`,
+                `${template.owner_id}/${contentIdbKey}.jpg`,
+              ]);
             setDesignOverwrite(undefined);
             addJob({
               idbKey: contentIdbKey,

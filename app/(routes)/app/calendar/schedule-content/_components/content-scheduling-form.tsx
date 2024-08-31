@@ -165,7 +165,7 @@ export default function ContentSchedulingForm({
     contentIdbKey: string,
     publishDateTime: Date,
   ): Promise<ScheduleContentRequest[0] | null> => {
-    const { ownerId, templateId, range } = deconstructContentIdbKey(contentIdbKey);
+    const { templateId, range } = deconstructContentIdbKey(contentIdbKey);
     const designs = await db.designs.where("key").startsWith(contentIdbKey).toArray();
     if (designs.length === 0) {
       console.error(`No designs for content idb key ${contentIdbKey} found in indexedDB`);
@@ -192,6 +192,7 @@ export default function ContentSchedulingForm({
       });
       return null;
     }
+    const ownerId = template.owner_id;
 
     const scheduleByRange = organizeScheduleDataByView(
       template.source_data_view,
@@ -220,7 +221,7 @@ export default function ContentSchedulingForm({
     const overwrittenDesigns: string[] = [];
     const { data: singleJpgOverwriteExists, error } = await supaClientComponentClient.storage
       .from(BUCKETS.designOverwrites)
-      .exists(contentIdbKey + ".jpg");
+      .exists(`${ownerId}/${contentIdbKey}.jpg`);
     if (error) {
       // Exists throw an error when it doesn't exist.
       console.error(error);
@@ -228,7 +229,7 @@ export default function ContentSchedulingForm({
     if (singleJpgOverwriteExists) {
       await supaClientComponentClient.storage
         .from(BUCKETS.designOverwrites)
-        .copy(`${contentIdbKey}.jpg`, `${ownerId}/${content.id}`, {
+        .copy(`${ownerId}/${contentIdbKey}.jpg`, `${ownerId}/${content.id}`, {
           destinationBucket: BUCKETS.scheduledContent,
         });
       overwrittenDesigns.push(contentIdbKey);
@@ -243,7 +244,7 @@ export default function ContentSchedulingForm({
       if (carouselOverwrite && carouselOverwrite.length > 0) {
         for (const overwrite of carouselOverwrite) {
           if (overwrite.name.endsWith(".jpg")) {
-            const overwritePath = `${contentIdbKey}/${overwrite.name}`;
+            const overwritePath = `${ownerId}/${contentIdbKey}/${overwrite.name}`;
             await supaClientComponentClient.storage
               .from(BUCKETS.designOverwrites)
               .copy(
@@ -456,6 +457,7 @@ export default function ContentSchedulingForm({
           <Spinner />
         ) : (
           <ContentList
+            sourceId={sourceId}
             templateIds={templateIds}
             scheduleRange={{
               from: scheduleRange?.from ?? new Date(),

@@ -47,12 +47,15 @@ export function renderCaption(template: string, schedule?: { [key: string]: stri
 }
 
 // scheduleRange is a string that represents the range of the schedule. e.g. "2022-01-01_2022-01-31" or "2022-01-01" if it's a single day.
-export const getContentIdbKey = (scheduleRange: string, template: Tables<"templates">) =>
-  `${template.owner_id}/${scheduleRange}/${template.id}`;
+export const getContentIdbKey = (
+  sourceId: string,
+  scheduleRange: string,
+  template: Tables<"templates">,
+) => `${sourceId}/${scheduleRange}/${template.id}`;
 
 export const deconstructContentIdbKey = (contentIdbKey: string) => {
-  const [ownerId, range, templateId] = contentIdbKey.split("/");
-  return { ownerId, range, templateId };
+  const [sourceId, range, templateId] = contentIdbKey.split("/");
+  return { sourceId, range, templateId };
 };
 
 export const getRangeStart = (range: string) =>

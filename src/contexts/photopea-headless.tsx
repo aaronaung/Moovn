@@ -182,6 +182,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
               console.log(`${namespace}: exporting design`, {
                 jpg: mostRecentExport.jpg,
                 psd: mostRecentExport.psd,
+                psdData: psd,
                 exportQueue,
                 exportMetadataQueue,
               });

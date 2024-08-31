@@ -110,7 +110,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
             await db.designs.delete(idbKey);
             await supaClientComponentClient.storage
               .from(BUCKETS.designOverwrites)
-              .remove([`${idbKey}.psd`, `${idbKey}.jpg`]);
+              .remove([`${template.owner_id}/${idbKey}.psd`, `${template.owner_id}/${idbKey}.jpg`]);
           }
 
           const templateFile = await (await fetch(templateUrl)).arrayBuffer();

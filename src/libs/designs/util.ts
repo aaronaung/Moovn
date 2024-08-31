@@ -110,12 +110,15 @@ export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActio
 
 export const generateDesignHash = (templateId: string, data: any) => hash({ templateId, data });
 
-export const getDesignOverwrites = async (contentIdbKey: string) => {
+export const getDesignOverwrites = async (ownerId: string, contentIdbKey: string) => {
   const design: { psdUrl?: string; jpgUrl?: string } = {};
 
   const result = await supaClientComponentClient.storage
     .from(BUCKETS.designOverwrites)
-    .createSignedUrls([`${contentIdbKey}.psd`, `${contentIdbKey}.jpg`], 24 * 60 * 60);
+    .createSignedUrls(
+      [`${ownerId}/${contentIdbKey}.psd`, `${ownerId}/${contentIdbKey}.jpg`],
+      24 * 60 * 60,
+    );
   if (!result.data) {
     console.log("failed to create signed url", result.error);
     return {};
@@ -123,9 +126,9 @@ export const getDesignOverwrites = async (contentIdbKey: string) => {
 
   for (const overwrite of result.data) {
     if (overwrite.signedUrl) {
-      if (overwrite.path === `${contentIdbKey}.psd`) {
+      if (overwrite.path === `${ownerId}/${contentIdbKey}.psd`) {
         design.psdUrl = overwrite.signedUrl;
-      } else if (overwrite.path === `${contentIdbKey}.jpg`) {
+      } else if (overwrite.path === `${ownerId}/${contentIdbKey}.jpg`) {
         design.jpgUrl = overwrite.signedUrl;
       }
     }
