@@ -4,7 +4,7 @@ import { toast } from "@/src/components/ui/use-toast";
 import { SourceDataView } from "@/src/consts/sources";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
-import { exportCmd } from "@/src/libs/designs/photopea";
+import { exportCmd } from "@/src/libs/designs/photopea/utils";
 import { cn } from "@/src/utils";
 import { useEffect, useRef, useState } from "react";
 import EditorHeader, { EDITOR_HEADER_HEIGHT } from "./editor-header";

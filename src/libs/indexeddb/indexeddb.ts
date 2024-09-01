@@ -1,5 +1,5 @@
 import Dexie, { EntityTable } from "dexie";
-import { InstagramTag } from "../designs/photopea";
+import { InstagramTag } from "../designs/photopea/utils";
 
 export type Design = {
   key: string; // `${ownerId}/${range}/${templateId} for daily schedule, the range is the date, for weekly schedule, this is "start - end"

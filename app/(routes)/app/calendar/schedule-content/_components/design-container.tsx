@@ -23,7 +23,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { InstagramTag } from "@/src/libs/designs/photopea";
+import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { ScheduleData } from "@/src/libs/sources";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
 import Image from "@/src/components/ui/image";

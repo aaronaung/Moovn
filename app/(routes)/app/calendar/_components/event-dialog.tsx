@@ -10,7 +10,7 @@ import {
 } from "@/src/components/ui/carousel";
 import Image from "@/src/components/ui/image";
 import { DesignImageWithIGTags } from "../schedule-content/_components/design-container";
-import { InstagramTag } from "@/src/libs/designs/photopea";
+import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { TrashIcon } from "@heroicons/react/24/outline";

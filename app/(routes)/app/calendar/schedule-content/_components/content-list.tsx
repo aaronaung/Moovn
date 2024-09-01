@@ -102,8 +102,8 @@ const ContentListForTemplate = ({
   const [timeForAll, setTimeForAll] = useState<Date | null>(null);
 
   const scheduleDataByRange = useMemo(
-    () => organizeScheduleDataByView(template?.source_data_view!, scheduleRange, scheduleData!),
-    [template?.source_data_view!, scheduleData, scheduleRange],
+    () => organizeScheduleDataByView(template.source_data_view, scheduleRange, scheduleData!),
+    [template.source_data_view, scheduleData, scheduleRange],
   );
 
   useEffect(() => {
