@@ -62,7 +62,7 @@ export class MindbodyClient implements SourceClient {
             {
               name: event.Staff?.Name,
               photo:
-                // event.Staff?.ImageUrl ??
+                event.Staff?.ImageUrl ??
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(event.Staff?.Name)}`,
               instagramHandle: "aarondidi",
             },

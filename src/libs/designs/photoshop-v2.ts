@@ -2,43 +2,59 @@ import { Psd } from "ag-psd";
 
 import { format } from "date-fns";
 
-export enum LayerUpdateType {
-  EditText = "editText",
-  LoadSmartObjectFromUrl = "loadSmartObjectFromUrl",
-  DeleteLayer = "deleteLayer",
-}
-
-export type LayerUpdates = {
-  // LayerUpdateType is the key
-  [key: string]: {
-    value: any;
-    name: string;
-    instagramTag?: string;
-    newLayerName?: string; // Only used for LoadSmartObjectFromUrl
-  }[];
+export type LoadAssets = LoadAsset[];
+export type LoadAsset = {
+  asset: ArrayBuffer;
+  layerName: string;
 };
-export type LayerTranslates = { from: string; to: string; instagramTag?: string }[];
+
+export type EditTexts = {
+  layerName: string;
+  value: string;
+}[];
+
+export type DeleteLayers = {
+  layerName: string;
+}[];
+
+export type ReplaceLayers = {
+  sourceLayerName: string;
+  targetLayerName: string;
+
+  // We may want to let users configure this in the template in the future.
+  // For now, the design generation process associates the ig tag with the target layer's position.
+  instagramTag?: string;
+}[];
 
 export type DesignGenSteps = {
-  layerUpdates: LayerUpdates;
-  layerTranslates: LayerTranslates;
+  editTexts: EditTexts;
+  loadAssets: LoadAssets;
+  deleteLayers: DeleteLayers;
+  replaceLayers: ReplaceLayers;
 };
 
-export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenSteps => {
-  if (!psd.children) {
+export const determineDesignGenSteps = async (
+  schedules: any,
+  template: Psd,
+): Promise<DesignGenSteps> => {
+  if (!template.children) {
     return {
-      layerUpdates: {},
-      layerTranslates: [],
+      loadAssets: [],
+      editTexts: [],
+      deleteLayers: [],
+      replaceLayers: [],
     };
   }
 
-  const layerUpdates: LayerUpdates = {
-    [LayerUpdateType.EditText]: [],
-    [LayerUpdateType.LoadSmartObjectFromUrl]: [],
-    [LayerUpdateType.DeleteLayer]: [],
+  const loadAssetsPromises = [];
+  const genSteps: DesignGenSteps = {
+    editTexts: [],
+    loadAssets: [],
+    deleteLayers: [],
+    replaceLayers: [],
   };
 
-  for (const layer of psd.children) {
+  for (const layer of template.children) {
     if (!layer.name || !layer.id) {
       continue;
     }
@@ -53,29 +69,23 @@ export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenStep
       continue;
     }
     if (!value) {
-      layerUpdates[LayerUpdateType.DeleteLayer] = [
-        ...layerUpdates[LayerUpdateType.DeleteLayer],
+      genSteps.deleteLayers = [
+        ...(genSteps.deleteLayers ?? []),
         {
-          name: ogLayerName,
-          value: ogLayerName, // value is the layer name
+          layerName: ogLayerName,
         },
       ];
       continue;
     }
     if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
-      layerUpdates[LayerUpdateType.EditText] = [
-        ...layerUpdates[LayerUpdateType.EditText],
+      genSteps.editTexts = [
+        ...(genSteps.editTexts ?? []),
         {
-          name: ogLayerName,
+          layerName: ogLayerName,
           value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
         },
       ];
     } else if (layer.placedLayer) {
-      const valueSplit = value.split("/");
-      // Photoshop always uses the last part of the URL as the layer name.
-      const newLayerName = valueSplit[valueSplit.length - 1];
-      const index = layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl].length;
-
       let instagramTag;
       if (layerName.indexOf("staff") !== -1) {
         const split = layerName.split(".");
@@ -83,35 +93,35 @@ export const determineDesignGenSteps = (schedules: any, psd: Psd): DesignGenStep
         instagramTag = schedules[`${split.join(".")}.instagramHandle`];
       }
 
-      layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl] = [
-        ...layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl],
-        {
-          name: ogLayerName,
-          // value is the URL of the image with the index as an anchor. e.g. "https://example.com/image.jpg#0". We do this to uniquely identify the layer.
-          value: `${value}#${index}`,
-          newLayerName: `${newLayerName}#${index}`,
-          ...(instagramTag ? { instagramTag } : {}),
-        },
-      ];
+      const index = genSteps.loadAssets.length;
+      const valueSplit = value.split("/");
+      const loadedAssetLayerName = valueSplit[valueSplit.length - 1]; // Photoshop always uses the last segment of the URL as the layer name.
+      loadAssetsPromises.push(
+        new Promise<LoadAsset>(async (resolve, reject) => {
+          resolve({
+            // We load the image with index as an anchor to uniquely identify the layer. That way, we can translate/move the loaded asset to the layer name later.
+            asset: await (await fetch(`${value}#${index}`)).arrayBuffer(),
+            layerName: `${loadedAssetLayerName}#${index}`,
+          });
+        }),
+      );
+
+      genSteps.replaceLayers.push({
+        sourceLayerName: `${loadedAssetLayerName}#${index}`,
+        targetLayerName: ogLayerName,
+        ...(instagramTag ? { instagramTag } : {}),
+      });
     } else if (layer.text) {
-      layerUpdates[LayerUpdateType.EditText] = [
-        ...layerUpdates[LayerUpdateType.EditText],
+      genSteps.editTexts = [
+        ...(genSteps.editTexts ?? []),
         {
-          name: ogLayerName,
+          layerName: ogLayerName,
           value, // value is the text content
         },
       ];
     }
   }
 
-  return {
-    layerUpdates: layerUpdates,
-    layerTranslates: layerUpdates[LayerUpdateType.LoadSmartObjectFromUrl as string].map(
-      ({ name, instagramTag, newLayerName }) => ({
-        from: newLayerName || name,
-        to: name,
-        instagramTag,
-      }),
-    ),
-  };
+  genSteps.loadAssets = await Promise.all(loadAssetsPromises);
+  return genSteps;
 };

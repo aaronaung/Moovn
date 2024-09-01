@@ -111,7 +111,7 @@ export const organizeScheduleDataByView = (
         const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
         const date = scheduleData[`day#${dayNumberInKey}.date`];
 
-        const dailyKey = format(new Date(date), "yyyy-MM-dd");
+        const dailyKey = format(date ? new Date(date) : new Date(), "yyyy-MM-dd");
 
         organizedSchedule[dailyKey] = {
           ...(organizedSchedule[dailyKey] || {}),

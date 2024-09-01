@@ -1,16 +1,25 @@
 "use client";
 import _ from "lodash";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  checkLayerTranslatesComplete,
-  checkLayerUpdatesComplete,
-  exportCmd,
-  InstagramTag,
-  translateLayersCmd,
-  updateLayersCmd,
-} from "../libs/designs/photopea";
-import { DesignGenSteps, LayerUpdateType } from "../libs/designs/photoshop-v2";
+
+import { DesignGenSteps } from "../libs/designs/photoshop-v2";
 import { readPsd, Psd } from "ag-psd";
+import {
+  replaceLayersCmd,
+  verifyReplaceLayersComplete,
+} from "../libs/designs/photopea/replace-layers";
+import { editTextsCmd, verifyEditTextsComplete } from "../libs/designs/photopea/edit-texts";
+import {
+  deleteLayersCmd,
+  verifyDeleteLayersComplete,
+} from "../libs/designs/photopea/delete-layers";
+import { exportCmd, InstagramTag } from "../libs/designs/photopea/utils";
+import {
+  focusDocZero,
+  moveAndRenameLoadedAssetCmd,
+  verifyLoadAssetsComplete,
+} from "../libs/designs/photopea/load-assets";
+import { verifyInitialLayerLoaded } from "../libs/designs/photopea/initial-layer-loaded";
 
 export type DesignExport = {
   jpg: ArrayBuffer | null;
@@ -73,37 +82,30 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
   const processEventFromPhotopea = useCallback(
     async (e: MessageEvent) => {
+      // These events occur in order.
       if (_.isString(e.data)) {
-        if (e.data.startsWith("layer_updates_complete")) {
-          // layer_updates_complete:namespace-123
+        if (e.data.startsWith("initial_layer_loaded")) {
+          // initial_layer_loaded:namespace-123
           const [_, namespace] = e.data.split(":");
-          if (pollIntervalMapRef.current[namespace]) {
-            clearIntervalForNamespace(namespace);
-          }
-          if (photopeaMap[namespace]) {
-            sendRawPhotopeaCmd(
-              namespace,
-              photopeaMap[namespace],
-              translateLayersCmd(namespace, designGenStepsMap[namespace].layerTranslates),
-            );
-            setIntervalForNamespace(
-              namespace,
-              () => {
-                sendRawPhotopeaCmd(
-                  namespace,
-                  photopeaMap[namespace],
-                  checkLayerTranslatesComplete(
-                    namespace,
-                    designGenStepsMap[namespace].layerTranslates,
-                  ),
-                );
-              },
-              LAYER_CHECK_INTERVAL,
-            );
-          }
+          executeDesignGenStep("loadAssets", namespace);
         }
-        if (e.data.startsWith("layer_translates_complete")) {
-          // layer_translates_complete:namespace-123
+        if (e.data.startsWith("load_assets_complete")) {
+          // load_assets_complete:namespace-123
+          const [_, namespace] = e.data.split(":");
+          executeDesignGenStep("deleteLayers", namespace);
+        }
+        if (e.data.startsWith("delete_layers_complete")) {
+          // delete_layers_complete:namespace-123
+          const [_, namespace] = e.data.split(":");
+          executeDesignGenStep("editTexts", namespace);
+        }
+        if (e.data.startsWith("edit_texts_complete")) {
+          // edit_texts_complete:namespace-123
+          const [_, namespace] = e.data.split(":");
+          executeDesignGenStep("replaceLayers", namespace);
+        }
+        if (e.data.startsWith("replace_layers_complete")) {
+          // replace_layers_complete:namespace-123
           const [_, namespace] = e.data.split(":");
           if (pollIntervalMapRef.current[namespace]) {
             clearIntervalForNamespace(namespace);
@@ -166,17 +168,12 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 "bad layer update - clearing exports and rerunning layer updates",
                 namespace,
               );
-              startLayerUpdates(namespace, photopeaMap[namespace], designGenStepsMap[namespace]);
-              // If the PSD is not valid, we should clear the exports for the namespace and rerun the layer updates.
+              // If the PSD is not valid, clear exports and rerun from the editTexts step.
               setExportMetadataQueue((prev) => prev.filter((e) => e.namespace !== namespace));
               setExportQueue((prev) =>
                 prev.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace),
               );
-              sendRawPhotopeaCmd(
-                namespace,
-                photopeaMap[namespace],
-                updateLayersCmd(designGenStepsMap[namespace].layerUpdates),
-              );
+              executeDesignGenStep("editTexts", namespace);
               return;
             } else {
               console.log(`${namespace}: exporting design`, {
@@ -200,16 +197,14 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   }, [exportQueue, exportMetadataQueue, onDesignExportMap]);
 
   const validateLayerUpdates = (namespace: string, psd: Psd) => {
-    for (const layerUpdates of designGenStepsMap[namespace]?.layerUpdates[
-      LayerUpdateType.EditText
-    ] ?? []) {
+    for (const editTexts of designGenStepsMap[namespace]?.editTexts ?? []) {
       for (const child of psd.children || []) {
-        if (child.name === layerUpdates.name && child.text?.text !== layerUpdates.value) {
+        if (child.name === editTexts.layerName && child.text?.text !== editTexts.value) {
           console.error("layer update error: layer text wasn't updated correctly", {
             layer_name: child.name,
             layer_text: child.text,
-            required_value: layerUpdates.value,
-            required_name: layerUpdates.name,
+            required_value: editTexts.value,
+            required_name: editTexts.layerName,
           });
           return false;
         }
@@ -218,24 +213,76 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const startLayerUpdates = (
+  const executeDesignGenStep = (
+    step: keyof DesignGenSteps | "start",
     namespace: string,
-    photopeaEl: HTMLIFrameElement,
-    designGenSteps: DesignGenSteps,
+    photopea?: HTMLIFrameElement,
+    designGenSteps?: DesignGenSteps,
   ) => {
-    sendRawPhotopeaCmd(namespace, photopeaEl, updateLayersCmd(designGenSteps.layerUpdates)); // Start the layer updates complete check.
+    if (pollIntervalMapRef.current[namespace]) {
+      // Clear any existing interval for this namespace.
+      clearIntervalForNamespace(namespace);
+    }
+    const pp = photopea ?? photopeaMap[namespace];
+    if (!pp) {
+      console.error("photopea not initialized", namespace);
+      return;
+    }
 
-    setIntervalForNamespace(
-      namespace,
-      () => {
-        sendRawPhotopeaCmd(
+    let cmds = [];
+    let verifyCmd = "";
+    const genSteps = designGenSteps ?? designGenStepsMap[namespace];
+    switch (step) {
+      case "start":
+        // console.log("genstep:start", namespace);
+        verifyCmd = verifyInitialLayerLoaded(namespace);
+        break;
+      case "loadAssets":
+        // console.log("genstep:loadAssets", namespace);
+        for (const loadAsset of genSteps.loadAssets) {
+          cmds.push(loadAsset.asset);
+          cmds.push(moveAndRenameLoadedAssetCmd(loadAsset));
+        }
+        cmds.push(focusDocZero());
+
+        verifyCmd = verifyLoadAssetsComplete(
           namespace,
-          photopeaEl,
-          checkLayerUpdatesComplete(namespace, designGenSteps),
+          genSteps.loadAssets.map((a) => ({ layerName: a.layerName })), // We only need the layer names for verification.
         );
-      },
-      LAYER_CHECK_INTERVAL,
-    );
+        break;
+      case "deleteLayers":
+        // console.log("genstep:deleteLayers", namespace);
+        cmds.push(deleteLayersCmd(namespace, genSteps.deleteLayers));
+        verifyCmd = verifyDeleteLayersComplete(namespace, genSteps.deleteLayers);
+        break;
+      case "editTexts":
+        // console.log("genstep:editTexts", namespace);
+        cmds.push(editTextsCmd(namespace, genSteps.editTexts));
+        verifyCmd = verifyEditTextsComplete(namespace, genSteps.editTexts);
+        break;
+      case "replaceLayers":
+        // console.log("genstep:replaceLayers", namespace);
+        cmds.push(replaceLayersCmd(namespace, genSteps.replaceLayers));
+        verifyCmd = verifyReplaceLayersComplete(namespace, genSteps.replaceLayers);
+        break;
+      default:
+        break;
+    }
+
+    if (cmds.length > 0) {
+      for (const cmd of cmds) {
+        sendRawPhotopeaCmd(namespace, pp, cmd);
+      }
+    }
+    if (verifyCmd) {
+      setIntervalForNamespace(
+        namespace,
+        () => {
+          sendRawPhotopeaCmd(namespace, pp, verifyCmd);
+        },
+        LAYER_CHECK_INTERVAL,
+      );
+    }
   };
 
   const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
@@ -346,7 +393,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
         if (designGenSteps) {
           // Start design gen
-          startLayerUpdates(namespace, photopeaEl, designGenSteps);
+          executeDesignGenStep("start", namespace, photopeaEl, designGenSteps);
         } else {
           console.log("no design gen steps, exporting design", namespace);
           // No design gen steps, just export the design.
@@ -355,11 +402,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    setTimeout(() => {
-      // Design gen timeout has been reached.
-      clear(namespace);
-      onTimeout?.();
-    }, timeout);
+    // setTimeout(() => {
+    //   // Design gen timeout has been reached.
+    //   clear(namespace);
+    //   onTimeout?.();
+    // }, timeout);
   };
 
   return (

@@ -10,7 +10,7 @@ import { supaClientComponentClient } from "../data/clients/browser";
 import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
-import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
+import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { usePhotopeaHeadless } from "./photopea-headless";
 
 type DesignJob = {
@@ -115,7 +115,9 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
 
           const templateFile = await (await fetch(templateUrl)).arrayBuffer();
           const psd = readPsd(templateFile);
-          const designGenSteps = determineDesignGenSteps(schedule, psd);
+          const designGenSteps = await determineDesignGenSteps(schedule, psd);
+
+          console.log({ designGenSteps });
 
           const photopeaEl = addHeadlessPhotopeaToDom();
           initialize(idbKey, photopeaEl, {

@@ -285,7 +285,7 @@ export default function FullCalendarMonthlyView({
                   <div>
                     {event.previewUrls && event.previewUrls.length > 0 && (
                       <Image
-                        className="h-[50px] w-[50px] rounded-lg bg-cover"
+                        className="h-[50px] w-[50px] rounded-sm bg-cover"
                         src={event.previewUrls[0]}
                         alt={"preview"}
                       />

@@ -1,7 +1,7 @@
 import { Tables } from "@/types/db";
 import { usePhotopeaHeadless } from "../contexts/photopea-headless";
 import { useState } from "react";
-import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea";
+import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { db } from "../libs/indexeddb/indexeddb";
 
 export const useGenerateTemplateJpg = () => {
