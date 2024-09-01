@@ -19,6 +19,7 @@ type DesignJob = {
   templateUrl: string;
   schedule: ScheduleData;
   forceRefresh?: boolean;
+  debug?: boolean;
 };
 
 type DesignGenQueueContextType = {
@@ -117,12 +118,12 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
           const psd = readPsd(templateFile);
           const designGenSteps = await determineDesignGenSteps(schedule, psd);
 
-          const photopeaEl = addHeadlessPhotopeaToDom();
+          const photopeaEl = addHeadlessPhotopeaToDom(nextJob.debug);
           initialize(idbKey, photopeaEl, {
             initialData: templateFile,
             designGenSteps,
             onTimeout: () => {
-              if (document.body.contains(photopeaEl)) {
+              if (document.body.contains(photopeaEl) && !nextJob.debug) {
                 document.body.removeChild(photopeaEl);
               }
               removeJob(nextJob.idbKey);
@@ -138,7 +139,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                   instagramTags: designExport.instagramTags,
                   lastUpdated: new Date(),
                 });
-                if (document.body.contains(photopeaEl)) {
+                if (document.body.contains(photopeaEl) && !nextJob.debug) {
                   document.body.removeChild(photopeaEl);
                 }
               }

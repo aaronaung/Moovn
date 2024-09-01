@@ -85,7 +85,13 @@ export const DesignContainer = ({
       }
     };
     fetchOverwrites();
-    addJob({ idbKey: contentIdbKey, template, schedule, templateUrl: signedTemplateUrl });
+    addJob({
+      idbKey: contentIdbKey,
+      template,
+      schedule,
+      templateUrl: signedTemplateUrl,
+      debug: false,
+    });
   }, [template, schedule]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {

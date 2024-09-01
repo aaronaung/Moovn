@@ -29,9 +29,7 @@ export const addHeadlessPhotopeaToDom = (debugMode: boolean = false) => {
   })}`;
   const photopeaEl = document.createElement("iframe");
   photopeaEl.src = iframeSrc;
-  photopeaEl.className = debugMode
-    ? "w-[1000px] h-[800px] ml-[200px] z-10000 mt-[100px]"
-    : "hidden";
+  photopeaEl.className = debugMode ? "w-screen h-[800px] ml-[200px] z-10000 mt-[100px]" : "hidden";
   document.body.appendChild(photopeaEl);
   return photopeaEl;
 };

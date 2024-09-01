@@ -68,7 +68,7 @@ export default function ContentSchedulingForm({
 
   const queryParams = useSearchParams();
   const qSourceId = queryParams.get("source_id");
-  const qTemplateIds = queryParams.get("template_ids")?.split(",");
+  const qTemplateIds = queryParams.get("template_ids")?.split(",").filter(Boolean);
   const qDestinationId = queryParams.get("destination_id");
   const qScheduleRangeSplit = queryParams.get("schedule_range")?.split("_");
   const qScheduleRange = qScheduleRangeSplit
@@ -97,7 +97,12 @@ export default function ContentSchedulingForm({
     defaultValues: {
       source_id: qSourceId || availableSources?.[0].id || "",
       destination_id: qDestinationId || availableDestinations?.[0].id || "",
-      template_ids: qTemplateIds || availableTemplates?.[0].id ? [availableTemplates?.[0].id] : [],
+      template_ids:
+        (qTemplateIds ?? []).length > 0
+          ? qTemplateIds
+          : availableTemplates?.[0].id
+          ? [availableTemplates?.[0].id]
+          : [],
       schedule_range: qScheduleRange ?? {
         from: new Date(),
         to: new Date(),

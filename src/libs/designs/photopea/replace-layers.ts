@@ -38,7 +38,21 @@ if (loadedLayers && loadedLayers.length > 0) {
         var translateY = targetCenterY - sourceCenterY;
 
         // Move and translate the 'source' layer
+        source.move(target, ElementPlacement.PLACEBEFORE);
         source.translate(translateX, translateY);
+
+        // Perform scaling if the source layer is not the same size as the target layer
+        var sWidth = sourceRight - sourceLeft;
+        var sHeight = sourceBottom - sourceTop;
+
+        var tWidth = targetRight - targetLeft;
+        var tHeight = targetBottom - targetTop;
+        
+        var scaleFactor = Math.max(tWidth / sWidth, tHeight / sHeight) * 100;  
+        source.resize(scaleFactor, scaleFactor, AnchorPosition.MIDDLECENTER);
+
+        // Perform clipping mask
+        source.grouped = true;
 
         // Calculate the relative position of the instagramTag
         var docWidth = doc.width;
@@ -98,7 +112,7 @@ function checkLayerTranslatesComplete() {
       // Check if the current position of 'source' matches the 'to' position
       if (Math.abs(sourceCenterX - targetCenterX) < 2 && Math.abs(sourceCenterY - targetCenterY) < 2) {
         source.name = target.name;
-        target.remove();
+        // target.remove();
       } else {
         return;
       }
