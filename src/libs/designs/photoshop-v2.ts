@@ -76,22 +76,33 @@ export const determineDesignGenSteps = async (
         },
       ];
       continue;
-    }
-    if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
-      genSteps.editTexts = [
-        ...(genSteps.editTexts ?? []),
-        {
-          layerName: ogLayerName,
-          value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
-        },
-      ];
-    } else if (layer.placedLayer) {
-      let instagramTag;
-      if (layerName.indexOf("staff") !== -1) {
-        const split = layerName.split(".");
-        split.pop();
-        instagramTag = schedules[`${split.join(".")}.instagramHandle`];
+    } else if (layer.text) {
+      if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
+        genSteps.editTexts = [
+          ...(genSteps.editTexts ?? []),
+          {
+            layerName: ogLayerName,
+            value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
+          },
+        ];
+      } else {
+        genSteps.editTexts = [
+          ...(genSteps.editTexts ?? []),
+          {
+            layerName: ogLayerName,
+            value, // value is the text content
+          },
+        ];
       }
+    } else {
+      const photoRegex = /^day#\d+\.event#\d+\.staff#\d+\.photo$/;
+      if (!photoRegex.test(layerName)) {
+        continue;
+      }
+
+      const split = layerName.split(".");
+      split.pop();
+      const instagramTag = schedules[`${split.join(".")}.instagramHandle`];
 
       const index = loadAssetsPromises.length;
       const valueSplit = value.split("/");
@@ -119,14 +130,6 @@ export const determineDesignGenSteps = async (
         targetLayerName: ogLayerName,
         ...(instagramTag ? { instagramTag } : {}),
       });
-    } else if (layer.text) {
-      genSteps.editTexts = [
-        ...(genSteps.editTexts ?? []),
-        {
-          layerName: ogLayerName,
-          value, // value is the text content
-        },
-      ];
     }
   }
 
