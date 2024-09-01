@@ -117,8 +117,6 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
           const psd = readPsd(templateFile);
           const designGenSteps = await determineDesignGenSteps(schedule, psd);
 
-          console.log({ designGenSteps });
-
           const photopeaEl = addHeadlessPhotopeaToDom();
           initialize(idbKey, photopeaEl, {
             initialData: templateFile,

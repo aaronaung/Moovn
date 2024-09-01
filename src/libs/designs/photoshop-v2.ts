@@ -100,7 +100,15 @@ export const determineDesignGenSteps = async (
         new Promise<LoadAsset>(async (resolve, reject) => {
           resolve({
             // We load the image with index as an anchor to uniquely identify the layer. That way, we can translate/move the loaded asset to the layer name later.
-            asset: await (await fetch(`${value}#${index}`)).arrayBuffer(),
+            asset: await (
+              await fetch(`/api/sources/download-image`, {
+                method: "POST",
+                body: JSON.stringify({ url: value }),
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              })
+            ).arrayBuffer(),
             layerName: `${loadedAssetLayerName}#${index}`,
           });
         }),
