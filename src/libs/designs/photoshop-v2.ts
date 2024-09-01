@@ -93,7 +93,7 @@ export const determineDesignGenSteps = async (
         instagramTag = schedules[`${split.join(".")}.instagramHandle`];
       }
 
-      const index = genSteps.loadAssets.length;
+      const index = loadAssetsPromises.length;
       const valueSplit = value.split("/");
       const loadedAssetLayerName = valueSplit[valueSplit.length - 1]; // Photoshop always uses the last segment of the URL as the layer name.
       loadAssetsPromises.push(
