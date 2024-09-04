@@ -38,4 +38,6 @@ function verifyDeleteLayersComplete() {
 
 if (loadedLayers && loadedLayers.length > 0 && verifyDeleteLayersComplete()) {
   app.echoToOE("delete_layers_complete:${namespace}:true");
+} else {
+  app.echoToOE("delete_layers_complete:${namespace}:false");
 }`;

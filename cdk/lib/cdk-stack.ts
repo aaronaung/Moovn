@@ -51,8 +51,6 @@ export class MoovnStack extends cdk.Stack {
         environment: {
           SUPABASE_URL: props?.config.SUPABASE_URL!,
           SUPABASE_SERVICE_ROLE_KEY: props?.config.SUPABASE_SERVICE_ROLE_KEY!,
-          FACEBOOK_APP_SECRET: props?.config.FACEBOOK_APP_SECRET!,
-          FACEBOOK_APP_ID: props?.config.FACEBOOK_APP_ID!,
         },
         functionName: prependStage("publish-content"),
         timeout: cdk.Duration.seconds(120),

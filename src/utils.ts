@@ -2,6 +2,10 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import crypto from "crypto";
 
+export function isLocal() {
+  return process.env.NODE_ENV === "development";
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -15,11 +19,7 @@ export function download(url: string, filename: string) {
   a.click();
 }
 
-export function pluralOrSingular(
-  count: number,
-  singular: string,
-  plural: string,
-) {
+export function pluralOrSingular(count: number, singular: string, plural: string) {
   return count === 1 ? singular : plural;
 }
 

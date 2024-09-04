@@ -1,6 +1,6 @@
 import * as supabase from "@supabase/supabase-js";
 import { success, error } from "../utils";
-import { FacebookGraphAPIClient } from "../libs/fb-client";
+import { InstagramAPIClient } from "../libs/instagram/ig-client";
 
 export const handler = async (event: any) => {
   try {
@@ -17,8 +17,6 @@ export const handler = async (event: any) => {
 
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const fbAppSecret = process.env.FACEBOOK_APP_SECRET!;
-    const fbAppId = process.env.FACEBOOK_APP_ID!;
 
     const sbClient = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -47,13 +45,20 @@ export const handler = async (event: any) => {
           );
         }
 
-        const fbClient = new FacebookGraphAPIClient(
+        const igClient = new InstagramAPIClient(
           {
             accessToken: content.destination.long_lived_token,
             lastRefreshedAt: content.destination.token_last_refreshed_at,
           },
-          fbAppId,
-          fbAppSecret,
+          async (token) => {
+            await sbClient
+              .from("destinations")
+              .update({
+                long_lived_token: token.accessToken,
+                token_last_refreshed_at: token.lastRefreshedAt.toISOString(),
+              })
+              .eq("id", content.destination.id);
+          },
         );
 
         const toPublish = [];
@@ -102,7 +107,7 @@ export const handler = async (event: any) => {
         switch (content.type) {
           case "Instagram Post":
             if (toPublish.length > 1) {
-              const resp = await fbClient.publishCarouselPost(
+              const resp = await igClient.publishCarouselPost(
                 content.destination.linked_ig_user_id,
                 toPublish.map(({ url, tags }) => ({
                   imageUrl: url,
@@ -121,7 +126,7 @@ export const handler = async (event: any) => {
               }
               publishedMediaIds.push(resp.id);
             } else {
-              const resp = await fbClient.publishPost(content.destination.linked_ig_user_id, {
+              const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
                 imageUrl: toPublish[0].url,
                 userTags: toPublish[0].tags,
                 caption: content.ig_caption,
@@ -138,7 +143,7 @@ export const handler = async (event: any) => {
             break;
           case "Instagram Story":
             for (const media of toPublish) {
-              const resp = await fbClient.publishStory(content.destination.linked_ig_user_id, {
+              const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
                 imageUrl: media.url,
               });
               if (!resp.id) {

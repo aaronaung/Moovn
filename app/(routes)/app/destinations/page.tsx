@@ -56,9 +56,11 @@ export default function DestinationsPage() {
       onError: (error) => {
         console.error(error);
         toast({
-          title: "Failed to delete destination",
+          title: "Failed to delete destination. ",
           variant: "destructive",
-          description: "Please try again or contact support.",
+          duration: 10000,
+          description:
+            "If you have scheduled contents associated with this destination, please remove them first. If the issue persists, please contact support.",
         });
       },
     },

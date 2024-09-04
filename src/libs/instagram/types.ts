@@ -1,4 +1,4 @@
-export type FacebookAPIToken = {
+export type InstagramAPIToken = {
   accessToken: string;
   lastRefreshedAt: Date;
 };

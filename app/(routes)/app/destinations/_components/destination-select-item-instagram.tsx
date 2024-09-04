@@ -3,20 +3,12 @@ import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import { FacebookIcon } from "@/src/components/ui/icons/facebook";
 import Image from "@/src/components/ui/image";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/src/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { DestinationTypes } from "@/src/consts/destinations";
-import { getInstagramAccounts, linkInstagramAccount } from "@/src/data/destinations-facebook";
+import { getInstagramAccount, linkInstagramAccount } from "@/src/data/destinations-ig";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { isLocal } from "@/src/utils";
 import { Tables } from "@/types/db";
+import { CheckIcon } from "@heroicons/react/24/outline";
 
 const scopes = [
   "instagram_manage_comments",
@@ -31,16 +23,16 @@ const scopes = [
   "pages_read_engagement",
 ];
 
-const generateFacebookLoginUrl = (
+const generateInstagramLoginUrl = (
   destinationId: string,
-) => `https://www.facebook.com/v20.0/dialog/oauth
-?client_id=${env.NEXT_PUBLIC_FACEBOOK_APP_ID}
-&display=page
-&extras={setup: { channel: "IG_API_ONBOARDING" } }
-&redirect_uri=${window.location.origin}/api/auth/facebook/callback
-&response_type=code
-&scope=${scopes.join(",")}
-&state=${destinationId}`;
+) => `https://www.instagram.com/oauth/authorize?
+enable_fb_login=0&
+force_authentication=1&
+client_id=${env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID}&
+redirect_uri=${
+  isLocal() ? "https://redirectmeto.com/http://localhost:3000" : window.location.origin
+}/api/auth/instagram/callback&response_type=code&scope=business_basic%2Cbusiness_manage_messages%2Cbusiness_manage_comments%2Cbusiness_content_publish&
+state=${destinationId}`;
 
 export default function InstagramDestinationItem({
   destination,
@@ -49,7 +41,7 @@ export default function InstagramDestinationItem({
   destination: Tables<"destinations">;
   isLoadingDestination: boolean;
 }) {
-  const { data: igAccounts, isLoading: isLoadingIgAccounts } = useSupaQuery(getInstagramAccounts, {
+  const { data: igAccount, isLoading: isLoadingIgAccounts } = useSupaQuery(getInstagramAccount, {
     arg: destination.id,
     enabled: destination.type === DestinationTypes.Instagram && !!destination.long_lived_token,
     queryKey: ["getInstagramAccounts", destination.id],
@@ -62,26 +54,11 @@ export default function InstagramDestinationItem({
     },
   );
 
-  const handleFacebookLogin = async () => {
-    window.location.href = generateFacebookLoginUrl(destination.id);
-  };
-
   const handleConnectDestination = async () => {
-    switch (destination.type) {
-      case DestinationTypes.Instagram:
-        handleFacebookLogin();
-        break;
-    }
+    window.location.href = generateInstagramLoginUrl(destination.id);
   };
 
-  const handleLinkInstagramAccount = async (accountId: string) => {
-    _linkInstagramAccount({
-      destinationId: destination.id,
-      accountId,
-    });
-  };
-
-  if (!destination.long_lived_token) {
+  if (!destination.long_lived_token || !destination.linked_ig_user_id) {
     return (
       <Button
         className="hover: h-[80px] rounded-md bg-[#1877F2] text-white hover:bg-[#3B5998]"
@@ -99,51 +76,26 @@ export default function InstagramDestinationItem({
       </div>
     );
   }
-  if (!igAccounts || (igAccounts && igAccounts.length === 0)) {
+  if (!igAccount) {
     return <p className="text-sm text-muted-foreground">No instagram accounts found.</p>;
   }
 
   return (
-    <div className="flex gap-2">
-      <Select
-        value={destination.linked_ig_user_id ?? undefined}
-        onValueChange={(value) => {
-          handleLinkInstagramAccount(value);
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select an account to link" />
-        </SelectTrigger>
-        <SelectContent className="p-1">
-          <SelectGroup>
-            <SelectLabel>Link an instagram account</SelectLabel>
-            {igAccounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                <div className="flex items-center gap-x-2 ">
-                  <Image
-                    alt={account.username}
-                    className="h-7 w-7 rounded-full"
-                    src={account.profilePictureUrl}
-                    retryOnError
-                  />
-                  <p className="line-clamp-1 text-sm">{account.username}</p>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      <Tooltip>
-        <TooltipTrigger>
-          <Button
-            className="hover: h-[38px] rounded-md bg-[#1877F2] text-white hover:bg-[#3B5998]"
-            onClick={handleConnectDestination}
-          >
-            <FacebookIcon className="h-6 w-6 text-white" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Link a different Facebook account</TooltipContent>{" "}
-      </Tooltip>
+    <div className="flex items-center justify-between gap-1">
+      {/* <p className="text-xs text-muted-foreground">Linked account: </p> */}
+      <div className="flex items-center gap-x-2 ">
+        <Image
+          alt={igAccount.username}
+          className="h-7 w-7 rounded-full"
+          src={igAccount.profilePictureUrl}
+          retryOnError
+        />
+        <p className="line-clamp-1 text-sm">{igAccount.username}</p>
+      </div>
+      <div className="ml-2 flex h-[28px] items-center gap-1 rounded-md bg-green-600 px-3">
+        <CheckIcon className="h-4 w-4" />
+        <p className="text-xs">Connected</p>
+      </div>
     </div>
   );
 }

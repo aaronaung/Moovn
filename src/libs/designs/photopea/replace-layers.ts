@@ -13,8 +13,24 @@ if (loadedLayers && loadedLayers.length > 0) {
       var targetName = layers[i].targetLayerName;
       var instagramTag = layers[i].instagramTag;
 
-      var source = doc.artLayers.getByName(sourceName);
-      var target = doc.artLayers.getByName(targetName);
+      var source;
+      var target;
+      try {
+        source = doc.artLayers.getByName(sourceName);
+        target = doc.artLayers.getByName(targetName);
+      } catch(e) {
+        // It's likely that the source layer has been renamed to the target layer. 
+
+        try {
+          source = doc.artLayers.getByName(targetName);
+
+          // If the source layer is the same as the target layer, this means the layer has been replaced. 
+          continue; 
+
+        } catch(e) {
+          console.error("Error getting source and target layer for replace step: ${namespace}", e)
+        }
+      }
 
       if (source && target) {
         // Calculate the center of the 'target' layer
@@ -84,12 +100,24 @@ function checkLayerTranslatesComplete() {
   for (var i = 0; i < layers.length; i++) {
     var sourceName = layers[i].sourceLayerName;
     var targetName = layers[i].targetLayerName;
-
+    
+    var source;
+    var target;
     try {
-      var source = doc.artLayers.getByName(sourceName);
-      var target = doc.artLayers.getByName(targetName);
+      source = doc.artLayers.getByName(sourceName);
+      target = doc.artLayers.getByName(targetName);
     } catch(e) {
-      console.error("Error getting layers for translation", e)
+      // It's likely that the source layer has been renamed to the target layer. 
+
+      try {
+        source = doc.artLayers.getByName(targetName);
+
+        // If the source layer is the same as the target layer, this means the layer has been replaced. 
+        continue; 
+
+      } catch(e) {
+        console.error("Error getting source and target layer for replace step: ${namespace}", e)
+      }
     }
 
     if (source && target) {
@@ -108,23 +136,31 @@ function checkLayerTranslatesComplete() {
       var sourceBottom = source.bounds[3].value;
       var sourceCenterX = (sourceLeft + sourceRight) / 2;
       var sourceCenterY = (sourceTop + sourceBottom) / 2;
-
+      console.log('verifying replace layers: ${namespace}', {
+        sourceCenterX, sourceCenterY, targetCenterX, targetCenterY
+      });
       // Check if the current position of 'source' matches the 'to' position
-      if (Math.abs(sourceCenterX - targetCenterX) < 2 && Math.abs(sourceCenterY - targetCenterY) < 2) {
+      if (Math.abs(sourceCenterX - targetCenterX) < 10 && Math.abs(sourceCenterY - targetCenterY) < 10) {
         source.name = target.name;
         // target.remove();
       } else {
-        return;
+        console.log("source layer position not equal to target layer position", {
+          sourceCenterX, sourceCenterY, targetCenterX, targetCenterY
+        });
+        return false;
       }
     } else {
-      return;
+      // If source or target layers are not found, we can assume the layer has been replaced.
+      console.log("source or/and target layers not found", { source, target });
+      return true;
     }
   }
-  app.echoToOE("replace_layers_complete:${namespace}");
+  return true;
 }
 
-try {
-  checkLayerTranslatesComplete();
-} catch(e) {
-  console.error("Error checking layer translates", err)
-}`;
+if (loadedLayers && loadedLayers.length > 0 && checkLayerTranslatesComplete()) {
+  app.echoToOE("replace_layers_complete:${namespace}:true");
+} else {
+  app.echoToOE("replace_layers_complete:${namespace}:false");
+}
+`;

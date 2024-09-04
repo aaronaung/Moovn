@@ -369,7 +369,7 @@ export const DesignImageWithIGTags = ({
           src={url}
           onClick={onClick}
           alt="Design"
-          className={cn(`w-[${width}px]`, className)}
+          className={cn(`w-[${width}px]`, className ?? "")}
         />
       </div>
     );

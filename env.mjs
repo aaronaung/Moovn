@@ -16,10 +16,10 @@ export const env = createEnv({
     // STRIPE_WEBHOOK_SECRET: z.string().min(1),
 
     PIKE13_CLIENT_ID: z.string().min(1),
-    FACEBOOK_APP_SECRET: z.string().min(1),
     CONTENT_SCHEDULING_API_HOST: z.string().min(1),
     CONTENT_SCHEDULING_API_KEY: z.string().min(1),
 
+    INSTAGRAM_CLIENT_SECRET: z.string().min(1),
     MINDBODY_API_KEY: z.string().min(1),
   },
   /*
@@ -34,7 +34,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_URL: z.string().min(1),
     // NEXT_PUBLIC_GOOGLE_MAP_API_KEY: z.string().min(1),
     // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
-    NEXT_PUBLIC_FACEBOOK_APP_ID: z.string().min(1),
+    NEXT_PUBLIC_INSTAGRAM_CLIENT_ID: z.string().min(1),
   },
   /*
    * Due to how Next.js bundles environment variables on Edge and Client,
@@ -52,7 +52,7 @@ export const env = createEnv({
     //   process.env.NEXT_PUBLIC_STRIPE_STARTER_PLAN_PRICE_ID,
     // NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID:
     //   process.env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID,
-    NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
+    NEXT_PUBLIC_INSTAGRAM_CLIENT_ID: process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID,
 
     SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,
     SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET,
@@ -62,7 +62,7 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 
     PIKE13_CLIENT_ID: process.env.PIKE13_CLIENT_ID,
-    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET,
+    INSTAGRAM_CLIENT_SECRET: process.env.INSTAGRAM_CLIENT_SECRET,
     CONTENT_SCHEDULING_API_HOST: process.env.CONTENT_SCHEDULING_API_HOST,
     CONTENT_SCHEDULING_API_KEY: process.env.CONTENT_SCHEDULING_API_KEY,
     MINDBODY_API_KEY: process.env.MINDBODY_API_KEY,

@@ -3,7 +3,7 @@ import { BUCKETS } from "@/src/consts/storage";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getContentById } from "@/src/data/content";
 
-import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
+import { InstagramAPIClient } from "@/src/libs/instagram/ig-client";
 import { signUrl } from "@/src/libs/storage";
 import { NextRequest } from "next/server";
 import { getTemplatesForContent } from "@/src/data/templates";
@@ -64,10 +64,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         );
       }
 
-      const fbClient = new FacebookGraphAPIClient({
-        accessToken: content.destination.long_lived_token,
-        lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? 0),
-      });
+      const igClient = new InstagramAPIClient(
+        {
+          accessToken: content.destination.long_lived_token,
+          lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? 0),
+        },
+        async (token) => {
+          await supaServerClient()
+            .from("destinations")
+            .update({
+              long_lived_token: token.accessToken,
+              token_last_refreshed_at: token.lastRefreshedAt.toISOString(),
+            })
+            .eq("id", content.destination_id);
+        },
+      );
       try {
         const toPublish = await Promise.all(
           templates.map(async (template) => {
@@ -94,7 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         switch (content.type) {
           case ContentType.InstagramPost:
             if (toPublish.length > 1) {
-              const resp = await fbClient.publishCarouselPost(
+              const resp = await igClient.publishCarouselPost(
                 content.destination.linked_ig_user_id,
                 toPublish.map(({ url, instagramTags }) => ({
                   imageUrl: url,
@@ -113,7 +124,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               }
               publishedMediaIds.push(resp.id);
             } else {
-              const resp = await fbClient.publishPost(content.destination.linked_ig_user_id, {
+              const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
                 imageUrl: toPublish[0].url,
                 userTags: toPublish[0].instagramTags,
                 caption,
@@ -128,7 +139,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           case ContentType.InstagramStory:
             if (toPublish.length > 1) {
               for (const media of toPublish) {
-                const resp = await fbClient.publishStory(content.destination.linked_ig_user_id, {
+                const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
                   imageUrl: media.url,
                 });
                 if (!resp.id) {
@@ -138,7 +149,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 publishedMediaIds.push(resp.id);
               }
             } else {
-              const resp = await fbClient.publishStory(content.destination.linked_ig_user_id, {
+              const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
                 imageUrl: toPublish[0].url,
               });
               if (!resp.id) {

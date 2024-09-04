@@ -8,7 +8,6 @@ import {
   CarouselDots,
   CarouselItem,
 } from "@/src/components/ui/carousel";
-import Image from "@/src/components/ui/image";
 import { DesignImageWithIGTags } from "../schedule-content/_components/design-container";
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog";
@@ -63,7 +62,14 @@ export default function EventDialog({
       return <p className="text-sm text-muted-foreground">No preview available.</p>;
     }
     if (event.previewUrls?.length === 1) {
-      return <Image src={event.previewUrls[0]} />;
+      return (
+        <DesignImageWithIGTags
+          width={500}
+          url={event.previewUrls[0]}
+          instagramTags={(content.ig_tags as InstagramTag[][])?.[0] ?? []}
+          className="rounded-md"
+        />
+      );
     }
     return (
       <Carousel className="w-[500px]">
@@ -74,6 +80,7 @@ export default function EventDialog({
                 width={500}
                 url={url}
                 instagramTags={(content.ig_tags as InstagramTag[][])?.[index] ?? []}
+                className="rounded-md"
               />
             </CarouselItem>
           ))}

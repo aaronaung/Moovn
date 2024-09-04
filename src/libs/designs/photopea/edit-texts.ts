@@ -42,4 +42,6 @@ function verifyEditTextsComplete() {
 
 if (loadedLayers && loadedLayers.length > 0 && verifyEditTextsComplete()) {
   app.echoToOE("edit_texts_complete:${namespace}:true");
+} else {
+  app.echoToOE("edit_texts_complete:${namespace}:false");
 }`;

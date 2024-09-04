@@ -5,7 +5,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 const excludedPaths = [
   "/api/stripe/webhook",
   "/api/auth/callback",
-  "/api/auth/facebook/callback",
+  "/api/auth/instagram/callback",
   "/api/auth/mindbody/callback",
 ];
 

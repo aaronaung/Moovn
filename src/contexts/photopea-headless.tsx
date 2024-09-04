@@ -65,6 +65,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
 
   // Internally managed
   const pollIntervalMapRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const debugGenStepMap = useRef<{ [key: string]: string }>({});
   const [exportQueue, setExportQueue] = useState<ArrayBuffer[]>([]);
   const [exportMetadataQueue, setExportMetadataQueue] = useState<
     { namespace: string; format: string }[]
@@ -88,30 +89,47 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // initial_layer_loaded:namespace-123
           const [_, namespace] = e.data.split(":");
           executeDesignGenStep("loadAssets", namespace);
+          debugGenStepMap.current[namespace] = "loadAssets";
         }
         if (e.data.startsWith("load_assets_complete")) {
           // load_assets_complete:namespace-123
           const [_, namespace] = e.data.split(":");
           executeDesignGenStep("deleteLayers", namespace);
+          debugGenStepMap.current[namespace] = "deleteLayers";
         }
         if (e.data.startsWith("delete_layers_complete")) {
           // delete_layers_complete:namespace-123
-          const [_, namespace] = e.data.split(":");
-          executeDesignGenStep("editTexts", namespace);
+          const [_, namespace, isComplete] = e.data.split(":");
+          if (isComplete === "true") {
+            executeDesignGenStep("editTexts", namespace);
+            debugGenStepMap.current[namespace] = "editTexts";
+          } else {
+            executeDesignGenStep("deleteLayers", namespace);
+          }
         }
         if (e.data.startsWith("edit_texts_complete")) {
           // edit_texts_complete:namespace-123
-          const [_, namespace] = e.data.split(":");
-          executeDesignGenStep("replaceLayers", namespace);
+          const [_, namespace, isComplete] = e.data.split(":");
+          if (isComplete === "true") {
+            executeDesignGenStep("replaceLayers", namespace);
+            debugGenStepMap.current[namespace] = "replaceLayers";
+          } else {
+            executeDesignGenStep("editTexts", namespace);
+          }
         }
         if (e.data.startsWith("replace_layers_complete")) {
           // replace_layers_complete:namespace-123
-          const [_, namespace] = e.data.split(":");
-          if (pollIntervalMapRef.current[namespace]) {
-            clearIntervalForNamespace(namespace);
-          }
-          if (photopeaMap[namespace]) {
-            sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
+          const [_, namespace, isComplete] = e.data.split(":");
+          if (isComplete === "true") {
+            debugGenStepMap.current[namespace] = "export";
+            if (pollIntervalMapRef.current[namespace]) {
+              clearIntervalForNamespace(namespace);
+            }
+            if (photopeaMap[namespace]) {
+              sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
+            }
+          } else {
+            executeDesignGenStep("replaceLayers", namespace);
           }
         }
         if (e.data.startsWith("export_file")) {
@@ -141,6 +159,10 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    setInterval(() => {
+      console.log("debugGenStepMap", debugGenStepMap.current);
+    }, 10000);
+
     return () => {
       Object.keys(pollIntervalMapRef.current).forEach(clearIntervalForNamespace);
     };
@@ -184,7 +206,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 exportMetadataQueue,
               });
             }
-
+            debugGenStepMap.current[namespace] = "completed/exported";
             onDesignExportMap[namespace](mostRecentExport);
             clear(namespace);
             return;

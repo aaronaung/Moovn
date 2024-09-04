@@ -13,8 +13,6 @@ export type ConfigProps = {
   ENVIRONMENT: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  FACEBOOK_APP_SECRET: string;
-  FACEBOOK_APP_ID: string;
 };
 
 const app = new cdk.App();
@@ -33,8 +31,6 @@ new MoovnStack(app, "moovn-prod", {
     ENVIRONMENT: "prod",
     SUPABASE_URL: process.env.PROD_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!,
-    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET!,
-    FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID!,
   },
 });
 
@@ -43,7 +39,5 @@ new MoovnStack(app, "moovn-dev", {
     ENVIRONMENT: "dev",
     SUPABASE_URL: process.env.DEV_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.DEV_SUPABASE_SERVICE_ROLE_KEY!,
-    FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET!,
-    FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID!,
   },
 });

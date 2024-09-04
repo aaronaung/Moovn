@@ -1,5 +1,7 @@
+import { env } from "@/env.mjs";
 import { supaServerClient } from "@/src/data/clients/server";
-import { FacebookGraphAPIClient } from "@/src/libs/facebook/facebook-client";
+import { InstagramAPIClient } from "@/src/libs/instagram/ig-client";
+import { isLocal } from "@/src/utils";
 import { Tables } from "@/types/db";
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -10,7 +12,7 @@ export async function GET(request: NextRequest) {
   const destinationId = requestUrl.searchParams.get("state");
 
   if (!destinationId) {
-    console.error("[FacebookAuthCallback] Destination ID is required");
+    console.error("[InstagramAuthCallback] Destination ID is required");
     return Response.json({ message: "Destination ID is required" }, { status: 400 });
   }
 
@@ -25,28 +27,32 @@ export async function GET(request: NextRequest) {
 
   const error = requestUrl.searchParams.get("error");
   if (error) {
-    console.error("[FacebookAuthCallback] Auth error:", error);
+    console.error("[InstagramAuthCallback] Auth error:", error);
   }
 
   const code = requestUrl.searchParams.get("code");
   if (code) {
-    const result = await FacebookGraphAPIClient.exchangeCodeForAccessToken(
+    const result = await InstagramAPIClient.exchangeCodeForAccessToken(
+      env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID,
+      env.INSTAGRAM_CLIENT_SECRET,
       code,
-      `${requestUrl.origin}/api/auth/facebook/callback`,
+      `${
+        isLocal() ? "https://redirectmeto.com/http://localhost:3000" : requestUrl.origin
+      }/api/auth/instagram/callback`,
     );
 
-    const igAccounts = await new FacebookGraphAPIClient({
+    const igAccount = await new InstagramAPIClient({
       accessToken: result.access_token,
       lastRefreshedAt: new Date(),
-    }).getInstagramAccounts();
+    }).getMe();
 
     let updatePayload: Partial<Tables<"destinations">> = {
       long_lived_token: result.access_token,
     };
-    if (igAccounts.length === 1) {
+    if (igAccount) {
       updatePayload = {
         ...updatePayload,
-        linked_ig_user_id: igAccounts[0].id,
+        linked_ig_user_id: igAccount.id,
       };
     }
     await supaServerClient().from("destinations").update(updatePayload).eq("id", destinationId);

@@ -71,23 +71,27 @@ export class Pike13Client implements SourceClient {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          event: (eventsByDay || []).map((event: any) => ({
-            staff: (event.staff_members || [])
-              .filter((s: any) => Boolean(staffMembersById[s.id]))
-              .map((s: any) => {
-                const staffMember = staffMembersById[s.id];
-                return {
-                  name: staffMember?.name,
-                  photo:
-                    staffMember.profile_photo?.["x400"] ??
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(staffMember.name)}`,
-                  instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
-                };
-              }),
-            name: event.name,
-            start: event.start_at,
-            end: event.end_at,
-          })),
+          event: (eventsByDay || []).map((event: any, index) => {
+            const min = 1;
+            const max = 12;
+            const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
+            const randomHeadshotUrl = `${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/test-assets/${randomNumber}.png`;
+            return {
+              staff: (event.staff_members || [])
+                .filter((s: any) => Boolean(staffMembersById[s.id]))
+                .map((s: any) => {
+                  const staffMember = staffMembersById[s.id];
+                  return {
+                    name: staffMember?.name,
+                    photo: randomHeadshotUrl,
+                    instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
+                  };
+                }),
+              name: event.name,
+              start: event.start_at,
+              end: event.end_at,
+            };
+          }),
         };
       }),
     };
