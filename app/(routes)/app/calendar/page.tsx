@@ -13,9 +13,14 @@ import { Tables } from "@/types/db";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
+import { format, startOfToday } from "date-fns";
 
 export default function Calendar() {
   const router = useRouter();
+  const today = startOfToday();
+
+  const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
+
   const { data: contents, isLoading: isLoadingContents } = useSupaQuery(getContentsForAuthUser, {
     queryKey: ["getContentsForAuthUser"],
   });
@@ -35,6 +40,7 @@ export default function Calendar() {
   }>({
     isOpen: false,
   });
+
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
@@ -96,6 +102,8 @@ export default function Calendar() {
         />
       )}
       <FullCalendar
+        currentMonth={currentMonth}
+        setCurrentMonth={setCurrentMonth}
         events={calendarEvents}
         onEventClick={(event) => {
           const content = contents?.find((c) => c.id === event.contentId);

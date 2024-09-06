@@ -31,15 +31,18 @@ export default function FullCalendar({
   actionButtons,
   events = [],
   onEventClick,
+  currentMonth,
+  setCurrentMonth,
 }: {
   actionButtons?: React.ReactNode[];
   events?: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
+  currentMonth: string;
+  setCurrentMonth: (month: string) => void;
 }) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = useState<Date>(today);
 
-  const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
   const [currentWeek, setCurrentWeek] = useState({
     start: startOfWeek(today),
     end: endOfWeek(today),

@@ -23,10 +23,16 @@ export default memo(
     contentIdbKey,
     template,
     scheduleData,
+    hideHeader,
+    className,
+    width = DESIGN_WIDTH,
   }: {
     contentIdbKey: string;
     template: Tables<"templates">;
     scheduleData: ScheduleData;
+    hideHeader?: boolean;
+    className?: string;
+    width?: number;
   }) {
     const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
 
@@ -34,7 +40,11 @@ export default memo(
       if (isLoadingTemplateObjects) {
         return (
           <div
-            className={`flex h-[${DESIGN_WIDTH}px] w-[${DESIGN_WIDTH}px] items-center justify-center`}
+            style={{
+              width,
+              height: width,
+            }}
+            className={cn(`flex items-center justify-center rounded-md`, className)}
           >
             <Spinner />
           </div>
@@ -50,11 +60,12 @@ export default memo(
             schedule={scheduleData}
             template={template}
             signedTemplateUrl={templateObjects[0].url}
+            width={width}
           />
         );
       }
       return (
-        <Carousel className="w-[220px]">
+        <Carousel>
           <CarouselContent>
             {templateObjects.map((obj) => (
               <CarouselItem
@@ -68,6 +79,7 @@ export default memo(
                   schedule={scheduleData}
                   template={template}
                   signedTemplateUrl={obj.url}
+                  width={width}
                 />
               </CarouselItem>
             ))}
@@ -79,16 +91,18 @@ export default memo(
 
     return (
       <div className="w-fit rounded-md bg-secondary" key={contentIdbKey}>
-        <div className="flex items-center gap-x-1 px-3 py-3">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <InstagramIcon className="h-4 w-4 fill-purple-600 text-secondary-foreground" />
-              <p className="text-xs font-medium text-pink-600">
-                {template.content_type?.split(" ")[1]}
-              </p>
+        {!hideHeader && (
+          <div className="flex items-center gap-x-1 px-3 py-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <InstagramIcon className="h-4 w-4 fill-purple-600 text-secondary-foreground" />
+                <p className="text-xs font-medium text-pink-600">
+                  {template.content_type?.split(" ")[1]}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <div className={cn("flex flex-col items-center")}>
           {/** if contentidbkey is a folder, then we render multiple design containers in a carousel
            * overwrite contentIdbKey: user_id/schedule_range/template_id/0,1,2.jpg and psd
@@ -99,7 +113,8 @@ export default memo(
         </div>
         {!_.isEmpty(scheduleData) && template.ig_caption_template && (
           <p
-            className={`overflow-scroll whitespace-pre-wrap text-sm max-w-[${DESIGN_WIDTH}px] p-2`}
+            className={`overflow-scroll whitespace-pre-wrap p-2 text-sm`}
+            style={{ maxWidth: width }}
           >
             {renderCaption(template.ig_caption_template || "", scheduleData as any)}
           </p>

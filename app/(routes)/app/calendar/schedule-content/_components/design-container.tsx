@@ -38,14 +38,16 @@ export const DesignContainer = ({
   signedTemplateUrl,
   template,
   schedule,
+  width = DESIGN_WIDTH,
 }: {
   contentIdbKey: string;
   signedTemplateUrl: string;
   template: Tables<"templates">;
   schedule: ScheduleData;
+  width?: number;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
-  const { addJob, isJobInProgress, isJobWaitingInQueue } = useDesignGenQueue();
+  const { addJob, isJobPending } = useDesignGenQueue();
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
@@ -148,13 +150,13 @@ export const DesignContainer = ({
     });
   };
 
-  const isGeneratingDesign = isJobInProgress(contentIdbKey) || isJobWaitingInQueue(contentIdbKey);
+  const isGeneratingDesign = isJobPending(contentIdbKey);
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
     if (isDesignNotReady || !designJpgUrl) {
       return (
-        <div className={`flex h-[220px] w-full items-center justify-center`}>
+        <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
           <Spinner />
         </div>
       );
@@ -162,6 +164,7 @@ export const DesignContainer = ({
 
     return (
       <DesignImageWithIGTags
+        width={width}
         url={designJpgUrl}
         instagramTags={designFromIndexedDb?.instagramTags || []}
         onClick={() => setIsImageViewerOpen(true)}
@@ -198,9 +201,10 @@ export const DesignContainer = ({
           This cannot be undone. Are you sure you want to proceed?`}
         />
       )}
-      <div className={`w-[${DESIGN_WIDTH}px]`}>
+      <div style={{ width }}>
         <div
-          className={`relative flex min-h-[${DESIGN_WIDTH}px] cursor-pointer items-center justify-center bg-secondary p-0`}
+          className={`relative flex cursor-pointer items-center justify-center bg-secondary p-0`}
+          style={{ minHeight: width }}
         >
           {designOverwrite && (
             <div className="absolute left-2 top-2 z-10">
@@ -208,7 +212,7 @@ export const DesignContainer = ({
                 <TooltipTrigger>
                   <div className="mt-1 w-fit rounded-md bg-orange-400 px-2 text-xs">Edited</div>
                 </TooltipTrigger>
-                <TooltipContent className={`w-[${DESIGN_WIDTH}px]`}>
+                <TooltipContent style={{ width }}>
                   This design was edited which overwrites the automatically generated design.
                   Refresh to regenerate and clear the overwrite.
                 </TooltipContent>
@@ -345,7 +349,7 @@ export const DesignImageWithIGTags = ({
   if (url) {
     return (
       <div className="relative h-auto" onClick={onClick}>
-        <div className={`absolute w-[${width}px]`}>
+        <div className={`absolute`} style={{ width }}>
           {instagramTags.map((itp, i) => (
             <span
               key={itp.username + i}
@@ -369,7 +373,8 @@ export const DesignImageWithIGTags = ({
           src={url}
           onClick={onClick}
           alt="Design"
-          className={cn(`w-[${width}px]`, className ?? "")}
+          className={cn(`rounded-md`, className ?? "")}
+          style={{ width }}
         />
       </div>
     );

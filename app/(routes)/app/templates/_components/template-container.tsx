@@ -141,9 +141,10 @@ export default function TemplateContainer({
   };
 
   return (
-    <div className={`w-[${TEMPLATE_WIDTH}px]`}>
+    <div style={{ width: TEMPLATE_WIDTH }}>
       <div
-        className={`relative flex min-h-[${TEMPLATE_WIDTH}px] cursor-pointer items-center justify-center bg-secondary p-0`}
+        style={{ minHeight: TEMPLATE_WIDTH }}
+        className={`relative flex cursor-pointer items-center justify-center bg-secondary p-0`}
       >
         {renderTemplateContent()}
         {templateFromIdb?.jpgUrl && (

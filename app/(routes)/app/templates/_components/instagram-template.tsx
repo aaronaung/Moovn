@@ -131,7 +131,8 @@ export const InstagramTemplate = ({
     if (isLoadingTemplateObjects) {
       return (
         <div
-          className={`flex h-[${TEMPLATE_WIDTH}px] w-[${TEMPLATE_WIDTH}px] items-center justify-center`}
+          style={{ width: TEMPLATE_WIDTH, height: TEMPLATE_WIDTH }}
+          className={`flex items-center justify-center`}
         >
           <Spinner />
         </div>

@@ -27,8 +27,7 @@ type DesignGenQueueContextType = {
   removeJob: (idbKey: string) => void;
   activeJobs: DesignJob[];
   queuedJobs: DesignJob[];
-  isJobInProgress: (idbKey: string) => boolean;
-  isJobWaitingInQueue: (idbKey: string) => boolean;
+  isJobPending: (idbKey: string) => boolean;
 };
 
 const MAX_JOBS_IN_PROGRESS = 5;
@@ -81,6 +80,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
   const isJobWaitingInQueue = (idbKey: string) => {
     return queuedJobs.some((job) => job.idbKey === idbKey);
   };
+  const isJobPending = (idbKey: string) => isJobInProgress(idbKey) || isJobWaitingInQueue(idbKey);
 
   useEffect(() => {
     const processQueue = async () => {
@@ -158,7 +158,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
 
   return (
     <DesignGenQueueContext.Provider
-      value={{ addJob, removeJob, activeJobs, queuedJobs, isJobInProgress, isJobWaitingInQueue }}
+      value={{ addJob, removeJob, activeJobs, queuedJobs, isJobPending }}
     >
       {children}
     </DesignGenQueueContext.Provider>

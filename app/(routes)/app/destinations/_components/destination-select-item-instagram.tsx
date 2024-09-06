@@ -10,19 +10,6 @@ import { isLocal } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { CheckIcon } from "@heroicons/react/24/outline";
 
-const scopes = [
-  "instagram_manage_comments",
-  "instagram_manage_insights",
-  "pages_show_list",
-
-  // Needed for content publishing
-  "instagram_basic",
-  "instagram_content_publish",
-  "business_management",
-  "ads_management",
-  "pages_read_engagement",
-];
-
 const generateInstagramLoginUrl = (
   destinationId: string,
 ) => `https://www.instagram.com/oauth/authorize?
