@@ -148,6 +148,7 @@ export default function EventDialog({
   };
 
   const renderEventContent = () => {
+    const width = isMobile ? 320 : 400;
     if (isLoadingScheduleData || !scheduleData) {
       return <Spinner className="my-4" />;
     }
@@ -160,7 +161,7 @@ export default function EventDialog({
       design = (
         <div className="shrink-0">
           <DesignImageWithIGTags
-            width={isMobile ? 320 : 400}
+            width={width}
             url={event.previewUrls[0]}
             instagramTags={(content.ig_tags as InstagramTag[][])?.[0] ?? []}
             className="rounded-md"
@@ -169,12 +170,12 @@ export default function EventDialog({
       );
     } else {
       design = (
-        <Carousel>
+        <Carousel style={{ width }}>
           <CarouselContent>
             {event.previewUrls?.map((url, index) => (
               <CarouselItem key={url}>
                 <DesignImageWithIGTags
-                  width={isMobile ? 320 : 400}
+                  width={width}
                   url={url}
                   instagramTags={(content.ig_tags as InstagramTag[][])?.[index] ?? []}
                   className="rounded-md"
@@ -225,7 +226,7 @@ export default function EventDialog({
               contentIdbKey={getContentIdbKey(content.source_id, range, content.template)}
               scheduleData={scheduleData}
               template={content.template}
-              width={isMobile ? 320 : 400}
+              width={width}
             />
           </div>
         )}

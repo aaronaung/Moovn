@@ -65,7 +65,7 @@ export default memo(
         );
       }
       return (
-        <Carousel>
+        <Carousel style={{ width }}>
           <CarouselContent>
             {templateObjects.map((obj) => (
               <CarouselItem
