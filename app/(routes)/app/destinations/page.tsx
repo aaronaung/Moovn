@@ -143,8 +143,13 @@ export default function DestinationsPage() {
       <div className="mb-3 flex items-end">
         <div className="flex-1">
           <Header2 title="Destinations" />
-          <p className="text-sm text-muted-foreground">
-            Destination represents the platform where your content is published.
+          <p className="hidden text-sm text-muted-foreground sm:block">
+            Destinations represent the platforms where your content is published. Once set up, you
+            can start generating content and scheduling it on your{" "}
+            <a href="/app/calendar" className="text-primary underline">
+              Content Calendar
+            </a>
+            .
           </p>
         </div>
         <Button

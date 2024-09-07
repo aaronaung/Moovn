@@ -136,10 +136,9 @@ export default function SourcesPage() {
       <div className="mb-3 flex items-end">
         <div className="flex-1">
           <Header2 title="Sources" />
-          <p className="text-sm text-muted-foreground">
-            Source represents the data that can be used to generate{" "}
-            <a className="text-primary underline" href="/app/designs">
-              {" "}
+          <p className="hidden text-sm text-muted-foreground sm:block">
+            Connect to data sources like Pike13, Mindbody, and Google sheet and start generating{" "}
+            <a className="text-primary underline" href="/app/templates">
               designs.
             </a>
           </p>

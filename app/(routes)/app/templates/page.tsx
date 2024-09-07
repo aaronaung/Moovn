@@ -140,9 +140,12 @@ export default function TemplatesPage() {
       <div className="mb-3 mt-2 flex items-end">
         <div className="flex-1">
           <Header2 title="Design templates" />
-          <p className="text-sm text-muted-foreground">
-            {`Design templates translate your schedule data into designs ready to be published to a
-            destination.`}
+          <p className="hidden text-sm text-muted-foreground sm:block">
+            {`Create templates for your designs and streamline your content creation process. Once you've created templates, set up `}
+            <a className="text-primary underline" href="/app/destinations">
+              destinations
+            </a>
+            {` to publish your generated content.`}
           </p>
         </div>
         <Button
