@@ -424,11 +424,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    // setTimeout(() => {
-    //   // Design gen timeout has been reached.
-    //   clear(namespace);
-    //   onTimeout?.();
-    // }, timeout);
+    setTimeout(() => {
+      // Design gen timeout has been reached.
+      clear(namespace);
+      onTimeout?.();
+    }, timeout);
   };
 
   return (

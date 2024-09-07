@@ -149,6 +149,7 @@ export default function EventDialog({
 
   const renderEventContent = () => {
     const width = isMobile ? 320 : 400;
+
     if (isLoadingScheduleData || !scheduleData) {
       return <Spinner className="my-4" />;
     }

@@ -7,6 +7,7 @@ import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { cn } from "@/src/utils";
 import { memo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
+import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 
 export default memo(
   function ContentListItem({
@@ -26,6 +27,7 @@ export default memo(
     publishDateTime: Date;
     onPublishDateTimeChange: (dateTime: Date) => void;
   }) {
+    const { isJobPending } = useDesignGenQueue();
     const renderContent = () => {
       let contentComp = <></>;
       switch (template.content_type) {
@@ -46,16 +48,19 @@ export default memo(
       return contentComp;
     };
 
+    const designLoading = isJobPending(contentIdbKey);
     return (
       <div className={cn("flex flex-col gap-2")}>
         <div className="ml-1 flex items-center gap-2">
           <Checkbox
+            disabled={designLoading}
             checked={isSelected}
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
           <Tooltip>
             <TooltipTrigger>
               <DateTimePicker
+                isDisabled={designLoading}
                 value={{
                   date: publishDateTime,
                   hasTime: true,

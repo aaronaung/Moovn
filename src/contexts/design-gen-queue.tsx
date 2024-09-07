@@ -75,10 +75,10 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const isJobInProgress = (idbKey: string) => {
-    return activeJobs.some((job) => job.idbKey === idbKey);
+    return activeJobs.some((job) => job.idbKey.startsWith(idbKey));
   };
   const isJobWaitingInQueue = (idbKey: string) => {
-    return queuedJobs.some((job) => job.idbKey === idbKey);
+    return queuedJobs.some((job) => job.idbKey.startsWith(idbKey));
   };
   const isJobPending = (idbKey: string) => isJobInProgress(idbKey) || isJobWaitingInQueue(idbKey);
 
