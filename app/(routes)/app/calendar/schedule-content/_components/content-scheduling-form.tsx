@@ -99,7 +99,7 @@ export default function ContentSchedulingForm({
 
   useEffect(() => {
     // On change of source, update the query params
-    const urlParams = new URLSearchParams();
+    const urlParams = new URLSearchParams(queryParams);
     urlParams.set("source_id", sourceId);
     urlParams.set("template_ids", templateIds.join(","));
     urlParams.set("destination_id", destinationId);
