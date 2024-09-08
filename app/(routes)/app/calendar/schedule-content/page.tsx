@@ -8,32 +8,28 @@ import { getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import EmptyState from "@/src/components/common/empty-state";
+import { toast } from "@/src/components/ui/use-toast";
 
 const MISSING_DETAILS = {
   sources: {
     title: "No sources found",
     description: "Please create a source to continue.",
     link: "/app/sources",
-    buttonText: "Go to Sources",
   },
   templates: {
     title: "No templates found",
     description: "Please create a template to continue.",
     link: "/app/templates",
-    buttonText: "Go to Templates",
   },
   destinations: {
     title: "No destinations found",
     description: "Please create a destination to continue.",
     link: "/app/destinations",
-    buttonText: "Go to Destinations",
   },
   connectedDestinations: {
     title: "No connected destinations found",
     description: "Please connect a destination to continue.",
     link: "/app/destinations",
-    buttonText: "Go to Destinations",
   },
 };
 
@@ -66,24 +62,33 @@ export default function ScheduleContent() {
     (destination) => destination.linked_ig_user_id && destination.long_lived_token,
   );
 
-  let missingDetails: any = null;
-
-  if ((connectedDestinations ?? []).length === 0)
-    missingDetails = MISSING_DETAILS.connectedDestinations;
-  if ((availableDestinations ?? []).length === 0) missingDetails = MISSING_DETAILS.destinations;
-  if ((availableTemplates ?? []).length === 0) missingDetails = MISSING_DETAILS.templates;
-  if ((availableSources ?? []).length === 0) missingDetails = MISSING_DETAILS.sources;
-
-  if (missingDetails) {
-    return (
-      <EmptyState
-        title={missingDetails.title}
-        description={missingDetails.description}
-        onAction={() => router.push(missingDetails.link)}
-        actionButtonText={missingDetails.buttonText}
-        actionButtonIcon={null}
-      />
-    );
+  if ((availableSources ?? []).length === 0) {
+    toast({
+      title: MISSING_DETAILS.sources.title,
+      description: MISSING_DETAILS.sources.description,
+    });
+    router.push(MISSING_DETAILS.sources.link);
+  }
+  if ((availableTemplates ?? []).length === 0) {
+    toast({
+      title: MISSING_DETAILS.templates.title,
+      description: MISSING_DETAILS.templates.description,
+    });
+    router.push(MISSING_DETAILS.templates.link);
+  }
+  if ((availableDestinations ?? []).length === 0) {
+    toast({
+      title: MISSING_DETAILS.destinations.title,
+      description: MISSING_DETAILS.destinations.description,
+    });
+    router.push(MISSING_DETAILS.destinations.link);
+  }
+  if ((connectedDestinations ?? []).length === 0) {
+    toast({
+      title: MISSING_DETAILS.connectedDestinations.title,
+      description: MISSING_DETAILS.connectedDestinations.description,
+    });
+    router.push(MISSING_DETAILS.connectedDestinations.link);
   }
 
   return (
