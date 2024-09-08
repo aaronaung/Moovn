@@ -16,7 +16,7 @@ import { cn } from "@/src/utils";
 import { saveContent, saveContentSchedule } from "@/src/data/content";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { useScheduleContent } from "@/src/hooks/use-schedule-content";
@@ -72,7 +72,6 @@ export default function ContentSchedulingForm({
     control,
     watch,
     setError,
-    setValue,
     clearErrors,
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
@@ -106,9 +105,10 @@ export default function ContentSchedulingForm({
     urlParams.set("destination_id", destinationId);
     urlParams.set(
       "schedule_range",
-      `${(scheduleRange?.from ?? new Date()).toISOString().split("T")[0]}_${
-        (scheduleRange?.to ?? scheduleRange?.from ?? new Date()).toISOString().split("T")[0]
-      }`,
+      `${format(scheduleRange?.from ?? new Date(), "yyyy-MM-dd")}_${format(
+        scheduleRange?.to ?? new Date(),
+        "yyyy-MM-dd",
+      )}`,
     );
     router.replace(`${window.location.pathname}?${urlParams.toString()}`);
   }, [sourceId, templateIds, destinationId, scheduleRange]);
