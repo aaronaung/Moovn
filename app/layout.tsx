@@ -14,6 +14,8 @@ import { PhotopeaHeadlessProvider } from "@/src/contexts/photopea-headless";
 import { PhotopeaEditorProvider } from "@/src/contexts/photopea-editor";
 import { EmailEditorProvider } from "@/src/contexts/email-editor";
 import { DesignGenQueueProvider } from "@/src/contexts/design-gen-queue";
+import { Suspense } from "react";
+import { Spinner } from "@/src/components/common/loading-spinner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -61,24 +63,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ReactQueryProvider>
             {/* The rest of your application */}
             <ReactQueryDevtools initialIsOpen={false} />
-            <PhotopeaHeadlessProvider>
-              <PhotopeaEditorProvider>
-                <EmailEditorProvider>
-                  <DesignGenQueueProvider>
-                    <ReactDnDProvider>
-                      <ThemeProvider
-                        attribute="class"
-                        defaultTheme="system"
-                        enableSystem
-                        disableTransitionOnChange
-                      >
-                        <TooltipProvider>{children}</TooltipProvider>
-                      </ThemeProvider>
-                    </ReactDnDProvider>
-                  </DesignGenQueueProvider>
-                </EmailEditorProvider>
-              </PhotopeaEditorProvider>
-            </PhotopeaHeadlessProvider>
+            <Suspense fallback={<Spinner />}>
+              <PhotopeaHeadlessProvider>
+                <PhotopeaEditorProvider>
+                  <EmailEditorProvider>
+                    <DesignGenQueueProvider>
+                      <ReactDnDProvider>
+                        <ThemeProvider
+                          attribute="class"
+                          defaultTheme="system"
+                          enableSystem
+                          disableTransitionOnChange
+                        >
+                          <TooltipProvider>{children}</TooltipProvider>
+                        </ThemeProvider>
+                      </ReactDnDProvider>
+                    </DesignGenQueueProvider>
+                  </EmailEditorProvider>
+                </PhotopeaEditorProvider>
+              </PhotopeaHeadlessProvider>
+            </Suspense>
           </ReactQueryProvider>
         </AsyncFileUploadProvider>
         <Toaster />
