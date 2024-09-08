@@ -20,6 +20,7 @@ import {
   verifyLoadAssetsComplete,
 } from "../libs/designs/photopea/load-assets";
 import { verifyInitialLayerLoaded } from "../libs/designs/photopea/initial-layer-loaded";
+import { useSearchParams } from "next/navigation";
 
 export type DesignExport = {
   jpg: ArrayBuffer | null;
@@ -62,6 +63,7 @@ const DEFAULT_TIMEOUT = 60_000;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
+  const params = useSearchParams();
 
   // Internally managed
   const pollIntervalMapRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
@@ -205,6 +207,15 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 exportQueue,
                 exportMetadataQueue,
               });
+
+              const debugKey = params.get("debug");
+              if (debugKey) {
+                const debugJpg = document.createElement("img");
+                debugJpg.src = URL.createObjectURL(new Blob([mostRecentExport.jpg]));
+                debugJpg.style.width = "350px";
+                debugJpg.style.height = "350px";
+                document.body.appendChild(debugJpg);
+              }
             }
             debugGenStepMap.current[namespace] = "completed/exported";
             onDesignExportMap[namespace](mostRecentExport);
