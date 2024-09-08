@@ -80,8 +80,8 @@ export default function InstagramDestinationItem({
         <p className="line-clamp-1 text-sm">{igAccount.username}</p>
       </div>
       <div className="ml-2 flex h-[28px] items-center gap-1 rounded-md bg-green-600 px-3">
-        <CheckIcon className="h-4 w-4" />
-        <p className="text-xs">Connected</p>
+        <CheckIcon className="h-4 w-4 text-white" />
+        <p className="text-xs text-white">Connected</p>
       </div>
     </div>
   );
