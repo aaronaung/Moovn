@@ -6,8 +6,6 @@ import { useGenerateTemplateJpg } from "@/src/hooks/use-generate-template-jpg";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { upsertObjectAtPath } from "@/src/libs/storage";
-import { BUCKETS } from "@/src/consts/storage";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { toast } from "@/src/components/ui/use-toast";
 import { DesignExport } from "@/src/contexts/photopea-headless";
@@ -23,6 +21,7 @@ import { Button } from "@/src/components/ui/button";
 import { DownloadCloudIcon } from "lucide-react";
 import { download } from "@/src/utils";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
+import { uploadObject } from "@/src/data/r2";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -91,13 +90,7 @@ export default function TemplateContainer({
     }
 
     await Promise.all([
-      upsertObjectAtPath({
-        bucket: BUCKETS.designTemplates,
-        objectPath: templatePath,
-        client: supaClientComponentClient,
-        content: designExport["psd"],
-        contentType: "image/vnd.adobe.photoshop",
-      }),
+      uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       db.designs.where("templateId").equals(template.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templates.put({
         key: templatePath,

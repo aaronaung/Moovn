@@ -1,17 +1,6 @@
 import { ContentType } from "./content";
 import { SourceDataView } from "./sources";
 
-export const BUCKETS = {
-  designTemplates: "templates",
-  designOverwrites: "designs",
-  emailAssets: "email_assets",
-  stagingAreaForContentPublishing: "staging_area_for_content_publishing",
-  freeDesignTemplates: "free_design_templates",
-  scheduledContent: "scheduled_content",
-};
-
-export const STORAGE_DIR_PATHS = {};
-
 export const FREE_DESIGN_TEMPLATES: { [key: string]: { [key: string]: string[] } } = {
   [SourceDataView.Daily]: {
     [ContentType.InstagramPost]: ["daily_template_1"],

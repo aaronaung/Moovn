@@ -10,10 +10,8 @@ import {
 } from "@/src/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
-import { BUCKETS } from "@/src/consts/storage";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { cn, download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
@@ -28,6 +26,7 @@ import { ScheduleData } from "@/src/libs/sources";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
 import Image from "@/src/components/ui/image";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
+import { deleteObject, uploadObject } from "@/src/data/r2";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -111,38 +110,9 @@ export const DesignContainer = ({
     const psdPath = `${template.owner_id}/${contentIdbKey}.psd`;
     const jpgPath = `${template.owner_id}/${contentIdbKey}.jpg`;
 
-    // Unfortunately, we have to remove the existing files before uploading the new ones, because
-    // createSignedUploadUrl fails if the file already exists.
-    await supaClientComponentClient.storage
-      .from(BUCKETS.designOverwrites)
-      .remove([psdPath, jpgPath]);
-    const [psd, jpg] = await Promise.all([
-      supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .createSignedUploadUrl(psdPath),
-      supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .createSignedUploadUrl(jpgPath),
-    ]);
-
-    if (!psd.data?.token || !jpg.data?.token) {
-      console.error("Failed to get signed URL: errors ->", {
-        psd: psd.error,
-        jpg: jpg.error,
-      });
-      return;
-    }
     await Promise.all([
-      supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .uploadToSignedUrl(psdPath, psd.data?.token, designExport["psd"], {
-          contentType: "image/vnd.adobe.photoshop",
-        }),
-      supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .uploadToSignedUrl(jpgPath, jpg.data?.token, designExport["jpg"], {
-          contentType: "image/jpeg",
-        }),
+      uploadObject("design-overwrites", psdPath, new Blob([designExport["psd"]])),
+      uploadObject("design-overwrites", jpgPath, new Blob([designExport["jpg"]])),
     ]);
     toast({
       variant: "success",
@@ -181,12 +151,10 @@ export const DesignContainer = ({
             setIsConfirmationDialogOpen(false);
           }}
           onConfirm={async () => {
-            await supaClientComponentClient.storage
-              .from(BUCKETS.designOverwrites)
-              .remove([
-                `${template.owner_id}/${contentIdbKey}.psd`,
-                `${template.owner_id}/${contentIdbKey}.jpg`,
-              ]);
+            await Promise.all([
+              deleteObject("design-overwrites", `${template.owner_id}/${contentIdbKey}.psd`),
+              deleteObject("design-overwrites", `${template.owner_id}/${contentIdbKey}.jpg`),
+            ]);
             setDesignOverwrite(undefined);
             addJob({
               idbKey: contentIdbKey,

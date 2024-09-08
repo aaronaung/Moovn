@@ -1,6 +1,7 @@
 import * as supabase from "@supabase/supabase-js";
 import { success, error } from "../utils";
 import { InstagramAPIClient } from "../libs/instagram/ig-client";
+import R2Storage from "../libs/r2/r2-storage";
 
 export const handler = async (event: any) => {
   try {
@@ -18,6 +19,11 @@ export const handler = async (event: any) => {
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+    const r2 = new R2Storage(
+      process.env.R2_ACCOUNT_ID!,
+      process.env.R2_ACCESS_KEY_ID!,
+      process.env.R2_SECRET_ACCESS_KEY!,
+    );
     const sbClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     const { data: content, error: getContentErr } = await sbClient
@@ -63,36 +69,26 @@ export const handler = async (event: any) => {
 
         const toPublish = [];
         const hasIgTags = content.ig_tags && content.ig_tags.length > 0;
-        const { data: files, error: storageListErr } = await sbClient.storage
-          .from("scheduled_content")
-          .list(contentPath);
-        if (storageListErr) {
-          throw new Error(storageListErr.message);
-        }
-        if (files.length === 0) {
+
+        const objects = await r2.listObjects("scheduled-content", contentPath);
+        if (objects.length === 0) {
           // It's not a directory.
-          const { data, error: signUrlErr } = await sbClient.storage
-            .from("scheduled_content")
-            .createSignedUrl(contentPath, 24 * 3600);
-          if (signUrlErr) {
-            throw new Error(signUrlErr.message);
-          }
+
+          const signedUrl = await r2.signUrl("scheduled-content", contentPath);
           toPublish.push({
-            url: data.signedUrl,
+            url: signedUrl,
             ...(hasIgTags ? { tags: content.ig_tags[0] } : {}),
           });
         } else {
-          for (const f of files) {
-            // file name is the index for tags.
-            const { data, error: signUrlErr } = await sbClient.storage
-              .from("scheduled_content")
-              .createSignedUrl(`${contentPath}/${f.name}`, 24 * 3600);
-            if (signUrlErr) {
-              throw new Error(signUrlErr.message);
+          for (const obj of objects) {
+            if (!obj.Key) {
+              throw new Error(`Missing Key for object in scheduled-content bucket`);
             }
-            const tagsIndex = parseInt(f.name);
+            // file name is the index for tags.
+            const signedUrl = await r2.signUrl("scheduled-content", obj.Key);
+            const tagsIndex = parseInt(obj.Key);
             toPublish.push({
-              url: data.signedUrl,
+              url: signedUrl,
               ...(hasIgTags && !isNaN(tagsIndex) ? { tags: content.ig_tags[tagsIndex] } : {}),
             });
           }
@@ -163,6 +159,7 @@ export const handler = async (event: any) => {
         await Promise.all(
           publishedMediaIds.map((id) =>
             sbClient.from("published_content").insert({
+              content_id: contentId,
               owner_id: content.destination.owner_id,
               ig_media_id: id,
               published_at: new Date().toISOString(),

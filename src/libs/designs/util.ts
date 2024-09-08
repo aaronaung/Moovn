@@ -2,8 +2,7 @@ import { Psd, Layer } from "ag-psd";
 import { format } from "date-fns";
 import { ScheduleData } from "../sources";
 import { MD5 as hash } from "object-hash";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
-import { BUCKETS } from "@/src/consts/storage";
+import { signUrl } from "@/src/data/r2";
 
 export enum PSDActionType {
   EditText = "editText",
@@ -111,27 +110,12 @@ export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActio
 export const generateDesignHash = (templateId: string, data: any) => hash({ templateId, data });
 
 export const getDesignOverwrites = async (ownerId: string, contentIdbKey: string) => {
-  const design: { psdUrl?: string; jpgUrl?: string } = {};
-
-  const result = await supaClientComponentClient.storage
-    .from(BUCKETS.designOverwrites)
-    .createSignedUrls(
-      [`${ownerId}/${contentIdbKey}.psd`, `${ownerId}/${contentIdbKey}.jpg`],
-      24 * 60 * 60,
-    );
-  if (!result.data) {
-    console.log("failed to create signed url", result.error);
-    return {};
-  }
-
-  for (const overwrite of result.data) {
-    if (overwrite.signedUrl) {
-      if (overwrite.path === `${ownerId}/${contentIdbKey}.psd`) {
-        design.psdUrl = overwrite.signedUrl;
-      } else if (overwrite.path === `${ownerId}/${contentIdbKey}.jpg`) {
-        design.jpgUrl = overwrite.signedUrl;
-      }
-    }
-  }
-  return design;
+  const [psdUrl, jpgUrl] = await Promise.all([
+    signUrl("design-overwrites", `${ownerId}/${contentIdbKey}.psd`),
+    signUrl("design-overwrites", `${ownerId}/${contentIdbKey}.jpg`),
+  ]);
+  return {
+    psdUrl,
+    jpgUrl,
+  };
 };

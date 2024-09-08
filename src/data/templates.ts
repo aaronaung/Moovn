@@ -2,8 +2,8 @@ import { Tables } from "@/types/db";
 import { SupabaseOptions } from "./clients/types";
 import { getAuthUser } from "./users";
 import { throwOrData } from "./util";
-import { BUCKETS } from "../consts/storage";
 import { SourceDataView } from "../consts/sources";
+import { deleteObject } from "./r2";
 
 export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
   return throwOrData(
@@ -57,10 +57,7 @@ export const deleteTemplate = async (
   { client }: SupabaseOptions,
 ) => {
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
-  await client.storage
-    .from(BUCKETS.designTemplates)
-    .remove([`${template.owner_id}/${template.id}`]);
-
+  await deleteObject("templates", `${template.owner_id}/${template.id}`);
   return resp;
 };
 

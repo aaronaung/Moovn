@@ -49,8 +49,12 @@ export class MoovnStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
         entry: "./lambda/publish-content/index.ts", // Points to the lambda directory
         environment: {
+          ENVIRONMENT: props?.config.ENVIRONMENT!,
           SUPABASE_URL: props?.config.SUPABASE_URL!,
           SUPABASE_SERVICE_ROLE_KEY: props?.config.SUPABASE_SERVICE_ROLE_KEY!,
+          R2_ACCOUNT_ID: props?.config.R2_ACCOUNT_ID!,
+          R2_ACCESS_KEY_ID: props?.config.R2_ACCESS_KEY_ID!,
+          R2_SECRET_ACCESS_KEY: props?.config.R2_SECRET_ACCESS_KEY!,
         },
         functionName: prependStage("publish-content"),
         timeout: cdk.Duration.seconds(120),

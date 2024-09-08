@@ -1,8 +1,6 @@
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import { signUrlForPathOrChildPaths } from "../libs/storage";
-import { BUCKETS } from "../consts/storage";
-import { supaClientComponentClient } from "../data/clients/browser";
 import { toast } from "../components/ui/use-toast";
 
 export const useTemplateStorageObjects = (template: Tables<"templates">) => {
@@ -16,9 +14,8 @@ export const useTemplateStorageObjects = (template: Tables<"templates">) => {
       try {
         setIsLoadingTemplateUrls(true);
         const urls = await signUrlForPathOrChildPaths(
-          BUCKETS.designTemplates,
+          "templates",
           `${template.owner_id}/${template.id}`,
-          supaClientComponentClient,
         );
         setTemplateUrls(urls);
       } catch (e) {

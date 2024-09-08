@@ -21,6 +21,10 @@ export const env = createEnv({
 
     INSTAGRAM_CLIENT_SECRET: z.string().min(1),
     MINDBODY_API_KEY: z.string().min(1),
+
+    R2_ACCOUNT_ID: z.string().min(1),
+    R2_ACCESS_KEY_ID: z.string().min(1),
+    R2_SECRET_ACCESS_KEY: z.string().min(1),
   },
   /*
    * Environment variables available on the client (and server).
@@ -66,5 +70,9 @@ export const env = createEnv({
     CONTENT_SCHEDULING_API_HOST: process.env.CONTENT_SCHEDULING_API_HOST,
     CONTENT_SCHEDULING_API_KEY: process.env.CONTENT_SCHEDULING_API_KEY,
     MINDBODY_API_KEY: process.env.MINDBODY_API_KEY,
+
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
   },
 });

@@ -6,9 +6,7 @@ import { db } from "../libs/indexeddb/indexeddb";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<unknown | null>(null);
   const { initialize } = usePhotopeaHeadless();
-  const [templateJpg, setTemplateJpg] = useState<ArrayBuffer | null>(null);
 
   const generateTemplateJpg = async ({
     template,
@@ -45,8 +43,6 @@ export const useGenerateTemplateJpg = () => {
 
   return {
     generateTemplateJpg,
-    templateJpg,
     isLoading,
-    error,
   };
 };

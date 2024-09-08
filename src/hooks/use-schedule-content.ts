@@ -18,8 +18,7 @@ import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { generateDesignHash } from "@/src/libs/designs/util";
-import { BUCKETS } from "../consts/storage";
-import { upsertObjectAtPath } from "../libs/storage";
+import { copyObject, listObjects, objectExists, uploadObject } from "../data/r2";
 
 const SCHEDULING_BATCH_SIZE = 5;
 
@@ -97,41 +96,33 @@ export function useScheduleContent({
     });
 
     const overwrittenDesigns: string[] = [];
-    const { data: singleJpgOverwriteExists, error } = await supaClientComponentClient.storage
-      .from(BUCKETS.designOverwrites)
-      .exists(`${ownerId}/${contentIdbKey}.jpg`);
-    if (error) {
-      // Exists throw an error when it doesn't exist.
-      console.error(error);
-    }
+    const singleJpgOverwriteExists = await objectExists(
+      "design-overwrites",
+      `${ownerId}/${contentIdbKey}.jpg`,
+    );
     if (singleJpgOverwriteExists) {
-      await supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .copy(`${ownerId}/${contentIdbKey}.jpg`, `${ownerId}/${content.id}`, {
-          destinationBucket: BUCKETS.scheduledContent,
-        });
+      await copyObject(
+        "design-overwrites",
+        `${ownerId}/${contentIdbKey}.jpg`,
+        "scheduled-content",
+        `${ownerId}/${content.id}`,
+      );
       overwrittenDesigns.push(contentIdbKey);
     } else {
-      const { data: carouselOverwrite, error } = await supaClientComponentClient.storage
-        .from(BUCKETS.designOverwrites)
-        .list(contentIdbKey);
-      if (error) {
-        // Exists throw an error when it doesn't exist.
-        console.error(error);
-      }
+      const carouselOverwrite = await listObjects("design-overwrites", contentIdbKey);
       if (carouselOverwrite && carouselOverwrite.length > 0) {
         for (const overwrite of carouselOverwrite) {
-          if (overwrite.name.endsWith(".jpg")) {
-            const overwritePath = `${ownerId}/${contentIdbKey}/${overwrite.name}`;
-            await supaClientComponentClient.storage
-              .from(BUCKETS.designOverwrites)
-              .copy(
-                overwritePath,
-                `${ownerId}/${content.id}/${overwrite.name.replaceAll(".jpg", "")}`,
-                {
-                  destinationBucket: BUCKETS.scheduledContent,
-                },
-              );
+          if (!overwrite.Key) {
+            continue;
+          }
+          if (overwrite.Key.endsWith(".jpg")) {
+            const overwritePath = `${ownerId}/${contentIdbKey}/${overwrite.Key}`;
+            await copyObject(
+              "design-overwrites",
+              overwritePath,
+              "scheduled-content",
+              `${ownerId}/${content.id}/${overwrite.Key.replaceAll(".jpg", "")}`,
+            );
             overwrittenDesigns.push(overwritePath.replaceAll(".jpg", ""));
           }
         }
@@ -141,26 +132,22 @@ export function useScheduleContent({
     // Upload the non-overwritten design(s) from indexedDB
     if (designs.length === 1) {
       if (overwrittenDesigns.indexOf(designs[0].key) === -1) {
-        await upsertObjectAtPath({
-          bucket: BUCKETS.scheduledContent,
-          objectPath: `${ownerId}/${content.id}`,
-          content: designs[0].jpg,
-          contentType: "image/jpeg",
-          client: supaClientComponentClient,
-        });
+        await uploadObject(
+          "scheduled-content",
+          `${ownerId}/${content.id}`,
+          new Blob([designs[0].jpg]),
+        );
       }
     } else {
       await Promise.all(
         designs
           .filter((d) => overwrittenDesigns.indexOf(d.key) === -1)
           .map((d) =>
-            upsertObjectAtPath({
-              bucket: BUCKETS.scheduledContent,
-              objectPath: `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
-              content: d.jpg,
-              contentType: "image/jpeg",
-              client: supaClientComponentClient,
-            }),
+            uploadObject(
+              "scheduled-content",
+              `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
+              new Blob([d.jpg]),
+            ),
           ),
       );
     }

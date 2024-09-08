@@ -4,7 +4,6 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/src/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -24,11 +23,10 @@ import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-obje
 import { GalleryHorizontal } from "lucide-react";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
-import { upsertObjectAtPath } from "@/src/libs/storage";
-import { BUCKETS } from "@/src/consts/storage";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { saveTemplate } from "@/src/data/templates";
+import { moveObject, uploadObject } from "@/src/data/r2";
 
 export const TEMPLATE_WIDTH = 320;
 
@@ -78,32 +76,21 @@ export const InstagramTemplate = ({
       let templatePathForNew;
       if (templateObjects.length > 1) {
         templatePathForNew = `${template.owner_id}/${template.id}/${templateObjects.length}`;
-        await upsertObjectAtPath({
-          bucket: BUCKETS.designTemplates,
-          objectPath: templatePathForNew,
-          client: supaClientComponentClient,
-          content: designExport["psd"],
-          contentType: "image/vnd.adobe.photoshop",
-        });
+
+        await uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]]));
       } else {
         templatePathForNew = `${templateObjects[0].path}/1`;
         // Delete the old template and design in idb.
         await Promise.all([
           db.designs.where("templateId").equals(template.id).delete(),
           db.templates.where("templateId").equals(template.id).delete(),
-
-          supaClientComponentClient.storage
-            .from(BUCKETS.designTemplates)
-            .move(templateObjects[0].path, `${templateObjects[0].path}/0`),
-
-          upsertObjectAtPath({
-            bucket: BUCKETS.designTemplates,
-            objectPath: templatePathForNew,
-            client: supaClientComponentClient,
-            content: designExport["psd"],
-            contentType: "image/vnd.adobe.photoshop",
-          }),
-
+          moveObject(
+            "templates",
+            templateObjects[0].path,
+            "templates",
+            `${templateObjects[0].path}/0`,
+          ),
+          uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]])),
           db.templates.put({
             key: templatePathForNew,
             templateId: template.id,

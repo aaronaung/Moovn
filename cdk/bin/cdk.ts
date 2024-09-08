@@ -13,6 +13,9 @@ export type ConfigProps = {
   ENVIRONMENT: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  R2_ACCOUNT_ID: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
 };
 
 const app = new cdk.App();
@@ -31,6 +34,9 @@ new MoovnStack(app, "moovn-prod", {
     ENVIRONMENT: "prod",
     SUPABASE_URL: process.env.PROD_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.PROD_SUPABASE_SERVICE_ROLE_KEY!,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID!,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
   },
 });
 
@@ -39,5 +45,8 @@ new MoovnStack(app, "moovn-dev", {
     ENVIRONMENT: "dev",
     SUPABASE_URL: process.env.DEV_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.DEV_SUPABASE_SERVICE_ROLE_KEY!,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID!,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
   },
 });

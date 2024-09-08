@@ -6,12 +6,11 @@ import { db } from "../libs/indexeddb/indexeddb";
 import { deconstructContentIdbKey, getRangeStart } from "../libs/content";
 import { isBefore, startOfToday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
-import { supaClientComponentClient } from "../data/clients/browser";
-import { BUCKETS } from "../consts/storage";
 import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { usePhotopeaHeadless } from "./photopea-headless";
+import { deleteObject } from "../data/r2";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
@@ -109,9 +108,10 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
           if (designInIdb && designInIdb.hash !== designHash) {
             // Schedule data has changed, delete the overwritten design.
             await db.designs.delete(idbKey);
-            await supaClientComponentClient.storage
-              .from(BUCKETS.designOverwrites)
-              .remove([`${template.owner_id}/${idbKey}.psd`, `${template.owner_id}/${idbKey}.jpg`]);
+            await Promise.all([
+              deleteObject("design-overwrites", `${template.owner_id}/${idbKey}.psd`),
+              deleteObject("design-overwrites", `${template.owner_id}/${idbKey}.jpg`),
+            ]);
           }
 
           const templateFile = await (await fetch(templateUrl)).arrayBuffer();

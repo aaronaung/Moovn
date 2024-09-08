@@ -1,9 +1,8 @@
 import { Tables } from "@/types/db";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
-import { PublishContentRequest } from "@/app/api/content/[id]/publish/route";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
-import { BUCKETS } from "../consts/storage";
+import { deleteObject, listObjects } from "./r2";
 
 export const saveContent = async (
   content: Partial<Tables<"content">>,
@@ -48,18 +47,6 @@ export const getContentById = async (id: string, { client }: SupabaseOptions) =>
   return throwOrData(
     client.from("content").select("*, destination:destinations(*)").eq("id", id).maybeSingle(),
   );
-};
-
-export const publishContent = async ({ id, body }: { id: string; body: PublishContentRequest }) => {
-  return (
-    await fetch(`/api/content/${id}/publish`, {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-  ).json();
 };
 
 export const saveContentSchedule = async (
@@ -107,18 +94,12 @@ export const deleteContentSchedule = async (
   await throwOrData(client.from("content_schedules").delete().eq("name", scheduleName));
   await throwOrData(client.from("content").delete().eq("id", contentId));
 
-  let toRemove = [`${ownerId}/${contentId}`];
-  const { data, error } = await client.storage
-    .from(BUCKETS.scheduledContent)
-    .list(`${ownerId}/${contentId}`);
-  if (error) {
-    console.error(error);
-    throw new Error(error.message);
+  const prefix = `${ownerId}/${contentId}`;
+  const objects = await listObjects("scheduled-content", prefix);
+  if (objects.length > 0) {
+    await Promise.all(objects.map((obj) => deleteObject("scheduled-content", obj.Key || "")));
   }
-  if (data.length > 0) {
-    toRemove = [...toRemove, ...data.map((d) => `${ownerId}/${contentId}/${d.name}`)];
-  }
-  await client.storage.from(BUCKETS.scheduledContent).remove(toRemove);
+  await deleteObject("scheduled-content", prefix);
   await fetch(`/api/content/delete-schedule`, {
     method: "POST",
     body: JSON.stringify({ scheduleName }),

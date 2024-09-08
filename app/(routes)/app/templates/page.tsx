@@ -11,15 +11,13 @@ import { TEMPLATE_WIDTH, InstagramTemplate } from "./_components/instagram-templ
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { toast } from "@/src/components/ui/use-toast";
-import { upsertObjectAtPath } from "@/src/libs/storage";
-import { BUCKETS } from "@/src/consts/storage";
 import { useAuthUser } from "@/src/contexts/auth";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { SourceDataView } from "@/src/consts/sources";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { ContentType } from "@/src/consts/content";
 import { SIDEBAR_WIDTH } from "../_components/dashboard-layout";
 import { cn } from "@/src/utils";
+import { deleteObject, uploadObject } from "@/src/data/r2";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -83,13 +81,7 @@ export default function TemplatesPage() {
           psd: designExport["psd"],
           lastUpdated: new Date(),
         }),
-        upsertObjectAtPath({
-          bucket: BUCKETS.designTemplates,
-          objectPath: templatePath,
-          client: supaClientComponentClient,
-          content: designExport["psd"],
-          contentType: "image/vnd.adobe.photoshop",
-        }),
+        uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       ]);
     } catch (err) {
       console.error(err);
@@ -125,11 +117,10 @@ export default function TemplatesPage() {
         onDelete={async () => {
           if (deleteConfirmationDialogState.template) {
             await _deleteTemplate(deleteConfirmationDialogState.template);
-            await supaClientComponentClient.storage
-              .from(BUCKETS.designTemplates)
-              .remove([
-                `${deleteConfirmationDialogState.template.owner_id}/${deleteConfirmationDialogState.template.id}.psd`,
-              ]);
+            await deleteObject(
+              "templates",
+              `${deleteConfirmationDialogState.template.owner_id}/${deleteConfirmationDialogState.template.id}.psd`,
+            );
           }
           setDeleteConfirmationDialogState({
             isOpen: false,

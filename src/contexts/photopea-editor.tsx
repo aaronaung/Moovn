@@ -2,11 +2,11 @@
 import { createContext, RefObject, useContext, useEffect, useState } from "react";
 import { DesignExport } from "./photopea-headless";
 import { SourceDataView } from "../consts/sources";
-import { signUrl } from "../libs/storage";
-import { BUCKETS, FREE_DESIGN_TEMPLATES } from "../consts/storage";
-import { supaClientComponentClient } from "../data/clients/browser";
+
+import { FREE_DESIGN_TEMPLATES } from "../consts/storage";
 import { flushSync } from "react-dom";
 import { ContentType } from "../consts/content";
+import { signUrl } from "../data/r2";
 
 export type PhotopeaEditorMetadata = {
   title: string;
@@ -98,16 +98,8 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
               psd: ArrayBuffer;
             }>(async (resolve) => {
               const [psdUrl, jpgUrl] = await Promise.all([
-                signUrl({
-                  bucket: BUCKETS.freeDesignTemplates,
-                  objectPath: `${contentType}/${fileName}.psd`,
-                  client: supaClientComponentClient,
-                }),
-                signUrl({
-                  bucket: BUCKETS.freeDesignTemplates,
-                  objectPath: `${contentType}/${fileName}.jpg`,
-                  client: supaClientComponentClient,
-                }),
+                signUrl("free-design-templates", `${contentType}/${fileName}.psd`),
+                signUrl("free-design-templates", `${contentType}/${fileName}.jpg`),
               ]);
               const [psd, jpg] = await Promise.all([fetch(psdUrl), fetch(jpgUrl)]);
               const [psdArrayBuffer, jpgArrayBuffer] = await Promise.all([

@@ -3,8 +3,6 @@ import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
 import { ContentType } from "@/src/consts/content";
-import { BUCKETS } from "@/src/consts/storage";
-import { supaClientComponentClient } from "@/src/data/clients/browser";
 import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
@@ -56,9 +54,8 @@ export default function Calendar() {
               new Promise(async (resolve, reject) => {
                 try {
                   const signUrlData = await signUrlForPathOrChildPaths(
-                    BUCKETS.scheduledContent,
+                    "scheduled-content",
                     `${content.owner_id}/${content.id}`,
-                    supaClientComponentClient,
                   );
                   resolve({
                     contentId: content.id,
