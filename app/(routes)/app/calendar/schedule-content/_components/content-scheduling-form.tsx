@@ -76,13 +76,13 @@ export default function ContentSchedulingForm({
     formState: { errors },
   } = useForm<ContentSchedulingFormSchema>({
     defaultValues: {
-      source_id: qSourceId || availableSources?.[0].id || "",
-      destination_id: qDestinationId || availableDestinations?.[0].id || "",
+      source_id: qSourceId || availableSources?.[0]?.id || "",
+      destination_id: qDestinationId || availableDestinations?.[0]?.id || "",
       template_ids:
         (qTemplateIds ?? []).length > 0
           ? qTemplateIds
-          : availableTemplates?.[0].id
-          ? [availableTemplates?.[0].id]
+          : availableTemplates?.[0]?.id
+          ? [availableTemplates?.[0]?.id]
           : [],
       schedule_range: qScheduleRange ?? {
         from: new Date(),
