@@ -9,6 +9,7 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { toast } from "@/src/components/ui/use-toast";
+import { useEffect } from "react";
 
 const MISSING_DETAILS = {
   sources: {
@@ -53,42 +54,60 @@ export default function ScheduleContent() {
       queryKey: ["getDestinationsForAuthUser"],
     },
   );
-
-  if (isLoadingSources || isLoadingTemplates || isLoadingDestinations) {
-    return <Spinner className="mt-8" />;
-  }
-
   const connectedDestinations = (availableDestinations ?? []).filter(
     (destination) => destination.linked_ig_user_id && destination.long_lived_token,
   );
 
-  if ((availableSources ?? []).length === 0) {
-    toast({
-      title: MISSING_DETAILS.sources.title,
-      description: MISSING_DETAILS.sources.description,
-    });
-    router.push(MISSING_DETAILS.sources.link);
-  }
-  if ((availableTemplates ?? []).length === 0) {
-    toast({
-      title: MISSING_DETAILS.templates.title,
-      description: MISSING_DETAILS.templates.description,
-    });
-    router.push(MISSING_DETAILS.templates.link);
-  }
-  if ((availableDestinations ?? []).length === 0) {
-    toast({
-      title: MISSING_DETAILS.destinations.title,
-      description: MISSING_DETAILS.destinations.description,
-    });
-    router.push(MISSING_DETAILS.destinations.link);
-  }
-  if ((connectedDestinations ?? []).length === 0) {
-    toast({
-      title: MISSING_DETAILS.connectedDestinations.title,
-      description: MISSING_DETAILS.connectedDestinations.description,
-    });
-    router.push(MISSING_DETAILS.connectedDestinations.link);
+  useEffect(() => {
+    if (isLoadingSources || isLoadingTemplates || isLoadingDestinations) {
+      return;
+    }
+
+    if ((availableSources ?? []).length === 0) {
+      toast({
+        title: MISSING_DETAILS.sources.title,
+        description: MISSING_DETAILS.sources.description,
+      });
+      router.push(MISSING_DETAILS.sources.link);
+      return;
+    }
+    if ((availableTemplates ?? []).length === 0) {
+      toast({
+        title: MISSING_DETAILS.templates.title,
+        description: MISSING_DETAILS.templates.description,
+      });
+      router.push(MISSING_DETAILS.templates.link);
+      return;
+    }
+    if ((availableDestinations ?? []).length === 0) {
+      toast({
+        title: MISSING_DETAILS.destinations.title,
+        description: MISSING_DETAILS.destinations.description,
+      });
+      router.push(MISSING_DETAILS.destinations.link);
+      return;
+    }
+    if ((connectedDestinations ?? []).length === 0) {
+      toast({
+        title: MISSING_DETAILS.connectedDestinations.title,
+        description: MISSING_DETAILS.connectedDestinations.description,
+      });
+      router.push(MISSING_DETAILS.connectedDestinations.link);
+      return;
+    }
+  }, [
+    availableSources,
+    connectedDestinations,
+    availableTemplates,
+    availableDestinations,
+    isLoadingSources,
+    isLoadingTemplates,
+    isLoadingDestinations,
+    router,
+  ]);
+
+  if (isLoadingSources || isLoadingTemplates || isLoadingDestinations) {
+    return <Spinner className="mt-8" />;
   }
 
   return (
