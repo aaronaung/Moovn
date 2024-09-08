@@ -75,7 +75,7 @@ export class Pike13Client implements SourceClient {
             const min = 1;
             const max = 12;
             const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
-            const randomHeadshotUrl = `${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/test-assets/${randomNumber}.png`;
+            const randomHeadshotUrl = `https://assets.moovn.co/headshots/${randomNumber}.png`;
             return {
               staff: (event.staff_members || [])
                 .filter((s: any) => Boolean(staffMembersById[s.id]))
