@@ -2,7 +2,6 @@ import { useEmailEditor } from "@/src/contexts/email-editor";
 import { useRef } from "react";
 
 import ReactEmailEditor, { EditorRef, EmailEditorProps } from "react-email-editor";
-import EditorHeader from "./editor-header";
 import { useTheme } from "next-themes";
 
 export default function EmailEditor() {
@@ -35,12 +34,13 @@ export default function EmailEditor() {
 
   return (
     <div className="h-screen">
-      <EditorHeader
+      {/* <EditorHeader
         initialTitle="Email Editor"
         onClose={close}
         onSave={exportHtml}
         isSaving={false}
-      />
+
+      /> */}
 
       <ReactEmailEditor
         ref={emailEditorRef}

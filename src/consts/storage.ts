@@ -10,3 +10,8 @@ export const FREE_DESIGN_TEMPLATES: { [key: string]: { [key: string]: string[] }
     [ContentType.InstagramPost]: ["weekly_1_template_1", "weekly_2_template_1"],
   },
 };
+
+export const BLANK_DESIGN_TEMPLATES: { [key: string]: string } = {
+  [ContentType.InstagramPost]: "blank_ig_post",
+  [ContentType.InstagramStory]: "blank_ig_story",
+};

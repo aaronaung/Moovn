@@ -4,6 +4,8 @@ import InputText from "@/src/components/ui/input/text";
 import { CheckIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 
+import { LEARN_TEMPLATE_CREATION_GUIDE_LINK } from "@/src/consts/links";
+
 export const EDITOR_HEADER_HEIGHT = 70;
 
 export default function EditorHeader({
@@ -12,12 +14,16 @@ export default function EditorHeader({
   onSave,
   onClose,
   isTitleEditable,
+  contentType,
+  sourceDataView,
 }: {
   initialTitle: string;
   isSaving: boolean;
   onSave: (title: string) => void;
   onClose: () => void;
   isTitleEditable?: boolean;
+  contentType: string;
+  sourceDataView: string;
 }) {
   const [title, setTitle] = useState<string>();
   const [pendingTitle, setPendingTitle] = useState<string>();
@@ -89,10 +95,27 @@ export default function EditorHeader({
             }}
           />
         )}
+        <div className="ml-10 flex gap-x-8">
+          <div className="gap-1">
+            <p className="text-xs text-gray-400">Schedule type</p>
+            <p className="text-sm text-white">{`${sourceDataView}`}</p>
+          </div>
+          <div className="gap-1">
+            <p className="text-xs text-gray-400">Content type</p>
+            <p className="text-sm text-white">{`${contentType}`}</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1"></div>
 
+      <a
+        href={LEARN_TEMPLATE_CREATION_GUIDE_LINK}
+        className="mr-4 text-sm text-blue-400 text-primary hover:underline"
+        target="_blank"
+      >
+        Learn how to create templates in our editor
+      </a>
       <Button
         className="w-[80px]"
         disabled={isSaving}

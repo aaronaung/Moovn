@@ -1,14 +1,11 @@
 import { ConfirmationDialog } from "@/src/components/dialogs/general-confirmation-dialog";
-import InputSelect from "@/src/components/ui/input/select";
 import { toast } from "@/src/components/ui/use-toast";
-import { SourceDataView } from "@/src/consts/sources";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { usePhotopeaHeadless } from "@/src/contexts/photopea-headless";
 import { exportCmd } from "@/src/libs/designs/photopea/utils";
 import { cn } from "@/src/utils";
 import { useEffect, useRef, useState } from "react";
 import EditorHeader, { EDITOR_HEADER_HEIGHT } from "./editor-header";
-import { ContentType } from "@/src/consts/content";
 
 const photopeaEditorNamespace = "global-editor";
 
@@ -21,7 +18,6 @@ export default function PhotopeaEditor() {
     options,
     save,
     isSaving,
-    freeDesignTemplates,
   } = usePhotopeaEditor();
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
   const ref = useRef<HTMLIFrameElement>(null);
@@ -131,6 +127,8 @@ export default function PhotopeaEditor() {
         isSaving={isSaving || isExporting}
         initialTitle={title}
         isTitleEditable={options?.isMetadataEditable}
+        contentType={contentType}
+        sourceDataView={sourceDataView}
       />
 
       <div
@@ -139,74 +137,6 @@ export default function PhotopeaEditor() {
           height: `calc(100vh - ${EDITOR_HEADER_HEIGHT}px)`,
         }}
       >
-        <div
-          className={`w-[350px] border-t-2 border-neutral-700 bg-neutral-800 px-4`}
-          style={{
-            height: `calc(100vh - ${EDITOR_HEADER_HEIGHT}px)`,
-          }}
-        >
-          <div className="my-4 flex flex-col justify-start gap-2">
-            {options?.isMetadataEditable && (
-              <>
-                <p className="text-sm text-white">Select a schedule type</p>
-                <InputSelect
-                  value={sourceDataView}
-                  className="w-[200px]"
-                  options={Object.keys(SourceDataView).map((key) => ({
-                    // @ts-ignore
-                    label: SourceDataView[key],
-                    // @ts-ignore
-                    value: SourceDataView[key],
-                  }))}
-                  onChange={(value) => {
-                    setSourceDataView(value);
-                  }}
-                />
-              </>
-            )}
-          </div>
-          <div className="my-4 flex flex-col justify-start gap-2">
-            {options?.isMetadataEditable && (
-              <>
-                <p className="text-sm text-white">Select a content type</p>
-                <InputSelect
-                  value={contentType}
-                  className="w-[200px]"
-                  options={Object.keys(ContentType).map((key) => ({
-                    // @ts-ignore
-                    label: ContentType[key],
-                    // @ts-ignore
-                    value: ContentType[key],
-                  }))}
-                  onChange={(value) => {
-                    setContentType(value);
-                  }}
-                />
-              </>
-            )}
-          </div>
-          <p className="mt-8 text-sm text-white">Get started with sample templates</p>
-          <div className="mt-4 flex flex-wrap gap-4">
-            {(freeDesignTemplates[sourceDataView][contentType] || []).length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Sample templates for this schedule type coming soon!
-              </p>
-            )}
-            {(freeDesignTemplates[sourceDataView][contentType] || []).map((template, index) => (
-              <img
-                key={index}
-                src={`data:image/jpeg;base64,${Buffer.from(template.jpg).toString("base64")}`}
-                className="h-[170px] w-[170px] cursor-pointer rounded-md object-cover hover:border-2 hover:border-white"
-                onClick={() => {
-                  if (ref.current) {
-                    sendRawPhotopeaCmd(photopeaEditorNamespace, ref.current, template.psd);
-                  }
-                }}
-                alt={`Template ${index}`}
-              />
-            ))}
-          </div>
-        </div>
         <iframe
           ref={ref}
           src={`https://www.photopea.com#${JSON.stringify({

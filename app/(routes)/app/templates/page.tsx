@@ -3,28 +3,24 @@ import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
-import { deleteTemplate, getTemplatesForAuthUser, saveTemplate } from "@/src/data/templates";
+import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
 import { TEMPLATE_WIDTH, InstagramTemplate } from "./_components/instagram-template";
-import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
-import { DesignExport } from "@/src/contexts/photopea-headless";
-import { toast } from "@/src/components/ui/use-toast";
 import { useAuthUser } from "@/src/contexts/auth";
-import { SourceDataView } from "@/src/consts/sources";
-import { db } from "@/src/libs/indexeddb/indexeddb";
-import { ContentType } from "@/src/consts/content";
 import { SIDEBAR_WIDTH } from "../_components/dashboard-layout";
 import { cn } from "@/src/utils";
-import { deleteObject, uploadObject } from "@/src/data/r2";
+import { deleteObject } from "@/src/data/r2";
+import CreateTemplateSheet from "./_components/create-template-sheet";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
-  const { open: openPhotopeaEditor, close } = usePhotopeaEditor();
+
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
     queryKey: ["getTemplatesForAuthUser"],
   });
+  const [createTemplateSheetOpen, setCreateTemplateSheetOpen] = useState(false);
 
   const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
     deleteTemplate,
@@ -32,12 +28,7 @@ export default function TemplatesPage() {
       invalidate: [["getTemplatesForAuthUser"]],
     },
   );
-  const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(
-    saveTemplate,
-    {
-      invalidate: [["getTemplatesForAuthUser"]],
-    },
-  );
+
   const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
@@ -49,60 +40,16 @@ export default function TemplatesPage() {
     return <Spinner className="mt-8" />;
   }
 
-  const handleTemplateCreate = async (
-    designExport: DesignExport,
-    metadataChanges: Partial<PhotopeaEditorMetadata>,
-  ) => {
-    if (!designExport["psd"] || !designExport["jpg"]) {
-      console.error("missing psd or jpg file in export:", {
-        designExport,
-      });
-      toast({
-        variant: "destructive",
-        title: "Failed to save template. Please try again or contact support.",
-      });
-      return;
-    }
-
-    try {
-      const saved = await _saveTemplate({
-        name: metadataChanges.title,
-        source_data_view: metadataChanges.source_data_view,
-        content_type: metadataChanges.content_type,
-        owner_id: user.id,
-      });
-      const templatePath = `${user.id}/${saved.id}`;
-
-      await Promise.all([
-        db.templates.put({
-          key: templatePath,
-          templateId: saved.id,
-          jpg: designExport["jpg"],
-          psd: designExport["psd"],
-          lastUpdated: new Date(),
-        }),
-        uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Failed to save template. Please try again or contact support",
-      });
-    } finally {
-      close();
-    }
-
-    toast({
-      variant: "success",
-      title: "Template saved",
-    });
-  };
   const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / TEMPLATE_WIDTH;
 
   return (
     <div>
       {/** Todo: check if the template is associated with any content that's to be published */}
+      <CreateTemplateSheet
+        user={user}
+        isOpen={createTemplateSheetOpen}
+        onClose={() => setCreateTemplateSheetOpen(false)}
+      />
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
@@ -140,23 +87,11 @@ export default function TemplatesPage() {
           </p>
         </div>
         <Button
-          disabled={isSavingTemplate}
           onClick={() => {
-            openPhotopeaEditor(
-              {
-                title: "Untitled",
-                source_data_view: SourceDataView.Daily,
-                content_type: ContentType.InstagramPost,
-              },
-              new ArrayBuffer(0),
-              {
-                onSave: handleTemplateCreate,
-                isMetadataEditable: true,
-              },
-            );
+            setCreateTemplateSheetOpen(true);
           }}
         >
-          {isSavingTemplate ? <Spinner /> : "Create template"}
+          Create template
         </Button>
       </div>
       <div className={cn("mt-4 flex flex-wrap gap-3 overflow-scroll")}>

@@ -4,16 +4,7 @@ import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
 import { ScheduleData } from "../libs/sources";
-import {
-  addDays,
-  endOfDay,
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { addDays, endOfDay, endOfWeek, format, startOfDay, startOfWeek } from "date-fns";
 
 export const saveSource = async (
   source: Partial<Tables<"sources">>,
@@ -73,12 +64,6 @@ export const getScheduleDataForSource = async ({
       range = {
         from: format(startOfWeek(current), "yyyy-MM-dd"),
         to: format(endOfWeek(current), "yyyy-MM-dd"),
-      };
-      break;
-    case SourceDataView.Monthly:
-      range = {
-        from: format(startOfMonth(current), "yyyy-MM-dd"),
-        to: format(endOfMonth(current), "yyyy-MM-dd"),
       };
       break;
     default:

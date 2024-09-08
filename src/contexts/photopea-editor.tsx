@@ -3,7 +3,7 @@ import { createContext, RefObject, useContext, useEffect, useState } from "react
 import { DesignExport } from "./photopea-headless";
 import { SourceDataView } from "../consts/sources";
 
-import { FREE_DESIGN_TEMPLATES } from "../consts/storage";
+import { BLANK_DESIGN_TEMPLATES, FREE_DESIGN_TEMPLATES } from "../consts/storage";
 import { flushSync } from "react-dom";
 import { ContentType } from "../consts/content";
 import { signUrl } from "../data/r2";
@@ -32,10 +32,14 @@ type PhotopeaEditorContextValue = {
   ) => void;
   options?: PhotopeaEditorOptions;
   metadata: PhotopeaEditorMetadata;
+  isLoadingFreeDesignTemplates: boolean;
   freeDesignTemplates: {
     [key: string]: {
       [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
     };
+  };
+  blankDesignTemplates: {
+    [key: string]: ArrayBuffer;
   };
 };
 
@@ -56,6 +60,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     source_data_view: SourceDataView.Daily,
     content_type: ContentType.InstagramPost,
   });
+  const [isLoadingFreeDesignTemplates, setIsLoadingFreeDesignTemplates] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [options, setOptions] = useState<PhotopeaEditorOptions>({
     isMetadataEditable: true,
@@ -73,21 +78,25 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
       [ContentType.InstagramPost]: [],
       [ContentType.InstagramStory]: [],
     },
-    [SourceDataView.Monthly as string]: {
-      [ContentType.InstagramPost]: [],
-      [ContentType.InstagramStory]: [],
-    },
+  });
+  const [blankDesignTemplates, setBlankDesignTemplates] = useState<{
+    [key: string]: ArrayBuffer;
+  }>({
+    [ContentType.InstagramPost]: new ArrayBuffer(0),
+    [ContentType.InstagramStory]: new ArrayBuffer(0),
   });
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchFreeDesignTemplates = async () => {
+      setIsLoadingFreeDesignTemplates(true);
       const downloads: Promise<{
         jpg: ArrayBuffer;
         psd: ArrayBuffer;
         scheduleRange: string;
         contentType: string;
       }>[] = [];
+
       for (const [scheduleRange, byContentType] of Object.entries(FREE_DESIGN_TEMPLATES)) {
         for (const [contentType, fileNames] of Object.entries(byContentType)) {
           for (const fileName of fileNames) {
@@ -127,7 +136,34 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         }
         designTemplates[download.scheduleRange][download.contentType].push(download);
       }
+
+      const blankDesignDownloads: Promise<{
+        psd: ArrayBuffer;
+        contentType: string;
+      }>[] = [];
+      const blankDesigns: {
+        [key: string]: ArrayBuffer;
+      } = {};
+      for (const [contentType, fileName] of Object.entries(BLANK_DESIGN_TEMPLATES)) {
+        const download = new Promise<{
+          contentType: string;
+          psd: ArrayBuffer;
+        }>(async (resolve) => {
+          const psdUrl = await signUrl("free-design-templates", `${contentType}/${fileName}.psd`);
+          const psd = await fetch(psdUrl);
+          const psdArrayBuffer = await psd.arrayBuffer();
+          resolve({ contentType, psd: psdArrayBuffer });
+        });
+        blankDesignDownloads.push(download);
+      }
+      const blankDesignsDownloaded = await Promise.all(blankDesignDownloads);
+      for (const blankDesign of blankDesignsDownloaded) {
+        blankDesigns[blankDesign.contentType] = blankDesign.psd;
+      }
+
       setFreeDesignTemplates(designTemplates);
+      setBlankDesignTemplates(blankDesigns);
+      setIsLoadingFreeDesignTemplates(false);
     };
     fetchFreeDesignTemplates();
   }, []);
@@ -177,6 +213,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     <PhotopeaEditorContext.Provider
       value={{
         initialize,
+        isLoadingFreeDesignTemplates,
         isOpen,
         options,
         close,
@@ -185,6 +222,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         isSaving,
         metadata,
         freeDesignTemplates,
+        blankDesignTemplates,
       }}
     >
       {children}
