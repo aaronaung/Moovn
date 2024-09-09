@@ -31,6 +31,7 @@ export type DesignGenSteps = {
   loadAssets: LoadAssets;
   deleteLayers: DeleteLayers;
   replaceLayers: ReplaceLayers;
+  cropImages?: any;
 };
 
 export const determineDesignGenSteps = async (

@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { DesignGenSteps } from "../libs/designs/photoshop-v2";
 import { readPsd, Psd } from "ag-psd";
 import {
+  cropImagesCmd,
   replaceLayersCmd,
   verifyReplaceLayersComplete,
 } from "../libs/designs/photopea/replace-layers";
@@ -119,8 +120,19 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             executeDesignGenStep("editTexts", namespace);
           }
         }
+
         if (e.data.startsWith("replace_layers_complete")) {
           // replace_layers_complete:namespace-123
+          const [_, namespace, isComplete] = e.data.split(":");
+          if (isComplete === "true") {
+            executeDesignGenStep("cropImages", namespace);
+            debugGenStepMap.current[namespace] = "cropImages";
+          } else {
+            executeDesignGenStep("replaceLayers", namespace);
+          }
+        }
+        if (e.data.startsWith("crop_images_complete")) {
+          // crop_images_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
           if (isComplete === "true") {
             debugGenStepMap.current[namespace] = "export";
@@ -130,8 +142,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             if (photopeaMap[namespace]) {
               sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
             }
-          } else {
-            executeDesignGenStep("replaceLayers", namespace);
           }
         }
         if (e.data.startsWith("export_file")) {
@@ -297,6 +307,10 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         // console.log("genstep:replaceLayers", namespace);
         cmds.push(replaceLayersCmd(namespace, genSteps.replaceLayers));
         verifyCmd = verifyReplaceLayersComplete(namespace, genSteps.replaceLayers);
+        break;
+      case "cropImages":
+        // console.log("genstep:cropImages", namespace);
+        cmds.push(cropImagesCmd(namespace, genSteps.replaceLayers));
         break;
       default:
         break;
