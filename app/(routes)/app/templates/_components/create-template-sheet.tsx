@@ -114,7 +114,7 @@ export default function CreateTemplateSheet({
         <SheetHeader>
           <SheetTitle>Create Template</SheetTitle>
         </SheetHeader>
-        <div className="flex flex-1 flex-col gap-6 overflow-scroll">
+        <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
           <SelectMetadataSection
             sourceDataView={sourceDataView}
             setSourceDataView={setSourceDataView}
@@ -172,7 +172,7 @@ const SelectMetadataSection = ({
         Select the type of content and schedule you want to use for this template. You can then edit
         the template in the editor.
       </p>
-      <div className="mx-1 mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
         <InputSelect
           value={sourceDataView}
           className="w-[200px]"
@@ -226,7 +226,7 @@ const SelectStartingTemplateSection = ({
     <div>
       <h3 className="text-sm text-muted-foreground">Select a starter template</h3>
       {!isLoadingFreeDesignTemplates ? (
-        <RadioGroup value={selectedTemplateIndex} onValueChange={onTemplateSelect}>
+        <RadioGroup value={`item-${selectedTemplateIndex}`} onValueChange={onTemplateSelect}>
           <div className="mt-3 flex flex-wrap gap-4">
             {(freeDesignTemplates[sourceDataView][contentType] || []).length === 0 && (
               <p className="text-xs text-muted-foreground">Starter templates coming soon!</p>
@@ -234,8 +234,14 @@ const SelectStartingTemplateSection = ({
 
             {(freeDesignTemplates[sourceDataView][contentType] || []).map((template, index) => (
               <div className="flex flex-col gap-2" key={index}>
-                <RadioGroupItem value={`${index}`} />
+                <RadioGroupItem value={`item-${index}`} />
                 <img
+                  style={{
+                    boxShadow:
+                      selectedTemplateIndex === index.toString()
+                        ? "0 0 0 2px #4CAF50"
+                        : "none" /* emulate the border */,
+                  }}
                   src={`data:image/jpeg;base64,${Buffer.from(template.jpg).toString("base64")}`}
                   className="w-[150px] cursor-pointer rounded-md object-cover sm:w-[200px]"
                   onClick={() => {

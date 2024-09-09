@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { verifyDestinationAccess } from "../../../../util";
 import { InstagramAPIClient } from "@/src/libs/instagram/ig-client";
 import { supaServerClient } from "@/src/data/clients/server";
+import { igTokenUpdater } from "@/src/data/destinations";
 
 export async function GET(
   req: NextRequest,
@@ -19,15 +20,7 @@ export async function GET(
       accessToken: destination.long_lived_token,
       lastRefreshedAt: new Date(destination.token_last_refreshed_at ?? 0),
     },
-    async (token) => {
-      await supaServerClient()
-        .from("destinations")
-        .update({
-          long_lived_token: token.accessToken,
-          token_last_refreshed_at: token.lastRefreshedAt.toISOString(),
-        })
-        .eq("id", destination.id);
-    },
+    igTokenUpdater(destination.id, { client: supaServerClient() }),
   );
 
   try {
