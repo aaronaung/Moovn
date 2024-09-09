@@ -39,14 +39,16 @@ export default function TemplateContainer({
   const [isLoadingTemplateSignedUrl, setIsLoadingTemplateSignedUrl] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const templateFromIdb = useLiveQuery(async () => {
-    const template = await db.templates.get(templatePath);
-    if (!template) {
+    const templateFromIdb = await db.templates.get(template.id);
+    if (!templateFromIdb) {
       return undefined;
     }
     return {
-      jpgUrl: URL.createObjectURL(new Blob([template.jpg], { type: "image/jpeg" })),
-      psdUrl: URL.createObjectURL(new Blob([template.psd], { type: "image/vnd.adobe.photoshop" })),
-      psd: template.psd,
+      jpgUrl: URL.createObjectURL(new Blob([templateFromIdb.jpg], { type: "image/jpeg" })),
+      psdUrl: URL.createObjectURL(
+        new Blob([templateFromIdb.psd], { type: "image/vnd.adobe.photoshop" }),
+      ),
+      psd: templateFromIdb.psd,
     };
   });
 
@@ -54,7 +56,7 @@ export default function TemplateContainer({
     const generateTemplate = async () => {
       try {
         setIsLoadingTemplateSignedUrl(true);
-        const fromdb = await db.templates.get(templatePath);
+        const fromdb = await db.templates.get(template.id);
         if (fromdb?.jpg && fromdb?.psd) {
           setIsLoadingTemplateSignedUrl(false);
           return;
@@ -93,7 +95,7 @@ export default function TemplateContainer({
       uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       db.designs.where("templateId").equals(template.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templates.put({
-        key: templatePath,
+        key: template.id,
         templateId: template.id,
         jpg: designExport["jpg"],
         psd: designExport["psd"],

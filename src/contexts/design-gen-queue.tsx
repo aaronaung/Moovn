@@ -114,9 +114,14 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
             ]);
           }
 
-          const templateFile = await (await fetch(templateUrl)).arrayBuffer();
-          const psd = readPsd(templateFile);
-          const designGenSteps = await determineDesignGenSteps(schedule, psd);
+          const templateInIdb = await db.templates.get(template.id);
+          let templateFile = templateInIdb?.psd;
+          if (!templateFile) {
+            templateFile = await (await fetch(templateUrl)).arrayBuffer();
+          }
+          const templatePsd = readPsd(templateFile);
+
+          const designGenSteps = await determineDesignGenSteps(schedule, templatePsd);
 
           const photopeaEl = addHeadlessPhotopeaToDom(nextJob.debug);
           initialize(idbKey, photopeaEl, {

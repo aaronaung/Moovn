@@ -26,7 +26,7 @@ export const useGenerateTemplateJpg = () => {
       onDesignExport: async (designExport) => {
         if (designExport?.["jpg"]) {
           await db.templates.put({
-            key: templatePath,
+            key: template.id,
             jpg: designExport["jpg"],
             psd: templateFile,
             templateId: template.id,

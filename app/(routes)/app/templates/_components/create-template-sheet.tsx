@@ -81,17 +81,16 @@ export default function CreateTemplateSheet({
         content_type: metadataChanges.content_type,
         owner_id: user.id,
       });
-      const templatePath = `${user.id}/${saved.id}`;
 
       await Promise.all([
         db.templates.put({
-          key: templatePath,
+          key: saved.id,
           templateId: saved.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
           lastUpdated: new Date(),
         }),
-        uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
+        uploadObject("templates", `${user.id}/${saved.id}`, new Blob([designExport["psd"]])),
       ]);
     } catch (err) {
       console.error(err);

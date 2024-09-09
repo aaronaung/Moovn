@@ -92,7 +92,7 @@ export const InstagramTemplate = ({
           ),
           uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]])),
           db.templates.put({
-            key: templatePathForNew,
+            key: template.id,
             templateId: template.id,
             jpg: designExport["jpg"],
             psd: designExport["psd"],

@@ -91,7 +91,7 @@ export const DesignContainer = ({
       template,
       schedule,
       templateUrl: signedTemplateUrl,
-      debug: true,
+      debug: false,
     });
   }, [template, schedule]);
 
