@@ -31,7 +31,10 @@ function verifyLoadAssetsComplete() {
   for (var i = 0; i < layers.length; i++) {
     var layer = layers[i];
     try {
-      var targetLayer = doc.artLayers.getByName(layer.layerName);
+      var targetLayer = loadedLayers.getByName(layer.layerName);
+      if (!targetLayer) {
+        return false;
+      }
       continue;
     } catch(e) {
       return false;

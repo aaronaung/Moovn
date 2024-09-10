@@ -67,15 +67,17 @@ export class Pike13Client implements SourceClient {
     const groupedEvents = this.groupEventsByDay(events);
 
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
+    let headshotIndex = 1;
     return {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          event: (eventsByDay || []).map((event: any, index) => {
-            const min = 1;
-            const max = 12;
-            const randomNumber = Math.floor(Math.random() * (max - min + 1) + min);
-            const randomHeadshotUrl = `https://assets.moovn.co/headshots/${randomNumber}.png`;
+          event: (eventsByDay || []).map((event: any) => {
+            const headshotUrl = `https://assets.moovn.co/headshots/${headshotIndex}.png`;
+            headshotIndex++;
+            if (headshotIndex > 10) {
+              headshotIndex = 1;
+            }
             return {
               staff: (event.staff_members || [])
                 .filter((s: any) => Boolean(staffMembersById[s.id]))
@@ -83,7 +85,7 @@ export class Pike13Client implements SourceClient {
                   const staffMember = staffMembersById[s.id];
                   return {
                     name: staffMember?.name,
-                    photo: randomHeadshotUrl,
+                    photo: headshotUrl,
                     instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13
                   };
                 }),

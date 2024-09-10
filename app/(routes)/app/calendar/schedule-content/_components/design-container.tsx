@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 import { toast } from "@/src/components/ui/use-toast";
 import { usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
-import { cn, download } from "@/src/utils";
+import { download } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
 
@@ -91,7 +91,6 @@ export const DesignContainer = ({
       template,
       schedule,
       templateUrl: signedTemplateUrl,
-      debug: false,
     });
   }, [template, schedule]);
 
@@ -337,13 +336,7 @@ export const DesignImageWithIGTags = ({
             </span>
           ))}
         </div>
-        <Image
-          src={url}
-          onClick={onClick}
-          alt="Design"
-          className={cn(`rounded-md`, className ?? "")}
-          style={{ width }}
-        />
+        <Image src={url} onClick={onClick} alt="Design" className={className} style={{ width }} />
       </div>
     );
   }

@@ -22,6 +22,8 @@ export type CalendarEvent = {
   title: string;
   start: Date;
   end?: Date;
+  data: any;
+  hasDataChanged: boolean;
   color?: string;
   contentType: ContentType;
   previewUrls?: string[];

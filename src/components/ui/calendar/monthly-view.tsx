@@ -13,7 +13,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { CalendarEvent } from "./full-calendar";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -164,16 +164,32 @@ export default function FullCalendarMonthlyView({
                                   onClick={() => onEventClick?.(event)}
                                 >
                                   <div
-                                    className={`flex w-full bg-${
-                                      event.color ?? "secondary"
-                                    } cursor-pointer rounded-full px-1`}
+                                    className={cn(
+                                      `flex w-full items-center gap-1 bg-${
+                                        event.color ?? "secondary"
+                                      } cursor-pointer rounded-full px-1`,
+                                      event.hasDataChanged && "text-orange-500",
+                                    )}
                                   >
-                                    <p className="line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600">
+                                    {event.hasDataChanged && (
+                                      <InformationCircleIcon className="h-4 w-4 " />
+                                    )}
+                                    <p
+                                      className={cn(
+                                        "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
+                                        event.hasDataChanged &&
+                                          "text-orange-500 group-hover/event-li:text-orange-500",
+                                      )}
+                                    >
                                       {event.title}
                                     </p>
                                     <time
                                       dateTime={event.start.toISOString()}
-                                      className="ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block"
+                                      className={cn(
+                                        "ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block",
+                                        event.hasDataChanged &&
+                                          "text-orange-500 group-hover/event-li:text-orange-500",
+                                      )}
                                     >
                                       {time}
                                     </time>
@@ -181,7 +197,22 @@ export default function FullCalendarMonthlyView({
                                 </li>
                               </TooltipTrigger>
                               <TooltipContent side="right" className="w-full cursor-pointer">
-                                {event.title} {time}
+                                <p
+                                  className={cn(
+                                    " font-semibold",
+                                    event.hasDataChanged && "mb-1 text-orange-500",
+                                  )}
+                                >
+                                  {event.title} {time}
+                                </p>
+                                {event.hasDataChanged && (
+                                  <div className="flex items-center gap-1">
+                                    <p className="text-sm  text-orange-500">
+                                      The schedule data has changed. Review the content before it
+                                      gets published.
+                                    </p>
+                                  </div>
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           );

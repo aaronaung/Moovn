@@ -87,3 +87,28 @@ export const getScheduleDataForSourceByTimeRange = async ({
   const resp = await fetch(`/api/sources/${id}/schedules?from=${from}&to=${to}`);
   return resp.json();
 };
+
+export const getScheduleDataFromAllSourcesByTimeRange = async (
+  dateRange: { from: Date; to: Date },
+  { client }: SupabaseOptions,
+): Promise<{ [key: string]: ScheduleData }> => {
+  const allSources = await throwOrData(client.from("sources").select("id"));
+  const allSourcesData = await Promise.all(
+    allSources.map(
+      ({ id }) =>
+        new Promise<{ sourceId: string; scheduleData: ScheduleData }>(async (resolve) => {
+          resolve({
+            sourceId: id,
+            scheduleData: await getScheduleDataForSourceByTimeRange({ id, dateRange }),
+          });
+        }),
+    ),
+  );
+  return allSourcesData.reduce(
+    (acc, data) => {
+      acc[data.sourceId] = data.scheduleData;
+      return acc;
+    },
+    {} as { [key: string]: ScheduleData },
+  );
+};

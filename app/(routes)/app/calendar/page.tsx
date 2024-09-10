@@ -11,7 +11,10 @@ import { Tables } from "@/types/db";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
-import { format, startOfToday } from "date-fns";
+import { add, endOfMonth, format, startOfMonth, startOfToday, sub } from "date-fns";
+import { getScheduleDataFromAllSourcesByTimeRange } from "@/src/data/sources";
+import { extractScheduleDataWithinRange } from "@/src/libs/sources/utils";
+import { generateDesignHash } from "@/src/libs/designs/util";
 
 export default function Calendar() {
   const router = useRouter();
@@ -19,18 +22,8 @@ export default function Calendar() {
 
   const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
 
-  const { data: contents, isLoading: isLoadingContents } = useSupaQuery(getContentsForAuthUser, {
-    queryKey: ["getContentsForAuthUser"],
-  });
-  const { data: contentSchedules, isLoading: isLoadingContentSchedules } = useSupaQuery(
-    getContentSchedules,
-    {
-      queryKey: ["getContentSchedules"],
-    },
-  );
-
-  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
     content?: Tables<"content"> & { template: Tables<"templates"> | null };
@@ -39,17 +32,42 @@ export default function Calendar() {
     isOpen: false,
   });
 
+  const { data: contents } = useSupaQuery(getContentsForAuthUser, {
+    queryKey: ["getContentsForAuthUser"],
+  });
+  const { data: contentSchedules } = useSupaQuery(getContentSchedules, {
+    queryKey: ["getContentSchedules"],
+  });
+  const { data: scheduleDataFromAllSources } = useSupaQuery(
+    getScheduleDataFromAllSourcesByTimeRange,
+    {
+      arg: {
+        from: sub(startOfMonth(currentMonth), { days: 7 }),
+        to: add(endOfMonth(currentMonth), { days: 7 }),
+      },
+      queryKey: ["getScheduleDataFromAllSourcesByTimeRange"],
+      refetchOnWindowFocus: false,
+    },
+  );
+
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
-        setIsLoadingCalendarEvents(true);
         const getEventPromises: Promise<CalendarEvent>[] = [];
         for (const schedule of contentSchedules ?? []) {
-          const { contentId } = deconstructScheduleName(schedule.name);
+          const { range, contentId } = deconstructScheduleName(schedule.name);
+
           const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
           const content = contents?.find((c) => c.id === contentId);
+          if (content && scheduledDate && scheduleDataFromAllSources) {
+            const dataForEvent = extractScheduleDataWithinRange(
+              range,
+              scheduleDataFromAllSources[content.source_id],
+            );
 
-          if (content && scheduledDate) {
+            const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
+            const hasDataChanged = dataHash !== content.data_hash;
+
             getEventPromises.push(
               new Promise(async (resolve, reject) => {
                 try {
@@ -60,6 +78,8 @@ export default function Calendar() {
                   resolve({
                     contentId: content.id,
                     scheduleName: schedule.name,
+                    data: dataForEvent,
+                    hasDataChanged,
                     title: content.template?.name ?? "Untitled",
                     start: scheduledDate,
                     contentType: content.type as ContentType,
@@ -79,12 +99,12 @@ export default function Calendar() {
         setIsLoadingCalendarEvents(false);
       }
     };
-    if (contents && contentSchedules) {
+    if (contents && contentSchedules && scheduleDataFromAllSources) {
       loadCalendarEvents();
     }
-  }, [contents, contentSchedules]);
+  }, [contents, contentSchedules, scheduleDataFromAllSources]);
 
-  if (isLoadingContents || isLoadingCalendarEvents || isLoadingContentSchedules) {
+  if (isLoadingCalendarEvents) {
     return <Spinner className="mt-8" />;
   }
 

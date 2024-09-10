@@ -1,4 +1,13 @@
-import { addWeeks, endOfWeek, format, isAfter, isBefore, min, startOfWeek } from "date-fns";
+import {
+  addWeeks,
+  endOfWeek,
+  format,
+  isAfter,
+  isBefore,
+  isWithinInterval,
+  min,
+  startOfWeek,
+} from "date-fns";
 import { ScheduleData } from ".";
 import { isArray, isPlainObject } from "lodash";
 import { SourceDataView } from "@/src/consts/sources";
@@ -98,8 +107,8 @@ export const flattenSchedule = (input?: ScheduleData) => {
 
 export const organizeScheduleDataByView = (
   view: string,
-  scheduleRange: { from: Date; to: Date },
   scheduleData: ScheduleData,
+  scheduleRange?: { from: Date; to: Date }, // only used for weekly view
 ) => {
   const organizedSchedule: { [key: string]: any } = {};
 
@@ -122,8 +131,8 @@ export const organizeScheduleDataByView = (
       break;
     case SourceDataView.Weekly:
       const weeklyRanges: { start: Date; end: Date }[] = [];
-      const start = new Date(scheduleRange.from);
-      const end = new Date(scheduleRange.to);
+      const start = scheduleRange?.from ?? new Date();
+      const end = scheduleRange?.to ?? new Date();
 
       let tempStart = start;
       let tempEnd: Date;
@@ -144,12 +153,16 @@ export const organizeScheduleDataByView = (
         const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
         const date = scheduleData[`day#${dayNumberInKey}.date`];
 
-        const weekRange = weeklyRanges[weekIndex] ?? {};
-        if (isAfter(new Date(date), weekRange.end)) {
+        let weeklyRange = weeklyRanges[weekIndex] ?? {};
+        if (isAfter(new Date(date), weeklyRange.end)) {
           weekIndex++;
           lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
         }
-        const weeklyKey = `${format(weeklyRanges[weekIndex].start, "yyyy-MM-dd")}_${format(
+        weeklyRange = weeklyRanges[weekIndex];
+        if (!weeklyRange) {
+          continue;
+        }
+        const weeklyKey = `${format(weeklyRange.start, "yyyy-MM-dd")}_${format(
           weeklyRanges[weekIndex].end,
           "yyyy-MM-dd",
         )}`;
@@ -165,4 +178,34 @@ export const organizeScheduleDataByView = (
       break;
   }
   return organizedSchedule;
+};
+
+export const extractScheduleDataWithinRange = (
+  range: string,
+  supersetScheduleData: ScheduleData,
+) => {
+  const dailyEvents = organizeScheduleDataByView(SourceDataView.Daily, supersetScheduleData) || {};
+
+  const [rangeStart, rangeEnd] = range.split("_");
+  let result: { [key: string]: any } = {};
+  if (!rangeEnd) {
+    result = dailyEvents[rangeStart];
+  } else {
+    let dayCtr = 1;
+    for (const day in dailyEvents) {
+      if (
+        isWithinInterval(new Date(day), {
+          start: new Date(rangeStart),
+          end: new Date(rangeEnd),
+        })
+      ) {
+        for (const key in dailyEvents[day]) {
+          const newKey = key.replace(`day#1.`, `day#${dayCtr}.`);
+          result[newKey] = dailyEvents[day][key];
+        }
+        dayCtr++;
+      }
+    }
+  }
+  return result;
 };

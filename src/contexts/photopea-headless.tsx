@@ -120,7 +120,6 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             executeDesignGenStep("editTexts", namespace);
           }
         }
-
         if (e.data.startsWith("replace_layers_complete")) {
           // replace_layers_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
@@ -140,7 +139,10 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
               clearIntervalForNamespace(namespace);
             }
             if (photopeaMap[namespace]) {
-              sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
+              setTimeout(() => {
+                // Let the changes settle before exporting.
+                sendRawPhotopeaCmd(namespace, photopeaMap[namespace], exportCmd(namespace));
+              }, 1000);
             }
           }
         }

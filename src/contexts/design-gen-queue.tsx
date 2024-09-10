@@ -11,6 +11,7 @@ import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { usePhotopeaHeadless } from "./photopea-headless";
 import { deleteObject } from "../data/r2";
+import { useSearchParams } from "next/navigation";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
@@ -18,7 +19,6 @@ type DesignJob = {
   templateUrl: string;
   schedule: ScheduleData;
   forceRefresh?: boolean;
-  debug?: boolean;
 };
 
 type DesignGenQueueContextType = {
@@ -36,6 +36,7 @@ const DesignGenQueueContext = createContext<DesignGenQueueContextType | null>(nu
 
 export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { initialize } = usePhotopeaHeadless();
+  const searchParams = useSearchParams();
 
   const [activeJobs, setActiveJobs] = useState<DesignJob[]>([]);
   const [queuedJobs, setQueuedJobs] = useState<DesignJob[]>([]);
@@ -88,11 +89,10 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         setActiveJobs((prevJobs) => [...prevJobs, nextJob]);
         setQueuedJobs(remainingJobs);
 
-        console.log("processing design gen job", nextJob.idbKey);
-
         const { template, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
         try {
           await cleanupIdb();
+          const debug = searchParams.get("debug") === "true";
 
           const designHash = generateDesignHash(template.id, schedule);
           const designInIdb = await db.designs.get(idbKey);
@@ -123,12 +123,12 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
 
           const designGenSteps = await determineDesignGenSteps(schedule, templatePsd);
 
-          const photopeaEl = addHeadlessPhotopeaToDom(nextJob.debug);
+          const photopeaEl = addHeadlessPhotopeaToDom(debug);
           initialize(idbKey, photopeaEl, {
             initialData: templateFile,
             designGenSteps,
             onTimeout: () => {
-              if (document.body.contains(photopeaEl) && !nextJob.debug) {
+              if (document.body.contains(photopeaEl) && !debug) {
                 document.body.removeChild(photopeaEl);
               }
               removeJob(nextJob.idbKey);
@@ -144,7 +144,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                   instagramTags: designExport.instagramTags,
                   lastUpdated: new Date(),
                 });
-                if (document.body.contains(photopeaEl) && !nextJob.debug) {
+                if (document.body.contains(photopeaEl) && !debug) {
                   document.body.removeChild(photopeaEl);
                 }
               }

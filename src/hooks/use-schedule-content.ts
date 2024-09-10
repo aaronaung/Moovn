@@ -71,11 +71,10 @@ export function useScheduleContent({
     }
     const ownerId = template.owner_id;
 
-    const scheduleByRange = organizeScheduleDataByView(
-      template.source_data_view,
-      { from: publishDateTime, to: publishDateTime },
-      scheduleData,
-    );
+    const scheduleByRange = organizeScheduleDataByView(template.source_data_view, scheduleData, {
+      from: publishDateTime,
+      to: publishDateTime,
+    });
     const scheduleDataForRange = scheduleByRange[range];
 
     const scheduleExpression = atScheduleExpression(publishDateTime);

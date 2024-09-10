@@ -13,19 +13,17 @@ import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { TrashIcon } from "@heroicons/react/24/outline";
-import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { deleteContentSchedule } from "@/src/data/content";
 import { toast } from "@/src/components/ui/use-toast";
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
-import { deconstructScheduleName, getContentIdbKey, parseRange } from "@/src/libs/content";
+import { deconstructScheduleName, getContentIdbKey } from "@/src/libs/content";
 import InstagramContent from "../schedule-content/_components/instagram-content";
 import { isMobile } from "react-device-detect";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { useState } from "react";
 import { useScheduleContent } from "@/src/hooks/use-schedule-content";
-import { generateDesignHash } from "@/src/libs/designs/util";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 
@@ -41,29 +39,17 @@ export default function EventDialog({
   event: CalendarEvent;
 }) {
   const queryClient = useQueryClient();
-  const { range } = deconstructScheduleName(event.scheduleName);
-  const dateRange = parseRange(range);
+
   const [publishDateTime, setPublishDateTime] = useState(event.start);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
+
+  const { range } = deconstructScheduleName(event.scheduleName);
   const idbKey = content.template
     ? getContentIdbKey(content.source_id, range, content.template)
     : "";
 
   const { isJobPending } = useDesignGenQueue();
-  const { data: scheduleData, isLoading: isLoadingScheduleData } = useSupaQuery(
-    getScheduleDataForSourceByTimeRange,
-    {
-      queryKey: ["getScheduleDataForSourceByTimeRange", content.source_id, dateRange],
-      arg: {
-        dateRange,
-        id: content.source_id,
-      },
-    },
-  );
-  const hasScheduleChanged =
-    !isLoadingScheduleData &&
-    content.data_hash !== generateDesignHash(content.template?.id ?? "", scheduleData);
 
   const { mutateAsync: _deleteContentSchedule } = useSupaMutation(deleteContentSchedule);
 
@@ -71,7 +57,7 @@ export default function EventDialog({
     sourceId: content.source_id,
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
-    scheduleData,
+    scheduleData: event.data,
   });
 
   const handleDeleteEvent = async () => {
@@ -149,10 +135,6 @@ export default function EventDialog({
 
   const renderEventContent = () => {
     const width = isMobile ? 320 : 400;
-
-    if (isLoadingScheduleData || !scheduleData) {
-      return <Spinner className="my-4" />;
-    }
     if ((event.previewUrls ?? []).length === 0) {
       return <p className="text-sm text-muted-foreground">No preview available.</p>;
     }
@@ -192,7 +174,7 @@ export default function EventDialog({
     return (
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
         <div>
-          {hasScheduleChanged && <p className="mb-4 font-medium">Current</p>}
+          {event.hasDataChanged && <p className="mb-4 font-medium">Current</p>}
           <p className="mb-3 text-sm">
             Scheduled to be published on {format(event.start, "MMM, do")} at{" "}
             {event.start.toLocaleTimeString([], {
@@ -204,7 +186,7 @@ export default function EventDialog({
           <p className={`whitespace-pre-wrap p-2 text-sm`}>{content.ig_caption}</p>
         </div>
 
-        {scheduleData && content.template && hasScheduleChanged && (
+        {event.data && content.template && event.hasDataChanged && (
           <div>
             <p className="mb-2 font-medium">New</p>
             <Tooltip>
@@ -225,7 +207,7 @@ export default function EventDialog({
             <InstagramContent
               hideHeader
               contentIdbKey={getContentIdbKey(content.source_id, range, content.template)}
-              scheduleData={scheduleData}
+              scheduleData={event.data}
               template={content.template}
               width={width}
             />
@@ -241,7 +223,7 @@ export default function EventDialog({
         <div className="flex flex-col ">
           <Header2 title={content.template?.name ?? "Untitled"} />
 
-          {hasScheduleChanged && (
+          {event.hasDataChanged && (
             <p className="mb-4 text-sm text-orange-400">
               The schedule data has changed. Reschedule to publish the newly generated content.
             </p>
@@ -249,12 +231,10 @@ export default function EventDialog({
           {renderEventContent()}
         </div>
         <DialogFooter>
-          {hasScheduleChanged && (
+          {event.hasDataChanged && (
             <Button
               onClick={handleRescheduleEvent}
-              disabled={
-                isJobPending(idbKey) || isLoadingScheduleData || isRescheduling || isDeleting
-              }
+              disabled={isJobPending(idbKey) || isRescheduling || isDeleting}
             >
               {isRescheduling ? <Spinner className="text-secondary" /> : `Reschedule new content`}
             </Button>
@@ -263,7 +243,7 @@ export default function EventDialog({
             variant="destructive"
             className="mb-2"
             onClick={handleDeleteEvent}
-            disabled={isLoadingScheduleData || isRescheduling || isDeleting}
+            disabled={isRescheduling || isDeleting}
           >
             {isDeleting ? (
               <Spinner />
