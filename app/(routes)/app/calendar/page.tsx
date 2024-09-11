@@ -42,8 +42,8 @@ export default function Calendar() {
     getScheduleDataFromAllSourcesByTimeRange,
     {
       arg: {
-        from: sub(startOfMonth(currentMonth), { days: 7 }),
-        to: add(endOfMonth(currentMonth), { days: 7 }),
+        from: sub(startOfMonth(today), { days: 7 }),
+        to: add(endOfMonth(today), { days: 7 }),
       },
       queryKey: ["getScheduleDataFromAllSourcesByTimeRange"],
       refetchOnWindowFocus: false,

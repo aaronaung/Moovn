@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ReactQueryProvider>
             {/* The rest of your application */}
             <ReactQueryDevtools initialIsOpen={false} />
-            <Suspense fallback={<Spinner />}>
+            <Suspense fallback={<Spinner className="my-32" />}>
               <PhotopeaHeadlessProvider>
                 <PhotopeaEditorProvider>
                   <EmailEditorProvider>
