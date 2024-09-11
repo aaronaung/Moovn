@@ -34,12 +34,14 @@ export const DESIGN_WIDTH = 220;
 
 export const DesignContainer = ({
   contentIdbKey,
+  templateIdbKey,
   signedTemplateUrl,
   template,
   schedule,
   width = DESIGN_WIDTH,
 }: {
   contentIdbKey: string;
+  templateIdbKey: string;
   signedTemplateUrl: string;
   template: Tables<"templates">;
   schedule: ScheduleData;
@@ -91,6 +93,7 @@ export const DesignContainer = ({
       template,
       schedule,
       templateUrl: signedTemplateUrl,
+      templateIdbKey,
     });
   }, [template, schedule]);
 
@@ -157,10 +160,11 @@ export const DesignContainer = ({
             setDesignOverwrite(undefined);
             addJob({
               idbKey: contentIdbKey,
-              template,
+              templateIdbKey,
               schedule,
               templateUrl: signedTemplateUrl,
               forceRefresh: true,
+              template,
             });
           }}
           title={"Refresh design"}
@@ -251,6 +255,7 @@ export const DesignContainer = ({
                     addJob({
                       idbKey: contentIdbKey,
                       template,
+                      templateIdbKey,
                       templateUrl: signedTemplateUrl,
                       schedule,
                       forceRefresh: true,

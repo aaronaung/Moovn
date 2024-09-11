@@ -3,11 +3,15 @@ import { useEffect, useState } from "react";
 import { signUrlForPathOrChildPaths } from "../libs/storage";
 import { toast } from "../components/ui/use-toast";
 
-export const useTemplateStorageObjects = (template: Tables<"templates">) => {
+export const useTemplateStorageObjects = (template?: Tables<"templates">) => {
   const [templateObjects, setTemplateUrls] = useState<{ url: string; path: string }[]>([]);
   const [isLoadingTemplateObjects, setIsLoadingTemplateUrls] = useState(true);
 
   useEffect(() => {
+    if (!template) {
+      setIsLoadingTemplateUrls(false);
+      return;
+    }
     // Some templates - specifically instagram templates can have multiple child design templates for Carousel type posts.
     // We need to fetch the signed urls for all the child templates.
     const fetchTemplateUrls = async () => {

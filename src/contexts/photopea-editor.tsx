@@ -8,6 +8,11 @@ import { flushSync } from "react-dom";
 import { ContentType } from "../consts/content";
 import { signUrl } from "../data/r2";
 
+type FreeDesignTemplate = {
+  jpg: ArrayBuffer;
+  psd: ArrayBuffer;
+  title: string;
+};
 export type PhotopeaEditorMetadata = {
   title: string;
   source_data_view: string;
@@ -35,7 +40,7 @@ type PhotopeaEditorContextValue = {
   isLoadingFreeDesignTemplates: boolean;
   freeDesignTemplates: {
     [key: string]: {
-      [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+      [key: string]: FreeDesignTemplate[];
     };
   };
   blankDesignTemplates: {
@@ -67,7 +72,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   });
   const [freeDesignTemplates, setFreeDesignTemplates] = useState<{
     [key: string]: {
-      [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+      [key: string]: FreeDesignTemplate[];
     };
   }>({
     [SourceDataView.Daily as string]: {
@@ -95,27 +100,35 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         psd: ArrayBuffer;
         scheduleRange: string;
         contentType: string;
+        title: string;
       }>[] = [];
 
       for (const [scheduleRange, byContentType] of Object.entries(FREE_DESIGN_TEMPLATES)) {
-        for (const [contentType, fileNames] of Object.entries(byContentType)) {
-          for (const fileName of fileNames) {
+        for (const [contentType, templates] of Object.entries(byContentType)) {
+          for (const template of templates) {
             const download = new Promise<{
               scheduleRange: string;
               contentType: string;
               jpg: ArrayBuffer;
               psd: ArrayBuffer;
+              title: string;
             }>(async (resolve) => {
               const [psdUrl, jpgUrl] = await Promise.all([
-                signUrl("free-design-templates", `${contentType}/${fileName}.psd`),
-                signUrl("free-design-templates", `${contentType}/${fileName}.jpg`),
+                signUrl("free-design-templates", `${contentType}/${template.fileName}.psd`),
+                signUrl("free-design-templates", `${contentType}/${template.fileName}.jpg`),
               ]);
               const [psd, jpg] = await Promise.all([fetch(psdUrl), fetch(jpgUrl)]);
               const [psdArrayBuffer, jpgArrayBuffer] = await Promise.all([
                 psd.arrayBuffer(),
                 jpg.arrayBuffer(),
               ]);
-              resolve({ scheduleRange, contentType, jpg: jpgArrayBuffer, psd: psdArrayBuffer });
+              resolve({
+                scheduleRange,
+                contentType,
+                jpg: jpgArrayBuffer,
+                psd: psdArrayBuffer,
+                title: template.title,
+              });
             });
             downloads.push(download);
           }
@@ -124,7 +137,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
       const downloaded = await Promise.all(downloads);
       const designTemplates: {
         [key: string]: {
-          [key: string]: { jpg: ArrayBuffer; psd: ArrayBuffer }[];
+          [key: string]: FreeDesignTemplate[];
         };
       } = {};
       for (const download of downloaded) {
@@ -134,7 +147,11 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         if (!designTemplates[download.scheduleRange][download.contentType]) {
           designTemplates[download.scheduleRange][download.contentType] = [];
         }
-        designTemplates[download.scheduleRange][download.contentType].push(download);
+        designTemplates[download.scheduleRange][download.contentType].push({
+          title: download.title,
+          jpg: download.jpg,
+          psd: download.psd,
+        });
       }
 
       const blankDesignDownloads: Promise<{

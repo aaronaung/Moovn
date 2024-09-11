@@ -1,5 +1,4 @@
 "use client";
-import { Tables } from "@/types/db";
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
@@ -12,9 +11,11 @@ import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { usePhotopeaHeadless } from "./photopea-headless";
 import { deleteObject } from "../data/r2";
 import { useSearchParams } from "next/navigation";
+import { Tables } from "@/types/db";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
+  templateIdbKey: string;
   template: Tables<"templates">;
   templateUrl: string;
   schedule: ScheduleData;
@@ -89,7 +90,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         setActiveJobs((prevJobs) => [...prevJobs, nextJob]);
         setQueuedJobs(remainingJobs);
 
-        const { template, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
+        const { template, templateIdbKey, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
         try {
           await cleanupIdb();
           const debug = searchParams.get("debug") === "true";
@@ -114,7 +115,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
             ]);
           }
 
-          const templateInIdb = await db.templates.get(template.id);
+          const templateInIdb = await db.templates.get(templateIdbKey);
           let templateFile = templateInIdb?.psd;
           if (!templateFile) {
             templateFile = await (await fetch(templateUrl)).arrayBuffer();

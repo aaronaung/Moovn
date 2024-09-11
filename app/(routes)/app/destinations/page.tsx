@@ -115,7 +115,9 @@ export default function DestinationsPage() {
     <div className="mt-2 flex flex-col">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={"You'll no longer be able to post content to the destination. Are you sure?"}
+        label={
+          "Deleting this destination will delete all associated scheduled contents. Are you sure?"
+        }
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({

@@ -24,7 +24,7 @@ export const db = new Dexie("moovn") as Dexie & {
   templates: EntityTable<Template, "key">;
 };
 
-db.version(2).stores({
+db.version(3).stores({
   designs: "key, templateId, psd, jpg, hash, instagramTags, lastUpdated",
   templates: "key, templateId, psd, jpg, lastUpdated",
 });

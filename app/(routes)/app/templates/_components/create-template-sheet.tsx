@@ -15,9 +15,10 @@ import { LEARN_TEMPLATE_CREATION_GUIDE_LINK } from "@/src/consts/links";
 import { SourceDataView } from "@/src/consts/sources";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
-import { uploadObject } from "@/src/data/r2";
+import { moveObject, uploadObject } from "@/src/data/r2";
 import { saveTemplate } from "@/src/data/templates";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
+import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
@@ -26,10 +27,14 @@ export default function CreateTemplateSheet({
   user,
   isOpen,
   onClose,
+  template,
+  title,
 }: {
   user: Tables<"users">;
   isOpen: boolean;
   onClose: () => void;
+  template?: Tables<"templates">; // if provided, we're adding to a carousel
+  title: string;
 }) {
   const {
     open: openPhotopeaEditor,
@@ -39,6 +44,7 @@ export default function CreateTemplateSheet({
   } = usePhotopeaEditor();
   const [sourceDataView, setSourceDataView] = useState(SourceDataView.Daily);
   const [contentType, setContentType] = useState(ContentType.InstagramPost);
+  const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<string | undefined>(undefined);
 
   const { mutateAsync: _saveTemplate, isPending: isSavingTemplate } = useSupaMutation(
@@ -57,6 +63,63 @@ export default function CreateTemplateSheet({
       blankDesignTemplates[contentType] ??
       new ArrayBuffer(0)
     );
+  };
+
+  const handleAddToCarousel = async (designExport: DesignExport) => {
+    if (!template) {
+      return;
+    }
+    if (!designExport["psd"] || !designExport["jpg"]) {
+      console.error("missing psd or jpg file in export:", {
+        designExport,
+      });
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support.",
+      });
+      return;
+    }
+
+    try {
+      let templatePathForNew;
+      if (templateObjects.length > 1) {
+        templatePathForNew = `${template.owner_id}/${template.id}/${templateObjects.length}`;
+
+        await uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]]));
+      } else {
+        templatePathForNew = `${templateObjects[0].path}/1`;
+        // Delete the old template and design in idb.
+        await Promise.all([
+          db.designs.where("templateId").equals(template.id).delete(),
+          db.templates.where("templateId").equals(template.id).delete(),
+          moveObject(
+            "templates",
+            templateObjects[0].path,
+            "templates",
+            `${templateObjects[0].path}/0`,
+          ),
+          uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]])),
+          db.templates.put({
+            key: templatePathForNew,
+            templateId: template.id,
+            jpg: designExport["jpg"],
+            psd: designExport["psd"],
+            lastUpdated: new Date(),
+          }),
+        ]);
+      }
+      toast({
+        variant: "success",
+        title: `Carousel template saved.`,
+      });
+      close();
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Failed to save template. Please try again or contact support.",
+      });
+    }
   };
 
   const handleTemplateCreate = async (
@@ -82,15 +145,16 @@ export default function CreateTemplateSheet({
         owner_id: user.id,
       });
 
+      const templatePath = `${user.id}/${saved.id}`;
       await Promise.all([
         db.templates.put({
-          key: saved.id,
+          key: templatePath,
           templateId: saved.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
           lastUpdated: new Date(),
         }),
-        uploadObject("templates", `${user.id}/${saved.id}`, new Blob([designExport["psd"]])),
+        uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       ]);
     } catch (err) {
       console.error(err);
@@ -112,7 +176,7 @@ export default function CreateTemplateSheet({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="flex h-[95dvh] flex-col ">
         <SheetHeader>
-          <SheetTitle>Create Template</SheetTitle>
+          <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
           <SelectMetadataSection
@@ -135,14 +199,14 @@ export default function CreateTemplateSheet({
             onClick={() => {
               openPhotopeaEditor(
                 {
-                  title: "Untitled",
-                  source_data_view: sourceDataView,
-                  content_type: contentType,
+                  title: template?.name || "Untitled",
+                  source_data_view: template?.source_data_view || sourceDataView,
+                  content_type: template?.content_type || contentType,
                 },
                 getSelectedTemplate(),
                 {
-                  onSave: handleTemplateCreate,
-                  isMetadataEditable: true,
+                  onSave: template ? handleAddToCarousel : handleTemplateCreate,
+                  isMetadataEditable: !Boolean(template), // Disable editing metadata if we're adding to a carousel
                 },
               );
             }}
@@ -226,7 +290,13 @@ const SelectStartingTemplateSection = ({
     <div>
       <h3 className="text-sm text-muted-foreground">Select a starter template</h3>
       {!isLoadingFreeDesignTemplates ? (
-        <RadioGroup value={`item-${selectedTemplateIndex}`} onValueChange={onTemplateSelect}>
+        <RadioGroup
+          value={`item-${selectedTemplateIndex}`}
+          onValueChange={(value) => {
+            const index = value.split("-")[1];
+            onTemplateSelect(index);
+          }}
+        >
           <div className="mt-3 flex flex-wrap gap-4">
             {(freeDesignTemplates[sourceDataView][contentType] || []).length === 0 && (
               <p className="text-xs text-muted-foreground">Starter templates coming soon!</p>
@@ -235,6 +305,14 @@ const SelectStartingTemplateSection = ({
             {(freeDesignTemplates[sourceDataView][contentType] || []).map((template, index) => (
               <div className="flex flex-col gap-2" key={index}>
                 <RadioGroupItem value={`item-${index}`} />
+                <p
+                  className="cursor-pointer text-sm font-semibold"
+                  onClick={() => {
+                    onTemplateSelect(`${index}`);
+                  }}
+                >
+                  {template.title}
+                </p>
                 <img
                   style={{
                     boxShadow:

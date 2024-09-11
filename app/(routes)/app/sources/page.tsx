@@ -108,7 +108,7 @@ export default function SourcesPage() {
     <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={"All designs created from this source will be deleted. Are you sure?"}
+        label={"Deleting this source will delete all associated scheduled contents. Are you sure?"}
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({

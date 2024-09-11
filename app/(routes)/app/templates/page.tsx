@@ -17,24 +17,28 @@ import CreateTemplateSheet from "./_components/create-template-sheet";
 export default function TemplatesPage() {
   const { user } = useAuthUser();
 
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
-    queryKey: ["getTemplatesForAuthUser"],
-  });
-  const [createTemplateSheetOpen, setCreateTemplateSheetOpen] = useState(false);
-
-  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
-    deleteTemplate,
-    {
-      invalidate: [["getTemplatesForAuthUser"]],
-    },
-  );
-
   const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
   }>({
     isOpen: false,
   });
+  const [createTemplateSheetState, setCreateTemplateSheetState] = useState<{
+    isOpen: boolean;
+    template?: Tables<"templates">;
+  }>({
+    isOpen: false,
+  });
+
+  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
+    queryKey: ["getTemplatesForAuthUser"],
+  });
+  const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
+    deleteTemplate,
+    {
+      invalidate: [["getTemplatesForAuthUser"]],
+    },
+  );
 
   if (isLoadingTemplates || !user) {
     return <Spinner className="mt-8" />;
@@ -47,13 +51,19 @@ export default function TemplatesPage() {
       {/** Todo: check if the template is associated with any content that's to be published */}
       <CreateTemplateSheet
         user={user}
-        isOpen={createTemplateSheetOpen}
-        onClose={() => setCreateTemplateSheetOpen(false)}
+        isOpen={createTemplateSheetState.isOpen}
+        onClose={() => setCreateTemplateSheetState({ isOpen: false })}
+        template={createTemplateSheetState.template}
+        title={
+          createTemplateSheetState.template
+            ? `Add to existing template (${createTemplateSheetState.template.name})`
+            : "Create template"
+        }
       />
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
-          "You'll no longer be able to generate designs from this template. Are you sure you want to delete this template?"
+          "Deleting this template will delete all associated scheduled contents. Are you sure you want to delete this template?"
         }
         isDeleting={isDeletingTemplate}
         onClose={() => {
@@ -88,7 +98,9 @@ export default function TemplatesPage() {
         </div>
         <Button
           onClick={() => {
-            setCreateTemplateSheetOpen(true);
+            setCreateTemplateSheetState({
+              isOpen: true,
+            });
           }}
         >
           Create template
@@ -106,6 +118,12 @@ export default function TemplatesPage() {
                 <InstagramTemplate
                   key={template.id}
                   template={template}
+                  onAddToCarousel={() => {
+                    setCreateTemplateSheetState({
+                      isOpen: true,
+                      template,
+                    });
+                  }}
                   onDeleteTemplate={() => {
                     setDeleteConfirmationDialogState({
                       isOpen: true,

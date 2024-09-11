@@ -71,6 +71,7 @@ export default function Calendar() {
             getEventPromises.push(
               new Promise(async (resolve, reject) => {
                 try {
+                  // This is not optimal, we should only sign url for child paths if the content is a directory.
                   const signUrlData = await signUrlForPathOrChildPaths(
                     "scheduled-content",
                     `${content.owner_id}/${content.id}`,

@@ -57,8 +57,9 @@ export default memo(
         return (
           <DesignContainer
             contentIdbKey={contentIdbKey}
-            schedule={scheduleData}
+            templateIdbKey={templateObjects[0].path}
             template={template}
+            schedule={scheduleData}
             signedTemplateUrl={templateObjects[0].url}
             width={width}
           />
@@ -76,8 +77,9 @@ export default memo(
               >
                 <DesignContainer
                   contentIdbKey={`${contentIdbKey}/${obj.path.split("/").pop()}`}
-                  schedule={scheduleData}
+                  templateIdbKey={obj.path}
                   template={template}
+                  schedule={scheduleData}
                   signedTemplateUrl={obj.url}
                   width={width}
                 />
