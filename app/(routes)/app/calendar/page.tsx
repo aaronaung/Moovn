@@ -53,47 +53,58 @@ export default function Calendar() {
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
-        const getEventPromises: Promise<CalendarEvent>[] = [];
-        for (const schedule of contentSchedules ?? []) {
-          const { range, contentId } = deconstructScheduleName(schedule.name);
+        const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
+        const scheduleDataMap = new Map(Object.entries(scheduleDataFromAllSources || {}));
 
-          const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
-          const content = contents?.find((c) => c.id === contentId);
-          if (content && scheduledDate && scheduleDataFromAllSources) {
+        const calendarEvents = await Promise.all(
+          (contentSchedules || []).map(async (schedule) => {
+            const { range, contentId } = deconstructScheduleName(schedule.name);
+            const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
+            const content = contentMap.get(contentId);
+
+            if (!content || !scheduledDate || !scheduleDataMap.has(content.source_id)) {
+              return null;
+            }
+
             const dataForEvent = extractScheduleDataWithinRange(
               range,
-              scheduleDataFromAllSources[content.source_id],
+              scheduleDataMap.get(content.source_id)!,
             );
 
             const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
             const hasDataChanged = dataHash !== content.data_hash;
 
-            getEventPromises.push(
-              new Promise(async (resolve, reject) => {
-                try {
-                  // This is not optimal, we should only sign url for child paths if the content is a directory.
-                  const signUrlData = await signUrlForPathOrChildPaths(
-                    "scheduled-content",
-                    `${content.owner_id}/${content.id}`,
-                  );
-                  resolve({
-                    contentId: content.id,
-                    scheduleName: schedule.name,
-                    data: dataForEvent,
-                    hasDataChanged,
-                    title: content.template?.name ?? "Untitled",
-                    start: scheduledDate,
-                    contentType: content.type as ContentType,
-                    previewUrls: signUrlData.map((data) => data.url),
-                  });
-                } catch (err: any) {
-                  reject(err.message);
-                }
-              }),
-            );
-          }
-        }
-        setCalendarEvents(await Promise.all(getEventPromises));
+            console.log("hashes", {
+              existingHash: content.data_hash,
+              newHash: dataHash,
+              templateId: content.template?.id,
+              dataForEvent,
+            });
+
+            try {
+              const signUrlData = await signUrlForPathOrChildPaths(
+                "scheduled-content",
+                `${content.owner_id}/${content.id}`,
+              );
+
+              return {
+                contentId: content.id,
+                scheduleName: schedule.name,
+                data: dataForEvent,
+                hasDataChanged,
+                title: content.template?.name ?? "Untitled",
+                start: scheduledDate,
+                contentType: content.type as ContentType,
+                previewUrls: signUrlData.map((data) => data.url),
+              };
+            } catch (err: any) {
+              console.error(`Failed to sign URL for content ${content.id}:`, err.message);
+              return null;
+            }
+          }),
+        );
+
+        setCalendarEvents(calendarEvents.filter((event) => event !== null));
       } catch (err) {
         console.error(err);
       } finally {

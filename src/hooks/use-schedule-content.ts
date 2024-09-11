@@ -79,6 +79,15 @@ export function useScheduleContent({
 
     const scheduleExpression = atScheduleExpression(publishDateTime);
 
+    const designHash = generateDesignHash(template.id, scheduleDataForRange);
+    console.log("generated design hash", {
+      designHash,
+      templateId,
+      scheduleDataForRange,
+      scheduleByRange,
+      range,
+    });
+
     const content = await _saveContent({
       source_id: sourceId,
       source_data_view: template.source_data_view,
@@ -90,7 +99,7 @@ export function useScheduleContent({
       ...(template.ig_caption_template
         ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
         : {}),
-      data_hash: generateDesignHash(template.id, scheduleDataForRange),
+      data_hash: designHash,
       updated_at: new Date().toISOString(),
     });
 

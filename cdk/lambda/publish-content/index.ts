@@ -2,6 +2,7 @@ import * as supabase from "@supabase/supabase-js";
 import { success, error } from "../utils";
 import { InstagramAPIClient } from "../libs/instagram/ig-client";
 import R2Storage from "../libs/r2/r2-storage";
+import { getBucketName } from "../libs/r2/r2-buckets";
 
 export const handler = async (event: any) => {
   try {
@@ -70,11 +71,11 @@ export const handler = async (event: any) => {
         const toPublish = [];
         const hasIgTags = content.ig_tags && content.ig_tags.length > 0;
 
-        const objects = await r2.listObjects("scheduled-content", contentPath);
+        const objects = await r2.listObjects(getBucketName("scheduled-content"), contentPath);
         if (objects.length === 0) {
           // It's not a directory.
 
-          const signedUrl = await r2.signUrl("scheduled-content", contentPath);
+          const signedUrl = await r2.signUrl(getBucketName("scheduled-content"), contentPath);
           toPublish.push({
             url: signedUrl,
             ...(hasIgTags ? { tags: content.ig_tags[0] } : {}),
@@ -85,7 +86,7 @@ export const handler = async (event: any) => {
               throw new Error(`Missing Key for object in scheduled-content bucket`);
             }
             // file name is the index for tags.
-            const signedUrl = await r2.signUrl("scheduled-content", obj.Key);
+            const signedUrl = await r2.signUrl(getBucketName("scheduled-content"), obj.Key);
             const tagsIndex = parseInt(obj.Key);
             toPublish.push({
               url: signedUrl,

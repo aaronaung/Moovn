@@ -246,7 +246,7 @@ export default function EventDialog({
             disabled={isRescheduling || isDeleting}
           >
             {isDeleting ? (
-              <Spinner />
+              <Spinner className="text-secondary" />
             ) : (
               <>
                 <TrashIcon className="mr-2 h-4 w-4" />
