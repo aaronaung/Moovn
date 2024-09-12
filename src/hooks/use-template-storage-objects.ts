@@ -20,6 +20,7 @@ export const useTemplateStorageObjects = (template?: Tables<"templates">) => {
         const urls = await signUrlForPathOrChildPaths(
           "templates",
           `${template.owner_id}/${template.id}`,
+          template.is_carousel,
         );
         setTemplateUrls(urls);
       } catch (e) {

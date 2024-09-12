@@ -8,6 +8,7 @@ export type Design = {
   jpg: ArrayBuffer;
   hash: string;
   instagramTags: InstagramTag[];
+  instagramCaption: string;
   lastUpdated: Date;
 };
 
@@ -28,3 +29,16 @@ db.version(3).stores({
   designs: "key, templateId, psd, jpg, hash, instagramTags, lastUpdated",
   templates: "key, templateId, psd, jpg, lastUpdated",
 });
+
+db.version(4)
+  .stores({
+    designs: "key, templateId, psd, jpg, hash, instagramTags, instagramCaption, lastUpdated",
+    templates: "key, templateId, psd, jpg, lastUpdated",
+  })
+  .upgrade((tx) => {
+    tx.table("designs")
+      .toCollection()
+      .modify((design) => {
+        design.instagramCaption = "";
+      });
+  });

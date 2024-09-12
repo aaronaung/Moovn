@@ -4,13 +4,6 @@ import { BucketName, getBucketName } from "../libs/r2/r2-buckets";
 const BASE_URL = "/api/r2";
 
 export async function signUrl(bucketName: BucketName, key: string): Promise<string> {
-  // First, check if the object exists
-  const exists = await objectExists(bucketName, key);
-  if (!exists) {
-    return ""; // Return an empty string if the object doesn't exist
-  }
-
-  // If the object exists, proceed with signing the URL
   const response = await fetch(
     `${BASE_URL}/sign-url?bucket=${encodeURIComponent(
       getBucketName(bucketName),

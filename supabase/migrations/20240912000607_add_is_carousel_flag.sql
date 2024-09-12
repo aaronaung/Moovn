@@ -1,0 +1,1 @@
+alter table "public"."templates" add column "is_carousel" boolean not null default false;

@@ -32,12 +32,14 @@ export type CalendarEvent = {
 export default function FullCalendar({
   actionButtons,
   events = [],
+  previewUrls = new Map<string, string[]>(),
   onEventClick,
   currentMonth,
   setCurrentMonth,
 }: {
   actionButtons?: React.ReactNode[];
   events?: CalendarEvent[];
+  previewUrls?: Map<string, string[]>;
   onEventClick?: (event: CalendarEvent) => void;
   currentMonth: string;
   setCurrentMonth: (month: string) => void;
@@ -106,6 +108,7 @@ export default function FullCalendar({
           <FullCalendarMonthlyView
             events={events}
             month={currentMonth}
+            previewUrls={previewUrls}
             selectedDay={selectedDay}
             onDaySelect={(day) => setSelectedDay(day)}
             onEventClick={onEventClick}

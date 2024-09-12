@@ -48,12 +48,14 @@ export function groupEventsByStartDate(events: CalendarEvent[]): Record<string, 
 export default function FullCalendarMonthlyView({
   month,
   selectedDay,
+  previewUrls,
   onDaySelect,
   events,
   onEventClick,
 }: {
   month: string;
   selectedDay: Date;
+  previewUrls: Map<string, string[]>;
   onDaySelect: (day: Date) => void;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
@@ -149,7 +151,7 @@ export default function FullCalendarMonthlyView({
                       {formattedDay.split("-").pop()?.replace(/^0/, "")}
                     </time>
                     {eventsOnDay.length > 0 && (
-                      <ol className="mt-2 space-y-1">
+                      <ol className="mt-2 space-y-0.5">
                         {eventsOnDay.slice(0, 3).map((event, index) => {
                           const time = event.start.toLocaleTimeString([], {
                             hour: "numeric",
@@ -314,10 +316,10 @@ export default function FullCalendarMonthlyView({
                     </time>
                   </div>
                   <div>
-                    {event.previewUrls && event.previewUrls.length > 0 && (
+                    {previewUrls.has(event.contentId) && (
                       <Image
                         className="h-[50px] w-[50px] rounded-sm bg-cover"
-                        src={event.previewUrls[0]}
+                        src={previewUrls.get(event.contentId)?.[0]}
                         alt={"preview"}
                       />
                     )}

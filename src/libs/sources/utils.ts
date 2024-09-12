@@ -110,6 +110,11 @@ export const organizeScheduleDataByView = (
   scheduleData: ScheduleData,
   scheduleRange?: { from: Date; to: Date }, // only used for weekly view
 ) => {
+  console.log("calling organizeScheduleByDataView", {
+    view,
+    scheduleData,
+    scheduleRange,
+  });
   const organizedSchedule: { [key: string]: any } = {};
 
   // Helper function to get the start and end of a week
@@ -180,12 +185,7 @@ export const organizeScheduleDataByView = (
   return organizedSchedule;
 };
 
-export const extractScheduleDataWithinRange = (
-  range: string,
-  supersetScheduleData: ScheduleData,
-) => {
-  const dailyEvents = organizeScheduleDataByView(SourceDataView.Daily, supersetScheduleData) || {};
-
+export const extractScheduleDataWithinRange = (range: string, dailyEvents: ScheduleData) => {
   const [rangeStart, rangeEnd] = range.split("_");
   let result: { [key: string]: any } = {};
   if (!rangeEnd) {

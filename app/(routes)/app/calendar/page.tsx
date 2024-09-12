@@ -13,8 +13,12 @@ import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
 import { add, endOfMonth, format, startOfMonth, startOfToday, sub } from "date-fns";
 import { getScheduleDataFromAllSourcesByTimeRange } from "@/src/data/sources";
-import { extractScheduleDataWithinRange } from "@/src/libs/sources/utils";
+import {
+  extractScheduleDataWithinRange,
+  organizeScheduleDataByView,
+} from "@/src/libs/sources/utils";
 import { generateDesignHash } from "@/src/libs/designs/util";
+import { SourceDataView } from "@/src/consts/sources";
 
 export default function Calendar() {
   const router = useRouter();
@@ -23,7 +27,11 @@ export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<Map<string, string[]>>(new Map());
+
   const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
+  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(true);
+
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
     content?: Tables<"content"> & { template: Tables<"templates"> | null };
@@ -49,12 +57,53 @@ export default function Calendar() {
       refetchOnWindowFocus: false,
     },
   );
+  useEffect(() => {
+    const loadPreviewUrls = async () => {
+      try {
+        setIsLoadingPreviewUrls(true);
+        const previewUrls = new Map<string, string[]>();
+        const previewUrlPromises: Promise<{ contentId: string; urls: string[] }>[] = [];
+        for (const content of contents || []) {
+          previewUrlPromises.push(
+            new Promise(async (resolve) => {
+              const signUrlData = await signUrlForPathOrChildPaths(
+                "scheduled-content",
+                `${content.owner_id}/${content.id}`,
+                content.template?.is_carousel || false,
+              );
+              resolve({
+                contentId: content.id,
+                urls: signUrlData.map((data) => data.url),
+              });
+            }),
+          );
+        }
+        const previewUrlData = await Promise.all(previewUrlPromises);
+        for (const data of previewUrlData) {
+          previewUrls.set(data.contentId, data.urls);
+        }
+        setPreviewUrls(previewUrls);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingPreviewUrls(false);
+      }
+    };
+
+    if (contents && contents.length > 0) {
+      loadPreviewUrls();
+    }
+  }, [contents]);
 
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
         const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
-        const scheduleDataMap = new Map(Object.entries(scheduleDataFromAllSources || {}));
+        const scheduleDataMap = new Map();
+        for (const [sourceId, data] of Object.entries(scheduleDataFromAllSources || {})) {
+          const dailyEvents = organizeScheduleDataByView(SourceDataView.Daily, data) || {};
+          scheduleDataMap.set(sourceId, dailyEvents);
+        }
 
         const calendarEvents = await Promise.all(
           (contentSchedules || []).map(async (schedule) => {
@@ -74,33 +123,15 @@ export default function Calendar() {
             const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
             const hasDataChanged = dataHash !== content.data_hash;
 
-            console.log("hashes", {
-              existingHash: content.data_hash,
-              newHash: dataHash,
-              templateId: content.template?.id,
-              dataForEvent,
-            });
-
-            try {
-              const signUrlData = await signUrlForPathOrChildPaths(
-                "scheduled-content",
-                `${content.owner_id}/${content.id}`,
-              );
-
-              return {
-                contentId: content.id,
-                scheduleName: schedule.name,
-                data: dataForEvent,
-                hasDataChanged,
-                title: content.template?.name ?? "Untitled",
-                start: scheduledDate,
-                contentType: content.type as ContentType,
-                previewUrls: signUrlData.map((data) => data.url),
-              };
-            } catch (err: any) {
-              console.error(`Failed to sign URL for content ${content.id}:`, err.message);
-              return null;
-            }
+            return {
+              contentId: content.id,
+              scheduleName: schedule.name,
+              data: dataForEvent,
+              hasDataChanged,
+              title: content.template?.name ?? "Untitled",
+              start: scheduledDate,
+              contentType: content.type as ContentType,
+            };
           }),
         );
 
@@ -116,7 +147,7 @@ export default function Calendar() {
     }
   }, [contents, contentSchedules, scheduleDataFromAllSources]);
 
-  if (isLoadingCalendarEvents) {
+  if (isLoadingCalendarEvents || isLoadingPreviewUrls) {
     return <Spinner className="mt-8" />;
   }
 
@@ -128,12 +159,14 @@ export default function Calendar() {
           onClose={() => setEventDialog((prev) => ({ ...prev, isOpen: false }))}
           content={eventDialog.content}
           event={eventDialog.event}
+          previewUrls={previewUrls}
         />
       )}
       <FullCalendar
         currentMonth={currentMonth}
         setCurrentMonth={setCurrentMonth}
         events={calendarEvents}
+        previewUrls={previewUrls}
         onEventClick={(event) => {
           const content = contents?.find((c) => c.id === event.contentId);
           setEventDialog({

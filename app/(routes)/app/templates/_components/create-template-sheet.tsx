@@ -106,6 +106,10 @@ export default function CreateTemplateSheet({
             psd: designExport["psd"],
             lastUpdated: new Date(),
           }),
+          _saveTemplate({
+            id: template.id,
+            is_carousel: true,
+          }),
         ]);
       }
       toast({
@@ -143,6 +147,7 @@ export default function CreateTemplateSheet({
         source_data_view: metadataChanges.source_data_view,
         content_type: metadataChanges.content_type,
         owner_id: user.id,
+        is_carousel: false,
       });
 
       const templatePath = `${user.id}/${saved.id}`;

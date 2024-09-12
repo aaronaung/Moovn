@@ -152,7 +152,6 @@ export default function ContentSchedulingForm({
     sourceId,
     destinationId,
     availableTemplates,
-    scheduleData,
   });
 
   const handleScheduleForPublishing = async () => {

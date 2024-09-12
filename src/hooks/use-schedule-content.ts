@@ -12,12 +12,9 @@ import {
   atScheduleExpression,
   deconstructContentIdbKey,
   getScheduleName,
-  renderCaption,
 } from "@/src/libs/content";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
-import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
-import { generateDesignHash } from "@/src/libs/designs/util";
 import { copyObject, listObjects, objectExists, uploadObject } from "../data/r2";
 
 const SCHEDULING_BATCH_SIZE = 5;
@@ -26,12 +23,10 @@ export function useScheduleContent({
   sourceId,
   destinationId,
   availableTemplates,
-  scheduleData,
 }: {
   sourceId: string;
   destinationId: string;
   availableTemplates: Tables<"templates">[];
-  scheduleData: any;
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -61,32 +56,9 @@ export function useScheduleContent({
       });
       return null;
     }
-    if (!scheduleData) {
-      console.error(`Schedule data not found for source ${sourceId}`);
-      toast({
-        variant: "destructive",
-        title: `Schedule data not found. Please contact support.`,
-      });
-      return null;
-    }
     const ownerId = template.owner_id;
 
-    const scheduleByRange = organizeScheduleDataByView(template.source_data_view, scheduleData, {
-      from: publishDateTime,
-      to: publishDateTime,
-    });
-    const scheduleDataForRange = scheduleByRange[range];
-
     const scheduleExpression = atScheduleExpression(publishDateTime);
-
-    const designHash = generateDesignHash(template.id, scheduleDataForRange);
-    console.log("generated design hash", {
-      designHash,
-      templateId,
-      scheduleDataForRange,
-      scheduleByRange,
-      range,
-    });
 
     const content = await _saveContent({
       source_id: sourceId,
@@ -96,10 +68,8 @@ export function useScheduleContent({
       template_id: template.id,
       destination_id: destinationId,
       ig_tags: designs.map((d) => d.instagramTags),
-      ...(template.ig_caption_template
-        ? { ig_caption: renderCaption(template.ig_caption_template, scheduleDataForRange) }
-        : {}),
-      data_hash: designHash,
+      ...(template.ig_caption_template ? { ig_caption: designs[0].instagramCaption } : {}),
+      data_hash: designs[0].hash, //the hash is the same for all designs in the carousel
       updated_at: new Date().toISOString(),
     });
 

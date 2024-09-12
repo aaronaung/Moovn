@@ -5,11 +5,9 @@ import { BucketName } from "./r2/r2-buckets";
 export const signUrlForPathOrChildPaths = async (
   bucket: BucketName,
   path: string,
+  isDirectory: boolean,
 ): Promise<{ url: string; path: string }[]> => {
-  const objects = await listObjects(bucket, path);
-
-  if (objects.length === 0) {
-    // The content is a single image.
+  if (!isDirectory) {
     const signedUrl = await signUrl(bucket, path);
     return [
       {
@@ -19,7 +17,7 @@ export const signUrlForPathOrChildPaths = async (
     ];
   }
 
-  // The content is a directory.
+  const objects = await listObjects(bucket, path);
   return await Promise.all(
     objects.map(async (object) => {
       const objectPath = object.Key || "";

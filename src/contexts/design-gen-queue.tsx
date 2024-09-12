@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
-import { deconstructContentIdbKey, getRangeStart } from "../libs/content";
+import { deconstructContentIdbKey, getRangeStart, renderCaption } from "../libs/content";
 import { isBefore, startOfToday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
 import { readPsd } from "ag-psd";
@@ -143,6 +143,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                   psd: designExport["psd"],
                   hash: designHash,
                   instagramTags: designExport.instagramTags,
+                  instagramCaption: renderCaption(template?.ig_caption_template || "", schedule),
                   lastUpdated: new Date(),
                 });
                 if (document.body.contains(photopeaEl) && !debug) {

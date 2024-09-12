@@ -128,42 +128,6 @@ export type Database = {
           },
         ]
       }
-      content_templates: {
-        Row: {
-          content_id: string
-          created_at: string | null
-          position: number
-          template_id: string
-        }
-        Insert: {
-          content_id: string
-          created_at?: string | null
-          position?: number
-          template_id: string
-        }
-        Update: {
-          content_id?: string
-          created_at?: string | null
-          position?: number
-          template_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_templates_content_id_foreign"
-            columns: ["content_id"]
-            isOneToOne: false
-            referencedRelation: "content"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_templates_template_id_foreign"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       destinations: {
         Row: {
           created_at: string | null
@@ -301,6 +265,7 @@ export type Database = {
           created_at: string | null
           id: string
           ig_caption_template: string | null
+          is_carousel: boolean
           name: string
           owner_id: string
           source_data_view: string
@@ -311,6 +276,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ig_caption_template?: string | null
+          is_carousel?: boolean
           name: string
           owner_id: string
           source_data_view: string
@@ -321,6 +287,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ig_caption_template?: string | null
+          is_carousel?: boolean
           name?: string
           owner_id?: string
           source_data_view?: string
@@ -374,13 +341,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      set_content_template_links: {
-        Args: {
-          arg_content_id: string
-          new_template_ids: string[]
-        }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

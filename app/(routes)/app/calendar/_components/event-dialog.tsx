@@ -32,11 +32,13 @@ export default function EventDialog({
   onClose,
   content,
   event,
+  previewUrls,
 }: {
   isOpen: boolean;
   onClose: () => void;
   content: Tables<"content"> & { template: Tables<"templates"> | null };
   event: CalendarEvent;
+  previewUrls: Map<string, string[]>;
 }) {
   const queryClient = useQueryClient();
 
@@ -57,7 +59,6 @@ export default function EventDialog({
     sourceId: content.source_id,
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
-    scheduleData: event.data,
   });
 
   const handleDeleteEvent = async () => {
@@ -135,17 +136,18 @@ export default function EventDialog({
 
   const renderEventContent = () => {
     const width = isMobile ? 320 : 400;
-    if ((event.previewUrls ?? []).length === 0) {
+    const previewUrlsForContent = previewUrls.get(event.contentId);
+    if (!previewUrlsForContent || previewUrlsForContent.length === 0) {
       return <p className="text-sm text-muted-foreground">No preview available.</p>;
     }
 
     let design = <></>;
-    if (event.previewUrls?.length === 1) {
+    if (previewUrlsForContent.length === 1) {
       design = (
         <div className="shrink-0">
           <DesignImageWithIGTags
             width={width}
-            url={event.previewUrls[0]}
+            url={previewUrlsForContent[0]}
             instagramTags={(content.ig_tags as InstagramTag[][])?.[0] ?? []}
             className="rounded-md"
           />
@@ -155,7 +157,7 @@ export default function EventDialog({
       design = (
         <Carousel style={{ width }}>
           <CarouselContent>
-            {event.previewUrls?.map((url, index) => (
+            {previewUrlsForContent.map((url, index) => (
               <CarouselItem key={url}>
                 <DesignImageWithIGTags
                   width={width}

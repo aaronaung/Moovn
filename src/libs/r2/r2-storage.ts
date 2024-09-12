@@ -25,6 +25,11 @@ class R2Storage {
   }
 
   async signUrl(bucketName: string, key: string, expiresIn: number = 3600): Promise<string> {
+    const exists = await this.exists(bucketName, key);
+    if (!exists) {
+      return "";
+    }
+
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: key,
