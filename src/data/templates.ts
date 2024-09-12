@@ -60,19 +60,3 @@ export const deleteTemplate = async (
   await deleteObject("templates", `${template.owner_id}/${template.id}`);
   return resp;
 };
-
-export const getTemplatesForContent = async (
-  { contentId, contentType }: { contentId: string; contentType: string },
-  { client }: SupabaseOptions,
-) => {
-  const templates = await throwOrData(
-    client
-      .from("content_templates")
-      .select("template:templates(*)")
-      .eq("content_id", contentId)
-      .eq("templates.content_type", contentType)
-      .order("position", { ascending: true }),
-  );
-
-  return templates.map((t) => t.template).filter((t) => t !== null) as Tables<"templates">[];
-};
