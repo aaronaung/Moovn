@@ -30,12 +30,6 @@ export const generateDesign = async ({
     return null;
   }
   const psdActions = determinePSDActions(scheduleData, inputPsd);
-  console.log({
-    inputUrl,
-    outputUrlJpeg,
-    outputUrlPsd,
-    psdActions,
-  });
 
   return photoshop.modifyDocument({
     inputs: [

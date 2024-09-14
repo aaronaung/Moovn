@@ -116,7 +116,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           if (isComplete === "true") {
             timeSpentMap.current[namespace] = {
               ...timeSpentMap.current[namespace],
-              deleteLayers: performance.now() - timeSpentMap.current[namespace].deleteLayers,
+              deleteLayers:
+                performance.now() -
+                (timeSpentMap.current[namespace]?.deleteLayers ?? performance.now()),
             };
             executeDesignGenStep("editTexts", namespace);
             debugGenStepMap.current[namespace] = "editTexts";
@@ -130,7 +132,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           if (isComplete === "true") {
             timeSpentMap.current[namespace] = {
               ...timeSpentMap.current[namespace],
-              editTexts: performance.now() - timeSpentMap.current[namespace].editTexts,
+              editTexts:
+                performance.now() -
+                (timeSpentMap.current[namespace]?.editTexts ?? performance.now()),
             };
             executeDesignGenStep("replaceLayers", namespace);
             debugGenStepMap.current[namespace] = "replaceLayers";
@@ -144,7 +148,9 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           if (isComplete === "true") {
             timeSpentMap.current[namespace] = {
               ...timeSpentMap.current[namespace],
-              replaceLayers: performance.now() - timeSpentMap.current[namespace].replaceLayers,
+              replaceLayers:
+                performance.now() -
+                (timeSpentMap.current[namespace]?.replaceLayers ?? performance.now()),
             };
             executeDesignGenStep("cropImages", namespace);
             debugGenStepMap.current[namespace] = "cropImages";
@@ -256,9 +262,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
                 document.body.appendChild(debugJpg);
               }
             }
+
             timeSpentMap.current[namespace] = {
               ...timeSpentMap.current[namespace],
-              export: performance.now() - timeSpentMap.current[namespace].export,
+              export:
+                performance.now() - (timeSpentMap.current[namespace]?.export ?? performance.now()),
             };
             debugGenStepMap.current[namespace] = "completed/exported";
             onDesignExportMap[namespace](mostRecentExport);

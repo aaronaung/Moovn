@@ -80,7 +80,6 @@ export const InstagramTemplate = ({
         />
       );
     }
-    console.log({ templateObjects });
     return (
       <Carousel className="w-[320px]">
         <CarouselContent>

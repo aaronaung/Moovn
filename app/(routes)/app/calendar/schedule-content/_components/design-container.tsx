@@ -133,11 +133,6 @@ export const DesignContainer = ({
   };
 
   const isGeneratingDesign = isJobPending(contentIdbKey);
-  console.log({
-    isGeneratingDesign,
-    isLoadingOverwrites,
-    isDesignGenTimedout,
-  });
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {

@@ -12,6 +12,7 @@ import { usePhotopeaHeadless } from "./photopea-headless";
 import { deleteObject } from "../data/r2";
 import { useSearchParams } from "next/navigation";
 import { Tables } from "@/types/db";
+import { isMobile } from "react-device-detect";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
@@ -31,7 +32,7 @@ type DesignGenQueueContextType = {
   isJobPending: (idbKey: string) => boolean;
 };
 
-const MAX_JOBS_IN_PROGRESS = 5;
+const MAX_JOBS_IN_PROGRESS = isMobile ? 2 : 5;
 const MAX_DESIGNS_IN_IDB = 50;
 
 const DesignGenQueueContext = createContext<DesignGenQueueContextType | null>(null);
