@@ -29,8 +29,8 @@ export default function Calendar() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Map<string, string[]>>(new Map());
 
-  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
-  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(true);
+  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(false);
+  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(false);
 
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
@@ -58,6 +58,7 @@ export default function Calendar() {
     },
   );
   useEffect(() => {
+    console.log("loading preview urls", contents);
     const loadPreviewUrls = async () => {
       try {
         setIsLoadingPreviewUrls(true);
@@ -96,8 +97,10 @@ export default function Calendar() {
   }, [contents]);
 
   useEffect(() => {
+    console.log("loading calendar events", contentSchedules);
     const loadCalendarEvents = async () => {
       try {
+        setIsLoadingCalendarEvents(true);
         const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
         const scheduleDataMap = new Map();
         for (const [sourceId, data] of Object.entries(scheduleDataFromAllSources || {})) {
