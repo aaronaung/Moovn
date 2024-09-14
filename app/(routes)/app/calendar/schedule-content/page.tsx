@@ -116,7 +116,7 @@ export default function ScheduleContent() {
         variant="ghost"
         className="mb-2"
         onClick={() => {
-          router.back();
+          router.push("/app/calendar");
         }}
       >
         <ArrowLeftIcon className="h-4 w-4" />

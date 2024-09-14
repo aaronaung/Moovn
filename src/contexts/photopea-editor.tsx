@@ -3,7 +3,7 @@ import { createContext, RefObject, useContext, useEffect, useState } from "react
 import { DesignExport } from "./photopea-headless";
 import { SourceDataView } from "../consts/sources";
 
-import { BLANK_DESIGN_TEMPLATES, FREE_DESIGN_TEMPLATES } from "../consts/storage";
+import { BLANK_DESIGN_TEMPLATES, FREE_DESIGN_TEMPLATES } from "../consts/templates";
 import { flushSync } from "react-dom";
 import { ContentType } from "../consts/content";
 import { signUrl } from "../data/r2";

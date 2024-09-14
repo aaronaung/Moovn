@@ -7,13 +7,13 @@ export const FREE_DESIGN_TEMPLATES: {
   [SourceDataView.Daily]: {
     [ContentType.InstagramPost]: [
       {
-        title: "Daily IG post template #1",
+        title: "Daily IG post #1",
         fileName: "daily_template_1",
       },
     ],
     [ContentType.InstagramStory]: [
       {
-        title: "Daily IG story template #1",
+        title: "Daily IG story #1",
         fileName: "daily_template_1",
       },
     ],
@@ -21,11 +21,11 @@ export const FREE_DESIGN_TEMPLATES: {
   [SourceDataView.Weekly]: {
     [ContentType.InstagramPost]: [
       {
-        title: "Weekly IG post (day 1-3) template #1",
+        title: "Weekly IG post (day 1-3) #1",
         fileName: "weekly_1_template_1",
       },
       {
-        title: "Weekly IG post (day 4-6) template #1",
+        title: "Weekly IG post (day 4-6) #1",
         fileName: "weekly_2_template_1",
       },
     ],

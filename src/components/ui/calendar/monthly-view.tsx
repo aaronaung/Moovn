@@ -167,9 +167,7 @@ export default function FullCalendarMonthlyView({
                                 >
                                   <div
                                     className={cn(
-                                      `flex w-full items-center gap-1 bg-${
-                                        event.color ?? "secondary"
-                                      } cursor-pointer rounded-full px-1`,
+                                      `flex w-full cursor-pointer items-center gap-1 rounded-full bg-secondary px-1.5 dark:bg-neutral-700`,
                                       event.hasDataChanged && "text-orange-500",
                                     )}
                                   >
@@ -201,7 +199,7 @@ export default function FullCalendarMonthlyView({
                               <TooltipContent side="right" className="w-full cursor-pointer">
                                 <p
                                   className={cn(
-                                    " font-semibold",
+                                    "font-semibold",
                                     event.hasDataChanged && "mb-1 text-orange-500",
                                   )}
                                 >
@@ -209,7 +207,7 @@ export default function FullCalendarMonthlyView({
                                 </p>
                                 {event.hasDataChanged && (
                                   <div className="flex items-center gap-1">
-                                    <p className="text-sm  text-orange-500">
+                                    <p className="text-xs text-orange-500">
                                       The schedule data has changed. Review the content before it
                                       gets published.
                                     </p>
@@ -301,14 +299,30 @@ export default function FullCalendarMonthlyView({
                   className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
                 >
                   <div className="flex-auto">
-                    <p className="line-clamp-2 font-semibold text-secondary-foreground">
-                      {event.title}
-                    </p>
+                    <div className="flex items-center gap-1">
+                      <p
+                        className={cn(
+                          "line-clamp-2 font-semibold text-secondary-foreground",
+                          event.hasDataChanged && "text-orange-500",
+                        )}
+                      >
+                        {event.title}
+                      </p>
+                    </div>
                     <time
                       dateTime={event.start.toISOString()}
-                      className="mt-2 flex items-center text-secondary-foreground"
+                      className={cn(
+                        "mt-2 flex items-center text-secondary-foreground",
+                        event.hasDataChanged && "text-orange-500",
+                      )}
                     >
-                      <ClockIcon className="mr-2 h-5 w-5 text-gray-400" aria-hidden="true" />
+                      <ClockIcon
+                        className={cn(
+                          "mr-2 h-5 w-5 text-gray-400",
+                          event.hasDataChanged && "text-orange-500",
+                        )}
+                        aria-hidden="true"
+                      />
                       {event.start.toLocaleTimeString([], {
                         hour: "numeric",
                         minute: "2-digit",
@@ -318,7 +332,7 @@ export default function FullCalendarMonthlyView({
                   <div>
                     {previewUrls.has(event.contentId) && (
                       <Image
-                        className="h-[50px] w-[50px] rounded-sm bg-cover"
+                        className="h-[50px] w-[50px] rounded-sm object-contain"
                         src={previewUrls.get(event.contentId)?.[0]}
                         alt={"preview"}
                       />

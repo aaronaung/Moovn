@@ -21,6 +21,7 @@ import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { Tables } from "@/types/db";
+import { MailIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function CreateTemplateSheet({
@@ -197,6 +198,18 @@ export default function CreateTemplateSheet({
             onTemplateSelect={setSelectedTemplateIndex}
           />
           <TemplateCreationGuideSection />
+          <div>
+            <h3 className="mb-3 mt-8 font-semibold">
+              Need help turning your design into a template?
+            </h3>
+            <a
+              href="mailto:team@moovn.co"
+              className="flex items-center text-sm text-primary hover:underline"
+              target="_blank"
+            >
+              <MailIcon className="mr-2 h-4 w-4" /> Contact us at team@moovn.co.
+            </a>
+          </div>
         </div>
         <SheetFooter>
           <Button
@@ -309,15 +322,18 @@ const SelectStartingTemplateSection = ({
 
             {(freeDesignTemplates[sourceDataView][contentType] || []).map((template, index) => (
               <div className="flex flex-col gap-2" key={index}>
-                <RadioGroupItem value={`item-${index}`} />
-                <p
-                  className="cursor-pointer text-sm font-semibold"
-                  onClick={() => {
-                    onTemplateSelect(`${index}`);
-                  }}
-                >
-                  {template.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value={`item-${index}`} />
+                  <p
+                    className="w-[180px] cursor-pointer text-xs font-semibold"
+                    onClick={() => {
+                      onTemplateSelect(`${index}`);
+                    }}
+                  >
+                    {template.title}
+                  </p>
+                </div>
+
                 <img
                   style={{
                     boxShadow:

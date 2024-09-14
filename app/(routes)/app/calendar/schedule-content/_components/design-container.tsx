@@ -53,6 +53,8 @@ export const DesignContainer = ({
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
 
   const [isLoadingOverwrites, setIsLoadingOverwrites] = useState(false);
+  const [isDesignGenTimedout, setIsDesignGenTimedout] = useState(false);
+
   const [designOverwrite, setDesignOverwrite] = useState<{
     jpgUrl?: string;
     psdUrl?: string;
@@ -71,6 +73,19 @@ export const DesignContainer = ({
   const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
   const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
 
+  const addDesignGenJob = (forceRefresh: boolean = false) => {
+    addJob({
+      idbKey: contentIdbKey,
+      template,
+      templateIdbKey,
+      templateUrl: signedTemplateUrl,
+      schedule,
+      forceRefresh,
+      onTimeout: () => {
+        setIsDesignGenTimedout(true);
+      },
+    });
+  };
   useEffect(() => {
     const fetchOverwrites = async () => {
       try {
@@ -87,14 +102,9 @@ export const DesignContainer = ({
         setIsLoadingOverwrites(false);
       }
     };
+    console.log("fetching overwrites");
     fetchOverwrites();
-    addJob({
-      idbKey: contentIdbKey,
-      template,
-      schedule,
-      templateUrl: signedTemplateUrl,
-      templateIdbKey,
-    });
+    addDesignGenJob();
   }, [template, schedule]);
 
   const uploadDesignExport = async (designExport: DesignExport) => {
@@ -123,9 +133,23 @@ export const DesignContainer = ({
   };
 
   const isGeneratingDesign = isJobPending(contentIdbKey);
+  console.log({
+    isGeneratingDesign,
+    isLoadingOverwrites,
+    isDesignGenTimedout,
+  });
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
+    if (isDesignGenTimedout) {
+      return (
+        <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
+          <p className="p-2 text-center text-xs text-muted-foreground">
+            We couldn&apos;t generate the design. Please refresh or contact support.
+          </p>
+        </div>
+      );
+    }
     if (isDesignNotReady || !designJpgUrl) {
       return (
         <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
@@ -158,14 +182,7 @@ export const DesignContainer = ({
               deleteObject("design-overwrites", `${template.owner_id}/${contentIdbKey}.jpg`),
             ]);
             setDesignOverwrite(undefined);
-            addJob({
-              idbKey: contentIdbKey,
-              templateIdbKey,
-              schedule,
-              templateUrl: signedTemplateUrl,
-              forceRefresh: true,
-              template,
-            });
+            addDesignGenJob(true);
           }}
           title={"Refresh design"}
           label={`You edited this design, overwriting the generated version. Refreshing will create a new design and remove edits. 
@@ -247,19 +264,12 @@ export const DesignContainer = ({
               <Button
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary "
-                disabled={isDesignNotReady || !designJpgUrl}
+                disabled={isDesignNotReady}
                 onClick={async () => {
                   if (designOverwrite) {
                     setIsConfirmationDialogOpen(true);
                   } else {
-                    addJob({
-                      idbKey: contentIdbKey,
-                      template,
-                      templateIdbKey,
-                      templateUrl: signedTemplateUrl,
-                      schedule,
-                      forceRefresh: true,
-                    });
+                    addDesignGenJob(true);
                   }
                 }}
               >

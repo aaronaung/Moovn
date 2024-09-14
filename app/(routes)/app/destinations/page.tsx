@@ -37,11 +37,12 @@ export default function DestinationsPage() {
     queryKey: ["getDestinationsForAuthUser"],
   });
   const [selectedDestination, setSelectedDestination] = useState<Tables<"destinations">>();
+  const hasDestinations = destinations && destinations.length > 0;
   useEffect(() => {
-    if (destinations && destinations.length > 0 && !selectedDestination) {
+    if (hasDestinations && !selectedDestination) {
       setSelectedDestination(destinations[0]);
     }
-  }, [destinations, selectedDestination]);
+  }, [hasDestinations, selectedDestination, destinations]);
 
   const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(
     deleteDestination,
@@ -68,36 +69,6 @@ export default function DestinationsPage() {
 
   if (isLoadingDestinations) {
     return <Spinner className="mt-8" />;
-  }
-
-  if (destinations && destinations.length === 0) {
-    return (
-      <>
-        <SaveDestinationDialog
-          isOpen={destinationDialogState.isOpen}
-          onClose={() => {
-            setDestinationDialogState({
-              isOpen: false,
-            });
-          }}
-        />
-        <EmptyState
-          title="No destinations found"
-          description="Add a destination to get started"
-          actionButtonOverride={
-            <Button
-              onClick={() => {
-                setDestinationDialogState({
-                  isOpen: true,
-                });
-              }}
-            >
-              Add destination
-            </Button>
-          }
-        />
-      </>
-    );
   }
 
   const renderDestinationView = () => {
@@ -154,32 +125,53 @@ export default function DestinationsPage() {
             .
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setDestinationDialogState({
-              isOpen: true,
-            });
-          }}
-        >
-          Create destination
-        </Button>
+        {hasDestinations && (
+          <Button
+            onClick={() => {
+              setDestinationDialogState({
+                isOpen: true,
+              });
+            }}
+          >
+            Create destination
+          </Button>
+        )}
       </div>
-      <div className="flex gap-x-2 overflow-scroll">
-        {(destinations || []).map((destination) => (
-          <DestinationSelectItem
-            key={destination.id}
-            isRefreshingDestinations={isRefetchingDestinations}
-            isSelected={selectedDestination?.id === destination.id}
-            destination={destination}
-            setSelectedDestination={setSelectedDestination}
-            setDestinationDialogState={setDestinationDialogState}
-            setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
-          />
-        ))}
-      </div>
-      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-        {renderDestinationView()}
-      </div>
+      {hasDestinations ? (
+        <>
+          <div className="flex gap-x-2 overflow-scroll">
+            {(destinations || []).map((destination) => (
+              <DestinationSelectItem
+                key={destination.id}
+                isRefreshingDestinations={isRefetchingDestinations}
+                isSelected={selectedDestination?.id === destination.id}
+                destination={destination}
+                setSelectedDestination={setSelectedDestination}
+                setDestinationDialogState={setDestinationDialogState}
+                setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
+            {renderDestinationView()}
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          description="No destinations found. Create one to get started."
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setDestinationDialogState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Add destination
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

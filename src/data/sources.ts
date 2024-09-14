@@ -4,7 +4,7 @@ import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { SourceDataView } from "../consts/sources";
 import { ScheduleData } from "../libs/sources";
-import { addDays, endOfDay, endOfWeek, format, startOfDay, startOfWeek } from "date-fns";
+import { endOfDay, endOfWeek, format, startOfDay, startOfWeek } from "date-fns";
 
 export const saveSource = async (
   source: Partial<Tables<"sources">>,
@@ -53,21 +53,11 @@ export const getScheduleDataForSource = async ({
     from: format(startOfDay(current), "yyyy-MM-dd"),
     to: format(endOfDay(current), "yyyy-MM-dd"),
   };
-  switch (view) {
-    case SourceDataView.Daily:
-      range = {
-        from: format(startOfDay(addDays(current, 1)), "yyyy-MM-dd"),
-        to: format(endOfDay(addDays(current, 1)), "yyyy-MM-dd"),
-      };
-      break;
-    case SourceDataView.Weekly:
-      range = {
-        from: format(startOfWeek(current), "yyyy-MM-dd"),
-        to: format(endOfWeek(current), "yyyy-MM-dd"),
-      };
-      break;
-    default:
-      break;
+  if (view === SourceDataView.Weekly) {
+    range = {
+      from: format(startOfWeek(current), "yyyy-MM-dd"),
+      to: format(endOfWeek(current), "yyyy-MM-dd"),
+    };
   }
 
   const resp = await fetch(`/api/sources/${id}/schedules?from=${range.from}&to=${range.to}`);

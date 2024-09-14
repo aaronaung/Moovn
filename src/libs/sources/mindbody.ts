@@ -56,8 +56,8 @@ export class MindbodyClient implements SourceClient {
         date: eventsByDay[0].date,
         event: eventsByDay.map((event: any) => ({
           name: event.ClassDescription?.Name ?? "Untitled",
-          start: event.StartDateTime,
-          end: event.EndDateTime,
+          start: new Date(event.StartDateTime).toISOString(),
+          end: new Date(event.EndDateTime).toISOString(),
           staff: [
             {
               name: event.Staff?.Name,

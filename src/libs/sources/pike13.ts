@@ -33,10 +33,11 @@ export class Pike13Client implements SourceClient {
       urlParams.set("from", `${from}T00:00:00`);
       urlParams.set("to", `${to}T23:59:59`);
     }
-    console.log("pike13 urlParams", urlParams.toString());
+
     const resp = await this.get(`/api/v2/front/event_occurrences`, urlParams.toString());
     return resp.event_occurrences || [];
   }
+
   async getRawStaffMembers() {
     const resp = await this.get(`/api/v2/front/staff_members`);
     return resp.staff_members || [];
@@ -67,22 +68,19 @@ export class Pike13Client implements SourceClient {
     const groupedEvents = this.groupEventsByDay(events);
 
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
-    let headshotIndex = 1;
+
     return {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
-          event: (eventsByDay || []).map((event: any) => {
-            const headshotUrl = `https://assets.moovn.co/headshots/${headshotIndex}.png`;
-            headshotIndex++;
-            if (headshotIndex > 10) {
-              headshotIndex = 1;
-            }
+          event: (eventsByDay || []).map((event: any, index: number) => {
+            const headshotUrl = `https://assets.moovn.co/headshots/${index + 1}.png`;
             return {
               staff: (event.staff_members || [])
                 .filter((s: any) => Boolean(staffMembersById[s.id]))
                 .map((s: any) => {
                   const staffMember = staffMembersById[s.id];
+
                   return {
                     name: staffMember?.name,
                     photo: headshotUrl,

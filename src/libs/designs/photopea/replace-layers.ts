@@ -117,10 +117,10 @@ if (loadedLayers && loadedLayers.length > 0) {
         if (sourceBottom > targetBottom) {
           doc.activeLayer = source;
           doc.selection.select([
-            [targetLeft - 5, targetBottom],
-            [targetRight + 5, targetBottom],
-            [sourceRight + 5, sourceBottom],
-            [sourceLeft - 5, sourceBottom]
+            [targetLeft - 5, targetBottom + 5],
+            [targetRight + 5, targetBottom + 5],
+            [sourceRight + 5, sourceBottom + 5],
+            [sourceLeft - 5, sourceBottom + 5]
           ]);
           doc.selection.clear();
           doc.selection.deselect();

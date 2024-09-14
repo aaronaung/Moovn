@@ -16,7 +16,7 @@ import { cn } from "@/src/utils";
 import { saveContent, saveContentSchedule } from "@/src/data/content";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays, format, isBefore, startOfToday } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { useScheduleContent } from "@/src/hooks/use-schedule-content";
@@ -53,20 +53,31 @@ export default function ContentSchedulingForm({
   const qTemplateIds = queryParams.get("template_ids")?.split(",").filter(Boolean);
   const qDestinationId = queryParams.get("destination_id");
   const qScheduleRangeSplit = queryParams.get("schedule_range")?.split("_");
-  const qScheduleRange = qScheduleRangeSplit
-    ? {
-        from: new Date(
-          formatInTimeZone(qScheduleRangeSplit[0] ?? new Date(), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
-        ),
-        to: new Date(
-          formatInTimeZone(
-            qScheduleRangeSplit[1] ?? qScheduleRangeSplit[0] ?? new Date(),
-            "UTC",
-            "yyyy-MM-dd'T'HH:mm:ss",
-          ),
-        ),
-      }
-    : undefined;
+
+  let qScheduleRange: { from: Date; to: Date } | undefined;
+  if (qScheduleRangeSplit) {
+    let qScheduleRangeFrom = new Date(
+      formatInTimeZone(qScheduleRangeSplit[0] ?? new Date(), "UTC", "yyyy-MM-dd'T'HH:mm:ss"),
+    );
+    let qScheduleRangeTo = new Date(
+      formatInTimeZone(
+        qScheduleRangeSplit[1] ?? qScheduleRangeSplit[0] ?? new Date(),
+        "UTC",
+        "yyyy-MM-dd'T'HH:mm:ss",
+      ),
+    );
+    if (isBefore(qScheduleRangeTo, qScheduleRangeFrom)) {
+      [qScheduleRangeFrom, qScheduleRangeTo] = [qScheduleRangeTo, qScheduleRangeFrom];
+    } else if (isBefore(qScheduleRangeFrom, startOfToday())) {
+      qScheduleRangeFrom = startOfToday();
+    } else if (isBefore(qScheduleRangeTo, startOfToday())) {
+      qScheduleRangeTo = startOfToday();
+    }
+    qScheduleRange = {
+      from: qScheduleRangeFrom,
+      to: qScheduleRangeTo,
+    };
+  }
 
   const {
     control,

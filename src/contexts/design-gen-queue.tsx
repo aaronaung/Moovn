@@ -20,6 +20,7 @@ type DesignJob = {
   templateUrl: string;
   schedule: ScheduleData;
   forceRefresh?: boolean;
+  onTimeout?: () => void;
 };
 
 type DesignGenQueueContextType = {
@@ -69,7 +70,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
       const { range: bRange } = deconstructContentIdbKey(b.key);
       return getRangeStart(aRange).getTime() - getRangeStart(bRange).getTime();
     });
-    if (designs.length > 50) {
+    if (designs.length > MAX_DESIGNS_IN_IDB) {
       const designsToDelete = designs.slice(0, designs.length - MAX_DESIGNS_IN_IDB);
       await Promise.all(designsToDelete.map((d) => db.designs.delete(d.key)));
     }
@@ -125,6 +126,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
           const designGenSteps = await determineDesignGenSteps(schedule, templatePsd);
 
           const photopeaEl = addHeadlessPhotopeaToDom(debug);
+          const start = performance.now();
           initialize(idbKey, photopeaEl, {
             initialData: templateFile,
             designGenSteps,
@@ -132,6 +134,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
               if (document.body.contains(photopeaEl) && !debug) {
                 document.body.removeChild(photopeaEl);
               }
+              nextJob.onTimeout?.();
               removeJob(nextJob.idbKey);
             },
             onDesignExport: async (designExport) => {
@@ -146,6 +149,8 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                   instagramCaption: renderCaption(template?.ig_caption_template || "", schedule),
                   lastUpdated: new Date(),
                 });
+                const end = performance.now();
+                console.log(`design generation took: ${idbKey} ${end - start}ms`);
                 if (document.body.contains(photopeaEl) && !debug) {
                   document.body.removeChild(photopeaEl);
                 }

@@ -7,12 +7,11 @@ import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
-import { TEMPLATE_WIDTH, InstagramTemplate } from "./_components/instagram-template";
+import { InstagramTemplate } from "./_components/instagram-template";
 import { useAuthUser } from "@/src/contexts/auth";
-import { SIDEBAR_WIDTH } from "../_components/dashboard-layout";
-import { cn } from "@/src/utils";
 import { deleteObject } from "@/src/data/r2";
 import CreateTemplateSheet from "./_components/create-template-sheet";
+import EmptyState from "@/src/components/common/empty-state";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -33,6 +32,7 @@ export default function TemplatesPage() {
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
     queryKey: ["getTemplatesForAuthUser"],
   });
+  const hasTemplates = templates && templates.length > 0;
   const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
     deleteTemplate,
     {
@@ -44,10 +44,8 @@ export default function TemplatesPage() {
     return <Spinner className="mt-8" />;
   }
 
-  const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / TEMPLATE_WIDTH;
-
   return (
-    <div>
+    <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       {/** Todo: check if the template is associated with any content that's to be published */}
       <CreateTemplateSheet
         user={user}
@@ -96,22 +94,21 @@ export default function TemplatesPage() {
             {` to publish your generated content.`}
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setCreateTemplateSheetState({
-              isOpen: true,
-            });
-          }}
-        >
-          Create template
-        </Button>
+        {hasTemplates && (
+          <Button
+            onClick={() => {
+              setCreateTemplateSheetState({
+                isOpen: true,
+              });
+            }}
+          >
+            Create template
+          </Button>
+        )}
       </div>
-      <div className={cn("mt-4 flex flex-wrap gap-3 overflow-scroll")}>
-        {!templates || templates.length === 0 ? (
-          <p className="mt-16 w-full text-center text-muted-foreground">
-            No templates found. Create one to get started.
-          </p>
-        ) : (
+
+      {hasTemplates ? (
+        <div className="flex flex-wrap gap-3 overflow-scroll">
           <div className="xs:columns-1 gap-3 space-y-3 sm:columns-2 lg:columns-4">
             {templates.map((template) => (
               <div className="break-inside-avoid" key={template.id}>
@@ -134,8 +131,23 @@ export default function TemplatesPage() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <EmptyState
+          description="No templates found. Create one to get started."
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setCreateTemplateSheetState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Create template
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

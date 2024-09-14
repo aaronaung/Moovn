@@ -31,11 +31,12 @@ export default function SourcesPage() {
     queryKey: ["getSourcesForAuthUser"],
   });
   const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
+  const hasSources = sources && sources.length > 0;
   useEffect(() => {
-    if (sources && sources.length > 0 && !selectedSource) {
+    if (hasSources && !selectedSource) {
       setSelectedSource(sources[0]);
     }
-  }, [sources, selectedSource]);
+  }, [hasSources, selectedSource, sources]);
 
   const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } = useSupaMutation(
     deleteSource,
@@ -73,37 +74,6 @@ export default function SourcesPage() {
     return <Spinner className="mt-8" />;
   }
 
-  if (sources && sources.length === 0) {
-    return (
-      <>
-        <SaveSourceDialog
-          initFormValues={sourceDialogState.source as any}
-          isOpen={sourceDialogState.isOpen}
-          onClose={() => {
-            setSourceDialogState({
-              isOpen: false,
-            });
-          }}
-        />
-        <EmptyState
-          title="No sources found"
-          description="Add a source to get started"
-          actionButtonOverride={
-            <Button
-              onClick={() => {
-                setSourceDialogState({
-                  isOpen: true,
-                });
-              }}
-            >
-              Add Source
-            </Button>
-          }
-        />
-      </>
-    );
-  }
-
   return (
     <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       <DeleteConfirmationDialog
@@ -133,6 +103,7 @@ export default function SourcesPage() {
         }}
         initFormValues={sourceDialogState.source as any}
       />
+
       <div className="mb-3 flex items-end">
         <div className="flex-1">
           <Header2 title="Sources" />
@@ -143,29 +114,52 @@ export default function SourcesPage() {
             </a>
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setSourceDialogState({
-              isOpen: true,
-            });
-          }}
-        >
-          Create source
-        </Button>
+        {hasSources && (
+          <Button
+            onClick={() => {
+              setSourceDialogState({
+                isOpen: true,
+              });
+            }}
+          >
+            Create source
+          </Button>
+        )}
       </div>
-      <div className="flex gap-x-2 overflow-scroll">
-        {(sources || []).map((source) => (
-          <SourceSelectItem
-            key={source.id}
-            isSelected={selectedSource?.id === source.id}
-            source={source}
-            setSelectedSource={setSelectedSource}
-            setSourceDialogState={setSourceDialogState}
-            setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
-          />
-        ))}
-      </div>
-      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">{renderSourceDetails()}</div>
+      {hasSources ? (
+        <>
+          <div className="flex gap-x-2 overflow-scroll">
+            {(sources || []).map((source) => (
+              <SourceSelectItem
+                key={source.id}
+                isSelected={selectedSource?.id === source.id}
+                source={source}
+                setSelectedSource={setSelectedSource}
+                setSourceDialogState={setSourceDialogState}
+                setDeleteConfirmationDialogState={setDeleteConfirmationDialogState}
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
+            {renderSourceDetails()}
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          description="No sources found. Create one to get started."
+          actionButtonOverride={
+            <Button
+              onClick={() => {
+                setSourceDialogState({
+                  isOpen: true,
+                });
+              }}
+            >
+              Create source
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }
