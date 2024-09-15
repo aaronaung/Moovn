@@ -196,7 +196,10 @@ export default function EventDialog({
                 }}
               />
             </TooltipTrigger>
-            <TooltipContent side="right">{`Update date time to reschedule`}</TooltipContent>
+            <TooltipContent
+              side="right"
+              className="mb-3" // because the date picker intrinsicly has some margin bottom
+            >{`Update date time to reschedule`}</TooltipContent>
           </Tooltip>
         </div>
         <RadioGroup

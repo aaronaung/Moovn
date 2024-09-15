@@ -67,6 +67,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   const params = useSearchParams();
 
   // Internally managed
+  const timeoutMap = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const pollIntervalMapRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const debugGenStepMap = useRef<{ [key: string]: string }>({});
   const timeSpentMap = useRef<{ [key: string]: { [key: string]: number } }>({});
@@ -93,20 +94,14 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         if (e.data.startsWith("initial_layer_loaded")) {
           // initial_layer_loaded:namespace-123
           const [_, namespace] = e.data.split(":");
-          timeSpentMap.current[namespace] = {
-            ...timeSpentMap.current[namespace],
-            start: performance.now() - timeSpentMap.current[namespace].start,
-          };
+          markStepDone(namespace, "start");
           executeDesignGenStep("loadAssets", namespace);
           debugGenStepMap.current[namespace] = "loadAssets";
         }
         if (e.data.startsWith("load_assets_complete")) {
           // load_assets_complete:namespace-123
           const [_, namespace] = e.data.split(":");
-          timeSpentMap.current[namespace] = {
-            ...timeSpentMap.current[namespace],
-            loadAssets: performance.now() - timeSpentMap.current[namespace].loadAssets,
-          };
+          markStepDone(namespace, "loadAssets");
           executeDesignGenStep("deleteLayers", namespace);
           debugGenStepMap.current[namespace] = "deleteLayers";
         }
@@ -114,12 +109,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // delete_layers_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
           if (isComplete === "true") {
-            timeSpentMap.current[namespace] = {
-              ...timeSpentMap.current[namespace],
-              deleteLayers:
-                performance.now() -
-                (timeSpentMap.current[namespace]?.deleteLayers ?? performance.now()),
-            };
+            markStepDone(namespace, "deleteLayers");
             executeDesignGenStep("editTexts", namespace);
             debugGenStepMap.current[namespace] = "editTexts";
           } else {
@@ -130,12 +120,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // edit_texts_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
           if (isComplete === "true") {
-            timeSpentMap.current[namespace] = {
-              ...timeSpentMap.current[namespace],
-              editTexts:
-                performance.now() -
-                (timeSpentMap.current[namespace]?.editTexts ?? performance.now()),
-            };
+            markStepDone(namespace, "editTexts");
             executeDesignGenStep("replaceLayers", namespace);
             debugGenStepMap.current[namespace] = "replaceLayers";
           } else {
@@ -146,12 +131,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // replace_layers_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
           if (isComplete === "true") {
-            timeSpentMap.current[namespace] = {
-              ...timeSpentMap.current[namespace],
-              replaceLayers:
-                performance.now() -
-                (timeSpentMap.current[namespace]?.replaceLayers ?? performance.now()),
-            };
+            markStepDone(namespace, "replaceLayers");
             executeDesignGenStep("cropImages", namespace);
             debugGenStepMap.current[namespace] = "cropImages";
           } else {
@@ -162,11 +142,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           // crop_images_complete:namespace-123
           const [_, namespace, isComplete] = e.data.split(":");
           if (isComplete === "true") {
+            markStepStart(namespace, "export");
             debugGenStepMap.current[namespace] = "export";
-            timeSpentMap.current[namespace] = {
-              ...timeSpentMap.current[namespace],
-              export: performance.now(),
-            };
             if (pollIntervalMapRef.current[namespace]) {
               clearIntervalForNamespace(namespace);
             }
@@ -263,11 +240,8 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
               }
             }
 
-            timeSpentMap.current[namespace] = {
-              ...timeSpentMap.current[namespace],
-              export:
-                performance.now() - (timeSpentMap.current[namespace]?.export ?? performance.now()),
-            };
+            clearTimeout(timeoutMap.current[namespace]);
+            markStepDone(namespace, "export");
             debugGenStepMap.current[namespace] = "completed/exported";
             onDesignExportMap[namespace](mostRecentExport);
             clear(namespace);
@@ -316,14 +290,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
     let cmds = [];
     let verifyCmd = "";
     const genSteps = designGenSteps ?? designGenStepsMap[namespace];
+
     switch (step) {
       case "start":
         // console.log("genstep:start", namespace);
         verifyCmd = verifyInitialLayerLoaded(namespace);
-        timeSpentMap.current[namespace] = {
-          ...timeSpentMap.current[namespace],
-          start: performance.now(),
-        };
         break;
       case "loadAssets":
         // console.log("genstep:loadAssets", namespace);
@@ -332,42 +303,25 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           cmds.push(moveAndRenameLoadedAssetCmd(loadAsset));
         }
         cmds.push(focusDocZero());
-
         verifyCmd = verifyLoadAssetsComplete(
           namespace,
           genSteps.loadAssets.map((a) => ({ layerName: a.layerName })), // We only need the layer names for verification.
         );
-        timeSpentMap.current[namespace] = {
-          ...timeSpentMap.current[namespace],
-          loadAssets: performance.now(),
-        };
         break;
       case "deleteLayers":
         // console.log("genstep:deleteLayers", namespace);
         cmds.push(deleteLayersCmd(namespace, genSteps.deleteLayers));
         verifyCmd = verifyDeleteLayersComplete(namespace, genSteps.deleteLayers);
-        timeSpentMap.current[namespace] = {
-          ...timeSpentMap.current[namespace],
-          deleteLayers: performance.now(),
-        };
         break;
       case "editTexts":
         // console.log("genstep:editTexts", namespace);
         cmds.push(editTextsCmd(namespace, genSteps.editTexts));
         verifyCmd = verifyEditTextsComplete(namespace, genSteps.editTexts);
-        timeSpentMap.current[namespace] = {
-          ...timeSpentMap.current[namespace],
-          editTexts: performance.now(),
-        };
         break;
       case "replaceLayers":
         // console.log("genstep:replaceLayers", namespace);
         cmds.push(replaceLayersCmd(namespace, genSteps.replaceLayers));
         verifyCmd = verifyReplaceLayersComplete(namespace, genSteps.replaceLayers);
-        timeSpentMap.current[namespace] = {
-          ...timeSpentMap.current[namespace],
-          replaceLayers: performance.now(),
-        };
         break;
       case "cropImages":
         // console.log("genstep:cropImages", namespace);
@@ -377,6 +331,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         break;
     }
 
+    markStepStart(namespace, step);
     if (cmds.length > 0) {
       for (const cmd of cmds) {
         sendRawPhotopeaCmd(namespace, pp, cmd);
@@ -391,6 +346,19 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
         LAYER_CHECK_INTERVAL,
       );
     }
+  };
+
+  const markStepStart = (namespace: string, step: keyof DesignGenSteps | "start" | "export") => {
+    timeSpentMap.current[namespace] = {
+      ...timeSpentMap.current[namespace],
+      [step]: performance.now(),
+    };
+  };
+  const markStepDone = (namespace: string, step: keyof DesignGenSteps | "start" | "export") => {
+    timeSpentMap.current[namespace] = {
+      ...timeSpentMap.current[namespace],
+      [step]: performance.now() - (timeSpentMap.current[namespace]?.[step] ?? performance.now()),
+    };
   };
 
   const setIntervalForNamespace = (namespace: string, callback: () => void, delay: number) => {
@@ -515,11 +483,12 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       // Design gen timeout has been reached.
       clear(namespace);
       onTimeout?.();
     }, timeout);
+    timeoutMap.current[namespace] = timeoutId;
   };
 
   return (
