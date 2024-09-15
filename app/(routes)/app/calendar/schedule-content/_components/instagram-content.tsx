@@ -26,6 +26,7 @@ export default memo(
     hideHeader,
     className,
     width = DESIGN_WIDTH,
+    disableImageViewer = false,
   }: {
     contentIdbKey: string;
     template: Tables<"templates">;
@@ -33,6 +34,7 @@ export default memo(
     hideHeader?: boolean;
     className?: string;
     width?: number;
+    disableImageViewer?: boolean;
   }) {
     const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
 
@@ -62,6 +64,7 @@ export default memo(
             schedule={scheduleData}
             signedTemplateUrl={templateObjects[0].url}
             width={width}
+            disableImageViewer={disableImageViewer}
           />
         );
       }
@@ -82,6 +85,7 @@ export default memo(
                   schedule={scheduleData}
                   signedTemplateUrl={obj.url}
                   width={width}
+                  disableImageViewer={disableImageViewer}
                 />
               </CarouselItem>
             ))}

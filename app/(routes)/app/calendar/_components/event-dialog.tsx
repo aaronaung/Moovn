@@ -1,7 +1,6 @@
 import { Tables } from "@/types/db";
 import { Header2 } from "@/src/components/common/header";
 import { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
-import { format } from "date-fns";
 import {
   Carousel,
   CarouselContent,
@@ -12,7 +11,7 @@ import { DesignImageWithIGTags } from "../schedule-content/_components/design-co
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { deleteContentSchedule } from "@/src/data/content";
 import { toast } from "@/src/components/ui/use-toast";
@@ -22,10 +21,11 @@ import InstagramContent from "../schedule-content/_components/instagram-content"
 import { isMobile } from "react-device-detect";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useScheduleContent } from "@/src/hooks/use-schedule-content";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
+import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 
 export default function EventDialog({
   isOpen,
@@ -43,6 +43,8 @@ export default function EventDialog({
   const queryClient = useQueryClient();
 
   const [publishDateTime, setPublishDateTime] = useState(event.start);
+  const [selectedDesign, setSelectedDesign] = useState<"current" | "new">("current");
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
 
@@ -60,6 +62,12 @@ export default function EventDialog({
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
   });
+
+  useEffect(() => {
+    if (event.start) {
+      setPublishDateTime(event.start);
+    }
+  }, [event]);
 
   const handleDeleteEvent = async () => {
     setIsDeleting(true);
@@ -149,7 +157,6 @@ export default function EventDialog({
             width={width}
             url={previewUrlsForContent[0]}
             instagramTags={(content.ig_tags as InstagramTag[][])?.[0] ?? []}
-            className="rounded-md"
           />
         </div>
       );
@@ -163,7 +170,6 @@ export default function EventDialog({
                   width={width}
                   url={url}
                   instagramTags={(content.ig_tags as InstagramTag[][])?.[index] ?? []}
-                  className="rounded-md"
                 />
               </CarouselItem>
             ))}
@@ -174,56 +180,86 @@ export default function EventDialog({
     }
 
     return (
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+      <div className="flex flex-col gap-2 ">
         <div>
-          {event.hasDataChanged && <p className="mb-4 font-medium">Current</p>}
-          <p className="mb-3 text-sm">
-            Scheduled to be published on {format(event.start, "MMM, do")} at{" "}
-            {event.start.toLocaleTimeString([], {
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </p>
-          {design}
-          <p className={`whitespace-pre-wrap p-2 text-sm`}>{content.ig_caption}</p>
+          <p className="mb-2 text-sm font-medium">Publish date time</p>
+          <Tooltip>
+            <TooltipTrigger autoFocus={false}>
+              <DateTimePicker
+                value={{
+                  date: publishDateTime,
+                  hasTime: true,
+                }}
+                className="mb-2 h-[32px] w-full min-w-0 rounded-md px-3"
+                onChange={(dateTime) => {
+                  setPublishDateTime(dateTime.date);
+                }}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="right">{`Update date time to reschedule`}</TooltipContent>
+          </Tooltip>
         </div>
+        <RadioGroup
+          value={selectedDesign}
+          onValueChange={(value) => setSelectedDesign(value as "current" | "new")}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div
+              className="cursor-pointer"
+              onClick={() => {
+                setSelectedDesign("current");
+              }}
+            >
+              {event.hasDataChanged && (
+                <div className="mb-2 flex items-center gap-2 ">
+                  <RadioGroupItem value="current" />
+                  <p className="text-sm font-medium">Current</p>
+                </div>
+              )}
+              {design}
+              <p className={`whitespace-pre-wrap p-2 text-sm`}>{content.ig_caption}</p>
+            </div>
 
-        {event.data && content.template && event.hasDataChanged && (
-          <div>
-            <p className="mb-2 font-medium">New</p>
-            <Tooltip>
-              <TooltipTrigger>
-                <DateTimePicker
-                  value={{
-                    date: publishDateTime,
-                    hasTime: true,
-                  }}
-                  className="mb-2 h-[32px] w-full min-w-0 rounded-md px-3"
-                  onChange={(dateTime) => {
-                    setPublishDateTime(dateTime.date);
-                  }}
+            {event.data && content.template && event.hasDataChanged && (
+              <div
+                className="cursor-pointer"
+                onClick={() => {
+                  setSelectedDesign("new");
+                }}
+              >
+                <div className="mb-2 flex items-center gap-2 ">
+                  <RadioGroupItem value="new" />
+                  <p className="text-sm font-medium">New</p>
+                </div>
+                <InstagramContent
+                  hideHeader
+                  contentIdbKey={getContentIdbKey(content.source_id, range, content.template)}
+                  scheduleData={event.data}
+                  template={content.template}
+                  width={width}
+                  disableImageViewer={true}
                 />
-              </TooltipTrigger>
-              <TooltipContent>{`Rescheduled date time to publish`}</TooltipContent>
-            </Tooltip>
-            <InstagramContent
-              hideHeader
-              contentIdbKey={getContentIdbKey(content.source_id, range, content.template)}
-              scheduleData={event.data}
-              template={content.template}
-              width={width}
-            />
+              </div>
+            )}
           </div>
-        )}
+        </RadioGroup>
       </div>
     );
   };
 
+  const publishDateChanged = event.start.getTime() !== publishDateTime.getTime();
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={() => {
+        setPublishDateTime(event.start);
+        setSelectedDesign("current");
+        onClose();
+      }}
+    >
       <DialogContent className="max-h-[calc(100vh_-_50px)] sm:max-w-max">
         <div className="flex flex-col ">
-          <Header2 title={content.template?.name ?? "Untitled"} />
+          <Header2 className="mb-4" title={content.template?.name ?? "Untitled"} />
 
           {event.hasDataChanged && (
             <p className="mb-4 text-sm text-orange-400">
@@ -233,14 +269,23 @@ export default function EventDialog({
           {renderEventContent()}
         </div>
         <DialogFooter>
-          {event.hasDataChanged && (
-            <Button
-              onClick={handleRescheduleEvent}
-              disabled={isJobPending(idbKey) || isRescheduling || isDeleting}
-            >
-              {isRescheduling ? <Spinner className="text-secondary" /> : `Reschedule new content`}
-            </Button>
-          )}
+          <Button
+            onClick={handleRescheduleEvent}
+            disabled={
+              (isJobPending(idbKey) || isRescheduling || isDeleting || !publishDateChanged) &&
+              selectedDesign === "current"
+            }
+          >
+            {isRescheduling ? (
+              <Spinner className="text-secondary" />
+            ) : (
+              <>
+                <ClockIcon className="mr-2 h-4 w-4" />
+                Reschedule
+              </>
+            )}
+          </Button>
+
           <Button
             variant="destructive"
             className="mb-2"
@@ -252,7 +297,7 @@ export default function EventDialog({
             ) : (
               <>
                 <TrashIcon className="mr-2 h-4 w-4" />
-                Delete schedule
+                Delete
               </>
             )}
           </Button>

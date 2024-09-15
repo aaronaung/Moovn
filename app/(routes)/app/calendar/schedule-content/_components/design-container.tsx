@@ -39,6 +39,7 @@ export const DesignContainer = ({
   template,
   schedule,
   width = DESIGN_WIDTH,
+  disableImageViewer = false,
 }: {
   contentIdbKey: string;
   templateIdbKey: string;
@@ -46,6 +47,7 @@ export const DesignContainer = ({
   template: Tables<"templates">;
   schedule: ScheduleData;
   width?: number;
+  disableImageViewer?: boolean;
 }) => {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { addJob, isJobPending } = useDesignGenQueue();
@@ -136,6 +138,13 @@ export const DesignContainer = ({
   const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
   const renderDesignContent = () => {
+    if (isDesignNotReady || !designJpgUrl) {
+      return (
+        <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
+          <Spinner />
+        </div>
+      );
+    }
     if (isDesignGenTimedout) {
       return (
         <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
@@ -145,20 +154,13 @@ export const DesignContainer = ({
         </div>
       );
     }
-    if (isDesignNotReady || !designJpgUrl) {
-      return (
-        <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
-          <Spinner />
-        </div>
-      );
-    }
 
     return (
       <DesignImageWithIGTags
         width={width}
         url={designJpgUrl}
         instagramTags={designFromIndexedDb?.instagramTags || []}
-        onClick={() => setIsImageViewerOpen(true)}
+        onClick={() => !disableImageViewer && setIsImageViewerOpen(true)}
       />
     );
   };
@@ -203,14 +205,16 @@ export const DesignContainer = ({
             </div>
           )}
           {renderDesignContent()}
-          <ImageViewer
-            visible={isImageViewerOpen}
-            onMaskClick={() => {
-              setIsImageViewerOpen(false);
-            }}
-            images={[{ src: designJpgUrl || "", alt: "Design" }]}
-            onClose={() => setIsImageViewerOpen(false)}
-          />
+          {!disableImageViewer && (
+            <ImageViewer
+              visible={isImageViewerOpen}
+              onMaskClick={() => {
+                setIsImageViewerOpen(false);
+              }}
+              images={[{ src: designJpgUrl || "", alt: "Design" }]}
+              onClose={() => setIsImageViewerOpen(false)}
+            />
+          )}
         </div>
         <div className="flex flex-row-reverse justify-center gap-2 p-2">
           <DropdownMenu>

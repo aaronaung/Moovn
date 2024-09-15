@@ -96,6 +96,9 @@ export default function FullCalendarMonthlyView({
         <div className="shadow ring-1 ring-black ring-opacity-5 lg:flex lg:flex-auto lg:flex-col">
           <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-secondary text-center text-xs font-semibold leading-6 text-secondary-foreground dark:border-gray-600 lg:flex-none">
             <div className="bg-secondary py-2">
+              S<span className="sr-only sm:not-sr-only">un</span>
+            </div>
+            <div className="bg-secondary py-2">
               M<span className="sr-only sm:not-sr-only">on</span>
             </div>
             <div className="bg-secondary py-2">
@@ -112,9 +115,6 @@ export default function FullCalendarMonthlyView({
             </div>
             <div className="bg-secondary py-2">
               S<span className="sr-only sm:not-sr-only">at</span>
-            </div>
-            <div className="bg-secondary py-2">
-              S<span className="sr-only sm:not-sr-only">un</span>
             </div>
           </div>
           <div className="flex bg-secondary text-xs leading-6 text-secondary-foreground dark:bg-neutral-700 lg:flex-auto">
