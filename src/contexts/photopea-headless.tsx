@@ -26,7 +26,7 @@ import { useSearchParams } from "next/navigation";
 export type DesignExport = {
   jpg: ArrayBuffer | null;
   psd: ArrayBuffer | null;
-  instagramTags: InstagramTag[];
+  instagramTags?: InstagramTag[];
 };
 
 type PhotopeaHeadlessContextValue = {
@@ -208,37 +208,37 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
           if (mostRecentExport?.jpg && mostRecentExport?.psd && onDesignExportMap[namespace]) {
             const psd = readPsd(mostRecentExport.psd);
 
-            const isValid = validateLayerUpdates(namespace, psd);
-            if (!isValid) {
-              console.log(
-                "bad layer update - clearing exports and rerunning layer updates",
-                namespace,
-              );
-              // If the PSD is not valid, clear exports and rerun from the editTexts step.
-              setExportMetadataQueue((prev) => prev.filter((e) => e.namespace !== namespace));
-              setExportQueue((prev) =>
-                prev.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace),
-              );
-              executeDesignGenStep("editTexts", namespace);
-              return;
-            } else {
-              console.log(`${namespace}: exporting design`, {
-                jpg: mostRecentExport.jpg,
-                psd: mostRecentExport.psd,
-                psdData: psd,
-                exportQueue,
-                exportMetadataQueue,
-              });
+            // const isValid = validateLayerUpdates(namespace, psd);
+            // if (!isValid) {
+            //   console.log(
+            //     "bad layer update - clearing exports and rerunning layer updates",
+            //     namespace,
+            //   );
+            //   // If the PSD is not valid, clear exports and rerun from the editTexts step.
+            //   setExportMetadataQueue((prev) => prev.filter((e) => e.namespace !== namespace));
+            //   setExportQueue((prev) =>
+            //     prev.filter((e, i) => exportMetadataQueue[i]?.namespace !== namespace),
+            //   );
+            //   executeDesignGenStep("editTexts", namespace);
+            //   return;
+            // } else {
+            console.log(`${namespace}: exporting design`, {
+              jpg: mostRecentExport.jpg,
+              psd: mostRecentExport.psd,
+              psdData: psd,
+              exportQueue,
+              exportMetadataQueue,
+            });
 
-              const debugKey = params.get("debug");
-              if (debugKey) {
-                const debugJpg = document.createElement("img");
-                debugJpg.src = URL.createObjectURL(new Blob([mostRecentExport.jpg]));
-                debugJpg.style.width = "350px";
-                debugJpg.style.height = "350px";
-                document.body.appendChild(debugJpg);
-              }
+            const debugKey = params.get("debug");
+            if (debugKey) {
+              const debugJpg = document.createElement("img");
+              debugJpg.src = URL.createObjectURL(new Blob([mostRecentExport.jpg]));
+              debugJpg.style.width = "350px";
+              debugJpg.style.height = "350px";
+              document.body.appendChild(debugJpg);
             }
+            // }
 
             clearTimeout(timeoutMap.current[namespace]);
             markStepDone(namespace, "export");

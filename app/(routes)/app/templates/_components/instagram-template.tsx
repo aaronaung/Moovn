@@ -20,7 +20,7 @@ import {
   CarouselItem,
 } from "@/src/components/ui/carousel";
 import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
-import { GalleryHorizontal } from "lucide-react";
+import { GalleryHorizontal, MailIcon } from "lucide-react";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { saveTemplate } from "@/src/data/templates";
 
@@ -30,10 +30,12 @@ export const InstagramTemplate = ({
   template,
   onDeleteTemplate,
   onAddToCarousel,
+  templateCreationRequest,
 }: {
   template: Tables<"templates">;
   onDeleteTemplate: () => void;
   onAddToCarousel: (template: Tables<"templates">) => void;
+  templateCreationRequest?: Tables<"template_creation_requests">;
 }) => {
   const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
   const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
@@ -77,6 +79,7 @@ export const InstagramTemplate = ({
           templatePath={templateObjects[0].path}
           template={template}
           signedTemplateUrl={templateObjects[0].url}
+          hideActions={!!templateCreationRequest}
         />
       );
     }
@@ -94,6 +97,7 @@ export const InstagramTemplate = ({
                 templatePath={obj.path}
                 template={template}
                 signedTemplateUrl={obj.url}
+                hideActions={!!templateCreationRequest}
               />
             </CarouselItem>
           ))}
@@ -105,6 +109,25 @@ export const InstagramTemplate = ({
 
   return (
     <Card className={`h-fit w-[320px] shrink-0`}>
+      {templateCreationRequest && (
+        <div className="flex flex-col gap-1 rounded-t-md bg-orange-300 p-2 text-center text-xs dark:bg-orange-700">
+          <Tooltip>
+            <TooltipTrigger className="w-full">
+              <p>Our team is actively working on this template.</p>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[420px]">
+              We have received your request to work on this template. This banner will disappear
+              once the template is ready.
+            </TooltipContent>
+          </Tooltip>
+          <p className="text-center text-primary hover:underline">
+            <span className="flex items-center justify-center gap-1">
+              <MailIcon className="h-3 w-3" />
+              <a href="mailto:team@moovn.co">team@moovn.co</a>
+            </span>
+          </p>
+        </div>
+      )}
       <CardHeader className="py-4 pl-4 pr-2">
         <div className="flex items-center">
           <div className="flex flex-col items-center gap-1">
@@ -129,19 +152,21 @@ export const InstagramTemplate = ({
               }}
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary"
             />
-            <Tooltip>
-              <TooltipTrigger>
-                <GalleryHorizontal
-                  onClick={() => {
-                    onAddToCarousel(template);
-                  }}
-                  className="h-9 w-9 cursor-pointer rounded-full p-2 text-primary hover:bg-secondary"
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                {templateObjects.length > 1 ? "Add to carousel" : "Convert to carousel"}
-              </TooltipContent>
-            </Tooltip>
+            {!templateCreationRequest && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <GalleryHorizontal
+                    onClick={() => {
+                      onAddToCarousel(template);
+                    }}
+                    className="h-9 w-9 cursor-pointer rounded-full p-2 text-primary hover:bg-secondary"
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {templateObjects.length > 1 ? "Add to carousel" : "Convert to carousel"}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -149,7 +174,7 @@ export const InstagramTemplate = ({
         {renderTemplateContainer()}
       </CardContent>
 
-      {template.content_type === ContentType.InstagramPost && (
+      {template.content_type === ContentType.InstagramPost && !templateCreationRequest && (
         <div className="group mt-3 rounded-md px-3 pb-4">
           {isEditingIgCaption ? (
             <div>

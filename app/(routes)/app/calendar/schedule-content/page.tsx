@@ -9,6 +9,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Tables } from "@/types/db";
 import { supaServerComponentClient } from "@/src/data/clients/server";
+import { TemplateCreationRequestStatus } from "@/src/consts/templates";
 
 const MISSING_DETAILS = {
   sources: {
@@ -27,7 +28,14 @@ const MISSING_DETAILS = {
 
 export default async function ScheduleContent() {
   const availableSources = await getSourcesForAuthUser({ client: supaServerComponentClient() });
-  const availableTemplates = await getTemplatesForAuthUser({ client: supaServerComponentClient() });
+  const allTemplates = await getTemplatesForAuthUser({ client: supaServerComponentClient() });
+  const availableTemplates = allTemplates.filter(
+    (template) =>
+      template.template_creation_requests.length === 0 ||
+      template.template_creation_requests.every(
+        (r) => r.status === TemplateCreationRequestStatus.Done,
+      ),
+  );
   const availableDestinations = await getDestinationsForAuthUser({
     client: supaServerComponentClient(),
   });

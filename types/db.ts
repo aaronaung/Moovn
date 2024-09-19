@@ -174,7 +174,7 @@ export type Database = {
       }
       published_content: {
         Row: {
-          content_id: string
+          content_id: string | null
           id: string
           ig_media_id: string | null
           owner_id: string
@@ -182,7 +182,7 @@ export type Database = {
           schedule_id: string | null
         }
         Insert: {
-          content_id: string
+          content_id?: string | null
           id?: string
           ig_media_id?: string | null
           owner_id: string
@@ -190,7 +190,7 @@ export type Database = {
           schedule_id?: string | null
         }
         Update: {
-          content_id?: string
+          content_id?: string | null
           id?: string
           ig_media_id?: string | null
           owner_id?: string
@@ -255,6 +255,51 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_creation_requests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          owner_id: string
+          status: string
+          template_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          owner_id: string
+          status: string
+          template_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          owner_id?: string
+          status?: string
+          template_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_creation_requests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_creation_requests_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
             referencedColumns: ["id"]
           },
         ]
@@ -341,7 +386,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_content_template_links: {
+        Args: {
+          arg_content_id: string
+          new_template_ids: string[]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

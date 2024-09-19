@@ -1,3 +1,4 @@
+import { FileIcon } from "lucide-react";
 import { ReactNode } from "react";
 import { DropzoneOptions, FileRejection, useDropzone } from "react-dropzone";
 
@@ -6,18 +7,19 @@ export default function FileDropzone({
   defaultIcon,
   options,
   isDisabled = false,
+  label,
 }: {
   onDrop: (files: File[], rejectedFiles: FileRejection[]) => void;
   defaultIcon?: ReactNode;
   options?: DropzoneOptions;
   isDisabled?: boolean;
+  label?: string;
 }) {
-  const { getRootProps, getInputProps, isDragActive, acceptedFiles } =
-    useDropzone({
-      onDrop,
-      disabled: isDisabled,
-      ...options,
-    });
+  const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
+    onDrop,
+    disabled: isDisabled,
+    ...options,
+  });
 
   return (
     <div
@@ -38,12 +40,13 @@ export default function FileDropzone({
         ) : (
           defaultIcon
         )}
-        <div className="text-md mt-4 flex leading-6 text-muted-foreground">
+        <div className="text-md flex leading-6 text-muted-foreground">
           <input {...getInputProps()} />
+          <FileIcon className="mr-2" />
           {isDragActive ? (
             <p>Drop the files here ...</p>
           ) : (
-            <p>{`Drag 'n' drop some files here, or click to select files`}</p>
+            <p>{label || `Drag 'n' drop some files here, or click to select files`}</p>
           )}
         </div>
       </div>

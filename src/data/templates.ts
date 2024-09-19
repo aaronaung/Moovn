@@ -7,7 +7,10 @@ import { deleteObject } from "./r2";
 
 export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
   return throwOrData(
-    client.from("templates").select("*").order("created_at", { ascending: false }),
+    client
+      .from("templates")
+      .select("*, template_creation_requests(*)")
+      .order("created_at", { ascending: false }),
   );
 };
 
@@ -59,4 +62,17 @@ export const deleteTemplate = async (
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
   await deleteObject("templates", `${template.owner_id}/${template.id}`);
   return resp;
+};
+
+export const saveTemplateCreationRequest = async (
+  templateCreationRequest: Partial<Tables<"template_creation_requests">>,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("template_creation_requests")
+      .upsert(templateCreationRequest as Tables<"template_creation_requests">)
+      .select("*")
+      .single(),
+  );
 };

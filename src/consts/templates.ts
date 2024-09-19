@@ -1,14 +1,23 @@
 import { ContentType } from "./content";
 import { SourceDataView } from "./sources";
 
+export enum TemplateCreationRequestStatus {
+  InProgress = "in_progress",
+  Done = "done",
+}
+
 export const FREE_DESIGN_TEMPLATES: {
   [key: string]: { [key: string]: { title: string; fileName: string }[] };
 } = {
   [SourceDataView.Daily]: {
     [ContentType.InstagramPost]: [
       {
-        title: "Daily IG post #1",
-        fileName: "daily_template_1",
+        title: "Daily Small IG post",
+        fileName: "daily_sm_1",
+      },
+      {
+        title: "Daily Medium IG post",
+        fileName: "daily_md_1",
       },
     ],
     [ContentType.InstagramStory]: [
@@ -21,12 +30,20 @@ export const FREE_DESIGN_TEMPLATES: {
   [SourceDataView.Weekly]: {
     [ContentType.InstagramPost]: [
       {
-        title: "Weekly IG post (day 1-3) #1",
-        fileName: "weekly_1_template_1",
+        title: "Weekly Small IG post (day 1-3)",
+        fileName: "weekly_sm_1_p1",
       },
       {
-        title: "Weekly IG post (day 4-6) #1",
-        fileName: "weekly_2_template_1",
+        title: "Weekly Small IG post (day 4-6)",
+        fileName: "weekly_sm_1_p2",
+      },
+      {
+        title: "Weekly Medium IG post (day 1-3)",
+        fileName: "weekly_md_1_p1",
+      },
+      {
+        title: "Weekly Medium IG post (day 4-6)",
+        fileName: "weekly_md_1_p2",
       },
     ],
   },

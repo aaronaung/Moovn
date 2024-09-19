@@ -203,6 +203,7 @@ export default function EventDialog({
           </Tooltip>
         </div>
         <RadioGroup
+          disabled={isJobPending(idbKey)}
           value={selectedDesign}
           onValueChange={(value) => setSelectedDesign(value as "current" | "new")}
         >
@@ -210,7 +211,9 @@ export default function EventDialog({
             <div
               className="cursor-pointer"
               onClick={() => {
-                setSelectedDesign("current");
+                if (!isJobPending(idbKey)) {
+                  setSelectedDesign("current");
+                }
               }}
             >
               {event.hasDataChanged && (
@@ -227,7 +230,9 @@ export default function EventDialog({
               <div
                 className="cursor-pointer"
                 onClick={() => {
-                  setSelectedDesign("new");
+                  if (!isJobPending(idbKey)) {
+                    setSelectedDesign("new");
+                  }
                 }}
               >
                 <div className="mb-2 flex items-center gap-2 ">

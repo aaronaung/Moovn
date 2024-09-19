@@ -61,7 +61,8 @@ export const determineDesignGenSteps = async (
     }
     const ogLayerName = layer.name;
 
-    const [layerName, dateFormat] = layer.name.trim().split("|") || [];
+    const [lname, dateFormat] = layer.name.trim().split("|") || [];
+    const layerName = lname.trim();
     const value = schedules[layerName];
 
     if (!layerName.startsWith("day")) {
@@ -78,12 +79,23 @@ export const determineDesignGenSteps = async (
       ];
       continue;
     } else if (layer.text) {
-      if (layerName.endsWith("start") || layerName.endsWith("end") || layerName.endsWith("date")) {
+      let defaultDateFormat;
+      if (layerName.endsWith("start")) {
+        defaultDateFormat = "hh:mm aa";
+      } else if (layerName.endsWith("end")) {
+        defaultDateFormat = "hh:mm aa";
+      } else if (layerName.endsWith("date")) {
+        defaultDateFormat = "EEE, MMM dd";
+      }
+
+      if (defaultDateFormat) {
         genSteps.editTexts = [
           ...(genSteps.editTexts ?? []),
           {
             layerName: ogLayerName,
-            value: dateFormat ? format(new Date(value), dateFormat.trim()) : value,
+            value: dateFormat
+              ? format(new Date(value), dateFormat.trim())
+              : format(new Date(value), defaultDateFormat),
           },
         ];
       } else {

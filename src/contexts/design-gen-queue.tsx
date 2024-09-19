@@ -146,7 +146,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                   jpg: designExport["jpg"],
                   psd: designExport["psd"],
                   hash: designHash,
-                  instagramTags: designExport.instagramTags,
+                  instagramTags: designExport.instagramTags ?? [],
                   instagramCaption: renderCaption(template?.ig_caption_template || "", schedule),
                   lastUpdated: new Date(),
                 });

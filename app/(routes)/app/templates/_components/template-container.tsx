@@ -29,10 +29,12 @@ export default function TemplateContainer({
   template,
   templatePath,
   signedTemplateUrl,
+  hideActions = false,
 }: {
   template: Tables<"templates">;
   templatePath: string;
   signedTemplateUrl: string;
+  hideActions?: boolean;
 }) {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateTemplateJpg, isLoading: isGeneratingTemplateJpg } = useGenerateTemplateJpg();
@@ -151,75 +153,77 @@ export default function TemplateContainer({
           />
         )}
       </div>
-      <div className="flex justify-center gap-2 py-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateFromIdb}>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  className="group hover:bg-secondary-foreground hover:text-secondary"
-                  variant="secondary"
-                  disabled={isLoadingTemplateSignedUrl || !templateFromIdb}
+      {!hideActions && (
+        <div className="flex justify-center gap-2 py-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateFromIdb}>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    className="group hover:bg-secondary-foreground hover:text-secondary"
+                    variant="secondary"
+                    disabled={isLoadingTemplateSignedUrl || !templateFromIdb}
+                  >
+                    <DownloadCloudIcon width={18} className="group-hover:text-secondary" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download</TooltipContent>
+              </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {templateFromIdb?.psdUrl && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => {
+                    download(templateFromIdb.psdUrl, `${template.name}.psd`);
+                  }}
                 >
-                  <DownloadCloudIcon width={18} className="group-hover:text-secondary" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download</TooltipContent>
-            </Tooltip>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {templateFromIdb?.psdUrl && (
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  download(templateFromIdb.psdUrl, `${template.name}.psd`);
-                }}
-              >
-                PSD
-              </DropdownMenuItem>
-            )}
-            {templateFromIdb?.jpgUrl && (
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  download(templateFromIdb.jpgUrl, `${template.name}.jpg`);
-                }}
-              >
-                JPEG
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                  PSD
+                </DropdownMenuItem>
+              )}
+              {templateFromIdb?.jpgUrl && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => {
+                    download(templateFromIdb.jpgUrl, `${template.name}.jpg`);
+                  }}
+                >
+                  JPEG
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              variant="secondary"
-              className="group hover:bg-secondary-foreground hover:text-secondary"
-              disabled={isLoadingTemplateSignedUrl || !templateFromIdb?.psd}
-              onClick={async () => {
-                if (templateFromIdb?.psd) {
-                  openPhotopeaEditor(
-                    {
-                      title: template.name || "Untitled",
-                      source_data_view: template.source_data_view,
-                      content_type: template.content_type,
-                    },
-                    templateFromIdb.psd,
-                    {
-                      onSave: handleTemplateSave,
-                      isMetadataEditable: true,
-                    },
-                  );
-                }
-              }}
-            >
-              <PaintBrushIcon width={18} className="group-hover:text-secondary" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit template</TooltipContent>
-        </Tooltip>
-      </div>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="secondary"
+                className="group hover:bg-secondary-foreground hover:text-secondary"
+                disabled={isLoadingTemplateSignedUrl || !templateFromIdb?.psd}
+                onClick={async () => {
+                  if (templateFromIdb?.psd) {
+                    openPhotopeaEditor(
+                      {
+                        title: template.name || "Untitled",
+                        source_data_view: template.source_data_view,
+                        content_type: template.content_type,
+                      },
+                      templateFromIdb.psd,
+                      {
+                        onSave: handleTemplateSave,
+                        isMetadataEditable: true,
+                      },
+                    );
+                  }
+                }}
+              >
+                <PaintBrushIcon width={18} className="group-hover:text-secondary" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit template</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 }

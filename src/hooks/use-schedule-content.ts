@@ -67,7 +67,7 @@ export function useScheduleContent({
       owner_id: ownerId,
       template_id: template.id,
       destination_id: destinationId,
-      ig_tags: designs.map((d) => d.instagramTags),
+      ig_tags: designs.map((d) => d.instagramTags ?? []),
       ...(template.ig_caption_template ? { ig_caption: designs[0].instagramCaption } : {}),
       data_hash: designs[0].hash, //the hash is the same for all designs in the carousel
       updated_at: new Date().toISOString(),
