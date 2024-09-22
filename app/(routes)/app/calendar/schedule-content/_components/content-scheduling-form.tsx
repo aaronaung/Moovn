@@ -255,20 +255,6 @@ export default function ContentSchedulingForm({
             disablePastDays
           />
         </div>
-        <InputSelect
-          label="Destination"
-          className="md:w-[620px]"
-          rhfKey={"destination_id"}
-          options={allowedDestinations.map((destination) => ({
-            value: destination.id,
-            label: destination.name,
-          }))}
-          control={control}
-          error={errors.destination_id?.message}
-          inputProps={{
-            placeholder: "Select a destination",
-          }}
-        />
         <InputMultiSelect
           label="Templates"
           rhfKey={"template_ids"}
@@ -283,6 +269,23 @@ export default function ContentSchedulingForm({
             placeholder: "Select one or more templates",
           }}
         />
+
+        {templateIds.length > 0 && (
+          <InputSelect
+            label="Destination"
+            className="md:w-[620px]"
+            rhfKey={"destination_id"}
+            options={allowedDestinations.map((destination) => ({
+              value: destination.id,
+              label: destination.name,
+            }))}
+            control={control}
+            error={errors.destination_id?.message}
+            inputProps={{
+              placeholder: "Select a destination",
+            }}
+          />
+        )}
 
         {isLoadingScheduleData ? (
           <Spinner />

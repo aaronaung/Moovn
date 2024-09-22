@@ -185,7 +185,7 @@ export class InstagramAPIClient {
     return this.request({
       method: "GET",
       path: `/${mediaId}`,
-      searchParams: new URLSearchParams("fields=id,permalink"),
+      searchParams: new URLSearchParams("fields=id,permalink,media_url"),
     });
   }
 
@@ -193,8 +193,6 @@ export class InstagramAPIClient {
     accountId: string,
     input: Omit<CreateMediaContainerInput, "isCarouselItem" | "userTags" | "caption">,
   ) {
-    await this.refreshTokenIfNeeded();
-
     const mediaContainer = await this.createMediaContainer(accountId, input, "STORIES");
     return this.publishMediaContainer(accountId, mediaContainer.id);
   }

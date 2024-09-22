@@ -12,6 +12,7 @@ export type InstagramBusinessAccount = {
 export type InstagramMedia = {
   id: string;
   permalink: string;
+  media_url: string;
   // more here: https://developers.facebook.com/docs/instagram-api/reference/ig-media/
 };
 

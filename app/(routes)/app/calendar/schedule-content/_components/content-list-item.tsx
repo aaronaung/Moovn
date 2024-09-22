@@ -50,7 +50,7 @@ export default memo(
 
     const designLoading = isJobPending(contentIdbKey);
     return (
-      <div className={cn("flex flex-col gap-2")}>
+      <div className="flex w-full flex-col gap-2 sm:w-fit">
         <div className="ml-1 flex items-center gap-2">
           <Checkbox
             disabled={designLoading}
@@ -58,7 +58,7 @@ export default memo(
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger className="w-full">
               <DateTimePicker
                 isDisabled={designLoading}
                 value={{

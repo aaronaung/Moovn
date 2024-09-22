@@ -26,7 +26,9 @@ export const getContentsForAuthUser = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("content")
-      .select("*, destination:destinations(*), template:templates(*)")
+      .select(
+        "*, destination:destinations(*), template:templates(*), published_content:published_content(*)",
+      )
       .order("created_at", { ascending: false }),
   );
 };
@@ -38,7 +40,7 @@ export const getContentByDestinationId = async (
   return throwOrData(
     client
       .from("content")
-      .select("*, destination:destinations(*)")
+      .select("*, destination:destinations(*),")
       .eq("destination_id", destinationId),
   );
 };

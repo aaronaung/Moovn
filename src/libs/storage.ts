@@ -2,7 +2,7 @@ import { listObjects, signUrl } from "../data/r2";
 import { BucketName } from "./r2/r2-buckets";
 
 // Returns path if it's not a directory, else returns all children paths.
-export const signUrlForPathOrChildPaths = async (
+export const getSignedUrls = async (
   bucket: BucketName,
   path: string,
   isDirectory: boolean,

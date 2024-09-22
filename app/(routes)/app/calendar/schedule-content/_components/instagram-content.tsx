@@ -96,7 +96,7 @@ export default memo(
     };
 
     return (
-      <div className="w-fit rounded-md bg-secondary" key={contentIdbKey}>
+      <div className="w-full rounded-md bg-secondary sm:w-fit" key={contentIdbKey}>
         {!hideHeader && (
           <div className="flex items-center gap-x-1 px-3 py-3">
             <div className="flex flex-col gap-1">
@@ -109,7 +109,7 @@ export default memo(
             </div>
           </div>
         )}
-        <div className={cn("flex flex-col items-center")}>
+        <div className="flex flex-col items-center p-3 sm:p-0">
           {/** if contentidbkey is a folder, then we render multiple design containers in a carousel
            * overwrite contentIdbKey: user_id/schedule_range/template_id/0,1,2.jpg and psd
            * generated design contentIdbKey:  user_id/schedule_range/template_id/0,1,2 this is only stored in indexedDB

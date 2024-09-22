@@ -158,14 +158,18 @@ export const handler = async (event: any) => {
         }
 
         await Promise.all(
-          publishedMediaIds.map((id) =>
+          publishedMediaIds.map(async (id) => {
+            const media = await igClient.getInstagramMedia(id);
+
             sbClient.from("published_content").insert({
               content_id: contentId,
               owner_id: content.destination.owner_id,
               ig_media_id: id,
+              ig_media_url: media.media_url,
+              ig_permalink: media.permalink,
               published_at: new Date().toISOString(),
-            }),
-          ),
+            });
+          }),
         );
         console.log("Published media ids", publishedMediaIds);
         break;

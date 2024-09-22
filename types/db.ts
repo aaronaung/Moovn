@@ -177,6 +177,8 @@ export type Database = {
           content_id: string | null
           id: string
           ig_media_id: string | null
+          ig_media_url: string | null
+          ig_permalink: string | null
           owner_id: string
           published_at: string | null
           schedule_id: string | null
@@ -185,6 +187,8 @@ export type Database = {
           content_id?: string | null
           id?: string
           ig_media_id?: string | null
+          ig_media_url?: string | null
+          ig_permalink?: string | null
           owner_id: string
           published_at?: string | null
           schedule_id?: string | null
@@ -193,6 +197,8 @@ export type Database = {
           content_id?: string | null
           id?: string
           ig_media_id?: string | null
+          ig_media_url?: string | null
+          ig_permalink?: string | null
           owner_id?: string
           published_at?: string | null
           schedule_id?: string | null

@@ -144,7 +144,7 @@ export default function EventDialog({
 
   const renderEventContent = () => {
     const width = isMobile ? 320 : 400;
-    const previewUrlsForContent = previewUrls.get(event.contentId);
+    const previewUrlsForContent = previewUrls.get(event.content.id);
     if (!previewUrlsForContent || previewUrlsForContent.length === 0) {
       return <p className="text-sm text-muted-foreground">No preview available.</p>;
     }

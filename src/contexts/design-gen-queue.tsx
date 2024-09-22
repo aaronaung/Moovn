@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
 import { deconstructContentIdbKey, getRangeStart, renderCaption } from "../libs/content";
-import { isBefore, startOfToday } from "date-fns";
+import { isBefore, startOfYesterday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
 import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
@@ -59,7 +59,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
     for (const design of designs) {
       const { range } = deconstructContentIdbKey(design.key);
       const rangeStart = getRangeStart(range);
-      if (isBefore(rangeStart, startOfToday())) {
+      if (isBefore(rangeStart, startOfYesterday())) {
         oldDesigns.push(design);
       }
     }

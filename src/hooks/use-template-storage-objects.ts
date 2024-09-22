@@ -1,7 +1,8 @@
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
-import { signUrlForPathOrChildPaths } from "../libs/storage";
+
 import { toast } from "../components/ui/use-toast";
+import { getSignedUrls } from "../libs/storage";
 
 export const useTemplateStorageObjects = (template?: Tables<"templates">) => {
   const [templateObjects, setTemplateUrls] = useState<{ url: string; path: string }[]>([]);
@@ -17,7 +18,7 @@ export const useTemplateStorageObjects = (template?: Tables<"templates">) => {
     const fetchTemplateUrls = async () => {
       try {
         setIsLoadingTemplateUrls(true);
-        const urls = await signUrlForPathOrChildPaths(
+        const urls = await getSignedUrls(
           "templates",
           `${template.owner_id}/${template.id}`,
           template.is_carousel,

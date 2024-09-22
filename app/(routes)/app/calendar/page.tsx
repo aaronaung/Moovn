@@ -2,11 +2,10 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
-import { ContentType } from "@/src/consts/content";
 import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
-import { signUrlForPathOrChildPaths } from "@/src/libs/storage";
+import { getSignedUrls } from "@/src/libs/storage";
 import { Tables } from "@/types/db";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,8 +28,8 @@ export default function Calendar() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Map<string, string[]>>(new Map());
 
-  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(false);
-  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(false);
+  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
+  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(true);
 
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
@@ -58,16 +57,14 @@ export default function Calendar() {
     },
   );
   useEffect(() => {
-    console.log("loading preview urls", contents);
     const loadPreviewUrls = async () => {
       try {
-        setIsLoadingPreviewUrls(true);
         const previewUrls = new Map<string, string[]>();
         const previewUrlPromises: Promise<{ contentId: string; urls: string[] }>[] = [];
         for (const content of contents || []) {
           previewUrlPromises.push(
             new Promise(async (resolve) => {
-              const signUrlData = await signUrlForPathOrChildPaths(
+              const signUrlData = await getSignedUrls(
                 "scheduled-content",
                 `${content.owner_id}/${content.id}`,
                 content.template?.is_carousel || false,
@@ -97,10 +94,8 @@ export default function Calendar() {
   }, [contents]);
 
   useEffect(() => {
-    console.log("loading calendar events", contentSchedules);
     const loadCalendarEvents = async () => {
       try {
-        setIsLoadingCalendarEvents(true);
         const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
         const scheduleDataMap = new Map();
         for (const [sourceId, data] of Object.entries(scheduleDataFromAllSources || {})) {
@@ -108,35 +103,32 @@ export default function Calendar() {
           scheduleDataMap.set(sourceId, dailyEvents);
         }
 
-        const calendarEvents = await Promise.all(
-          (contentSchedules || []).map(async (schedule) => {
-            const { range, contentId } = deconstructScheduleName(schedule.name);
-            const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
-            const content = contentMap.get(contentId);
+        const calendarEvents = (contentSchedules || []).map((schedule) => {
+          const { range, contentId } = deconstructScheduleName(schedule.name);
+          const scheduledDate = fromAtScheduleExpressionToDate(schedule.schedule_expression);
+          const content = contentMap.get(contentId);
 
-            if (!content || !scheduledDate || !scheduleDataMap.has(content.source_id)) {
-              return null;
-            }
+          if (!content || !scheduledDate || !scheduleDataMap.has(content.source_id)) {
+            return null;
+          }
 
-            const dataForEvent = extractScheduleDataWithinRange(
-              range,
-              scheduleDataMap.get(content.source_id)!,
-            );
+          const dataForEvent = extractScheduleDataWithinRange(
+            range,
+            scheduleDataMap.get(content.source_id)!,
+          );
 
-            const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
-            const hasDataChanged = dataHash !== content.data_hash;
+          const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
+          const hasDataChanged = dataHash !== content.data_hash;
 
-            return {
-              contentId: content.id,
-              scheduleName: schedule.name,
-              data: dataForEvent,
-              hasDataChanged,
-              title: content.template?.name ?? "Untitled",
-              start: scheduledDate,
-              contentType: content.type as ContentType,
-            };
-          }),
-        );
+          return {
+            content,
+            scheduleName: schedule.name,
+            data: dataForEvent,
+            hasDataChanged,
+            title: content.template?.name ?? "Untitled",
+            start: scheduledDate,
+          };
+        });
 
         setCalendarEvents(calendarEvents.filter((event) => event !== null) as CalendarEvent[]);
       } catch (err) {
@@ -171,7 +163,7 @@ export default function Calendar() {
         events={calendarEvents}
         previewUrls={previewUrls}
         onEventClick={(event) => {
-          const content = contents?.find((c) => c.id === event.contentId);
+          const content = contents?.find((c) => c.id === event.content.id);
           setEventDialog({
             isOpen: true,
             content,

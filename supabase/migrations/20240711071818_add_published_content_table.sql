@@ -4,6 +4,8 @@ create table "public"."published_content" (
   "content_id" uuid references "public"."content" ("id") on delete set null,
   "schedule_id" uuid references "public"."content_schedules" ("id") on delete set null, -- schedule_id null means it's published manually
   "ig_media_id" text,
+  "ig_media_url" text,
+  "ig_permalink" text,
   "published_at" timestamp with time zone default now()
 );
 create unique index if not exists published_content_pkey on public."published_content" using btree (id);

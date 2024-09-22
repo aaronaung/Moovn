@@ -8,7 +8,7 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Button } from "../button";
 import FullCalendarMonthlyView from "./monthly-view";
 import FullCalendarWeeklyView from "./weekly-view";
-import { ContentType } from "@/src/consts/content";
+import { Tables } from "@/types/db";
 
 enum CalendarView {
   // Daily = "Daily",
@@ -17,7 +17,9 @@ enum CalendarView {
 }
 
 export type CalendarEvent = {
-  contentId: string;
+  content: Tables<"content"> & {
+    published_content: Tables<"published_content">[];
+  };
   scheduleName: string;
   title: string;
   start: Date;
@@ -25,7 +27,6 @@ export type CalendarEvent = {
   data: any;
   hasDataChanged: boolean;
   color?: string;
-  contentType: ContentType;
   previewUrls?: string[];
 };
 
