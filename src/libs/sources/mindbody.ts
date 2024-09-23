@@ -2,6 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
+import { formatInTimeZone } from "date-fns-tz";
 
 export type MindbodySourceSettings = {
   siteId: string;
@@ -16,8 +17,9 @@ export class MindbodyClient implements SourceClient {
 
   private async getRawEventOcurrences(from: string, to: string) {
     const urlParams = new URLSearchParams();
-    urlParams.set("startDateTime", from);
-    urlParams.set("endDateTime", to);
+    urlParams.set("startDateTime", formatInTimeZone(from, "UTC", "yyyy-MM-dd'T'HH:mm:ss"));
+    urlParams.set("endDateTime", formatInTimeZone(to, "UTC", "yyyy-MM-dd'T'HH:mm:ss"));
+    console.log("mindbody schedule search params", urlParams.toString());
 
     const resp = await fetch(
       `https://api.mindbodyonline.com/public/v6/class/classes?${urlParams.toString()}`,
