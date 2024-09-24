@@ -52,9 +52,12 @@ export class MindbodyClient implements SourceClient {
       const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       console.log({
         startDateTime: event.StartDateTime,
-        toZonedTime: toZonedTime(event.StartDateTime, timeZone),
-        startOfDay: startOfDay(parseISO(event.StartDateTime)),
-        final: toZonedTime(startOfDay(toZonedTime(event.StartDateTime, timeZone)), serverTimezone),
+        toZonedTime: toZonedTime(event.StartDateTime, timeZone).toISOString(),
+        startOfDay: startOfDay(parseISO(event.StartDateTime)).toISOString(),
+        final: toZonedTime(
+          startOfDay(toZonedTime(event.StartDateTime, timeZone)),
+          serverTimezone,
+        ).toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
