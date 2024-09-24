@@ -8,6 +8,7 @@ export type MindbodySourceSettings = {
   siteId: string;
 };
 
+// https://developers.mindbodyonline.com/ui/documentation/public-api
 export class MindbodyClient implements SourceClient {
   private apiKey: string;
 
@@ -15,11 +16,19 @@ export class MindbodyClient implements SourceClient {
     this.apiKey = env.MINDBODY_API_KEY;
   }
 
+  private async getSites() {
+    const resp = await fetch(`https://api.mindbodyonline.com/public/v6/site/sites`, {
+      headers: {
+        "API-Key": this.apiKey,
+      },
+    });
+    return (await resp.json()).Sites;
+  }
+
   private async getRawEventOcurrences(from: string, to: string) {
     const urlParams = new URLSearchParams();
-    urlParams.set("startDateTime", formatInTimeZone(from, "UTC", "yyyy-MM-dd'T'HH:mm:ss"));
-    urlParams.set("endDateTime", formatInTimeZone(to, "UTC", "yyyy-MM-dd'T'HH:mm:ss"));
-    console.log("mindbody schedule search params", urlParams.toString());
+    urlParams.set("startDateTime", from);
+    urlParams.set("endDateTime", to);
 
     const resp = await fetch(
       `https://api.mindbodyonline.com/public/v6/class/classes?${urlParams.toString()}`,
@@ -30,10 +39,10 @@ export class MindbodyClient implements SourceClient {
         },
       },
     );
-    return resp.json();
+    return (await resp.json()).Classes;
   }
 
-  private groupEventsByDay(events: any[]) {
+  private groupEventsByDay(events: any[], timeZone: string) {
     if ((events ?? []).length === 0) {
       return [];
     }
@@ -41,7 +50,9 @@ export class MindbodyClient implements SourceClient {
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => ({
       ...event,
-      date: startOfDay(new Date(event.StartDateTime)).toISOString(),
+      date: startOfDay(
+        formatInTimeZone(event.StartDateTime, timeZone, "yyyy-MM-dd'T'HH:mm:ss"),
+      ).toISOString(),
     }));
 
     // Group the events by the formatted date
@@ -51,8 +62,12 @@ export class MindbodyClient implements SourceClient {
   }
 
   async getScheduleData(from: string, to: string): Promise<ScheduleData> {
-    const resp = await this.getRawEventOcurrences(from, to);
-    const groupedEvents = this.groupEventsByDay(resp.Classes);
+    // TODO: We can call this only once and store the result in database.
+    const sites = await this.getSites();
+    const site = sites.find((site: any) => site.Id == this.siteId);
+
+    const events = await this.getRawEventOcurrences(from, to);
+    const groupedEvents = this.groupEventsByDay(events, site?.TimeZone ?? "America/Los_Angeles");
     return {
       day: groupedEvents.map((eventsByDay: any) => ({
         date: eventsByDay[0].date,
