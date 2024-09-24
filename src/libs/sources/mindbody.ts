@@ -58,6 +58,7 @@ export class MindbodyClient implements SourceClient {
           timeZone,
           "yyyy-MM-dd'T'HH:mm:ss'Z'",
         ),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       return {
         ...event,
