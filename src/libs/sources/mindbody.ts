@@ -49,21 +49,20 @@ export class MindbodyClient implements SourceClient {
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
-      const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const parsedDate = parseISO(event.StartDateTime); // Parse the date string properly
+
       console.log({
         startDateTime: event.StartDateTime,
-        toZonedTime: toZonedTime(event.StartDateTime, timeZone).toISOString(),
-        startOfDay: startOfDay(parseISO(event.StartDateTime)).toISOString(),
-        final: toZonedTime(
-          startOfDay(toZonedTime(event.StartDateTime, timeZone)),
-          serverTimezone,
-        ).toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        toZonedTime: toZonedTime(parsedDate, timeZone).toISOString(),
+        startOfDay: startOfDay(toZonedTime(parsedDate, timeZone)).toISOString(),
+        final: toZonedTime(startOfDay(toZonedTime(parsedDate, timeZone)), timeZone).toISOString(),
+        timeZone,
       });
 
       return {
         ...event,
-        date: toZonedTime(startOfDay(toZonedTime(event.StartDateTime, timeZone)), serverTimezone),
+        // Ensure date calculation is consistent across environments
+        date: toZonedTime(startOfDay(toZonedTime(parsedDate, timeZone)), timeZone),
       };
     });
 
