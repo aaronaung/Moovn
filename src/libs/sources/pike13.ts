@@ -2,7 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
-import { toZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 
 export type Pike13SourceSettings = {
   url: string;
@@ -44,7 +44,7 @@ export class Pike13Client implements SourceClient {
     return resp.staff_members || [];
   }
 
-  private groupEventsByDay(events: any[], timeZone: string) {
+  private groupEventsByDay(events: any[]) {
     if (events.length === 0) {
       return [];
     }
@@ -52,7 +52,7 @@ export class Pike13Client implements SourceClient {
     events.sort((a, b) => compareAsc(parseISO(a.start_at), parseISO(b.start_at)));
     const formattedEvents = events.map((event) => ({
       ...event,
-      date: startOfDay(toZonedTime(parseISO(event.start_at), timeZone)).toISOString(), // The first event's start date is used to determine the day.
+      date: formatInTimeZone(startOfDay(event.start_at), "UTC", "yyyy-MM-dd'T'HH:mm:ssXXX"), // The first event's start date is used to determine the day.
     }));
 
     // Group the events by the formatted date
@@ -66,10 +66,7 @@ export class Pike13Client implements SourceClient {
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
     const staffMembersById = _.keyBy(staffMembers, "id");
-    const groupedEvents = this.groupEventsByDay(
-      events,
-      events[0]?.timezone || "America/Los_Angeles",
-    );
+    const groupedEvents = this.groupEventsByDay(events);
 
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
     return {

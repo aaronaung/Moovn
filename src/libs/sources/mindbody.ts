@@ -2,7 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
-import { toDate, toZonedTime } from "date-fns-tz";
+import { formatInTimeZone, toDate } from "date-fns-tz";
 
 export type MindbodySourceSettings = {
   siteId: string;
@@ -42,23 +42,16 @@ export class MindbodyClient implements SourceClient {
     return (await resp.json()).Classes;
   }
 
-  private groupEventsByDay(events: any[], timeZone: string) {
+  private groupEventsByDay(events: any[]) {
     if ((events ?? []).length === 0) {
       return [];
     }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
-      console.log({
-        startDateTime: event.StartDateTime,
-        timeZone,
-        parseIso: parseISO(event.StartDateTime),
-        zonedTime: toZonedTime(parseISO(event.StartDateTime), timeZone),
-        date: startOfDay(toZonedTime(parseISO(event.StartDateTime), timeZone)).toISOString(), // Convert to timezone, get start of day, then convert back to ISO string
-      });
       return {
         ...event,
-        date: startOfDay(toZonedTime(parseISO(event.StartDateTime), timeZone)).toISOString(), // Convert to timezone, get start of day, then convert back to ISO string
+        date: formatInTimeZone(startOfDay(event.StartDateTime), "UTC", "yyyy-MM-dd'T'HH:mm:ssXXX"), // Convert to timezone, get start of day, then convert back to ISO string
       };
     });
 
@@ -74,7 +67,7 @@ export class MindbodyClient implements SourceClient {
     const site = sites.find((site: any) => site.Id == this.siteId);
 
     const events = await this.getRawEventOcurrences(from, to);
-    const groupedEvents = this.groupEventsByDay(events, site?.TimeZone ?? "America/Los_Angeles");
+    const groupedEvents = this.groupEventsByDay(events);
     const siteTimeZone = site?.TimeZone ?? "America/Los_Angeles";
     return {
       day: groupedEvents.map((eventsByDay: any) => ({
