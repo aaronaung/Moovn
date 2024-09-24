@@ -2,7 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
-import { formatInTimeZone, toDate } from "date-fns-tz";
+import { toDate, toZonedTime } from "date-fns-tz";
 
 export type MindbodySourceSettings = {
   siteId: string;
@@ -49,24 +49,18 @@ export class MindbodyClient implements SourceClient {
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
+      const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       console.log({
         startDateTime: event.StartDateTime,
-        parseISO: parseISO(event.StartDateTime),
+        toZonedTime: toZonedTime(event.StartDateTime, timeZone),
         startOfDay: startOfDay(parseISO(event.StartDateTime)),
-        formatInTimeZone: formatInTimeZone(
-          startOfDay(parseISO(event.StartDateTime)),
-          timeZone,
-          "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        ),
+        final: toZonedTime(startOfDay(toZonedTime(event.StartDateTime, timeZone)), serverTimezone),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
+
       return {
         ...event,
-        date: formatInTimeZone(
-          startOfDay(parseISO(event.StartDateTime)),
-          timeZone,
-          "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        ),
+        date: toZonedTime(startOfDay(toZonedTime(event.StartDateTime, timeZone)), serverTimezone),
       };
     });
 
