@@ -53,6 +53,7 @@ export class MindbodyClient implements SourceClient {
 
       console.log({
         startDateTime: event.StartDateTime,
+        parsedDate,
         toZonedTime: toZonedTime(parsedDate, timeZone).toISOString(),
         startOfDay: startOfDay(toZonedTime(parsedDate, timeZone)).toISOString(),
         final: toZonedTime(startOfDay(toZonedTime(parsedDate, timeZone)), timeZone).toISOString(),
