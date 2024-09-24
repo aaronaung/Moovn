@@ -1,6 +1,6 @@
 import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
-import { compareAsc, parseISO, startOfDay } from "date-fns";
+import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
 import { toDate } from "date-fns-tz";
 
@@ -49,15 +49,9 @@ export class MindbodyClient implements SourceClient {
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
-      console.log({
-        start: event.StartDateTime,
-        toDate: toDate(event.StartDateTime, { timeZone }),
-        timeZone,
-        startOfDay: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
-      });
       return {
         ...event,
-        date: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
+        date: toDate(events[0].StartDateTime, { timeZone }).toISOString(), // The first event's start date is used to determine the day.
       };
     });
 
