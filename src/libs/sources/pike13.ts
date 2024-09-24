@@ -1,8 +1,8 @@
 import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
-import { compareAsc, parseISO } from "date-fns";
+import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
-import { toDate } from "date-fns-tz";
+import { toZonedTime } from "date-fns-tz";
 
 export type Pike13SourceSettings = {
   url: string;
@@ -52,7 +52,7 @@ export class Pike13Client implements SourceClient {
     events.sort((a, b) => compareAsc(parseISO(a.start_at), parseISO(b.start_at)));
     const formattedEvents = events.map((event) => ({
       ...event,
-      date: toDate(events[0].start_at, { timeZone }).toISOString(), // The first event's start date is used to determine the day.
+      date: startOfDay(toZonedTime(parseISO(event.start_at), timeZone)).toISOString(), // The first event's start date is used to determine the day.
     }));
 
     // Group the events by the formatted date
@@ -72,7 +72,6 @@ export class Pike13Client implements SourceClient {
     );
 
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
-
     return {
       day: groupedEvents.map((eventsByDay) => {
         return {

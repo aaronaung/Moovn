@@ -4,15 +4,12 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn } from "@/src/utils";
-import { SIDEBAR_WIDTH } from "../../../_components/dashboard-layout";
-import { DESIGN_WIDTH } from "@/app/(routes)/app/calendar/schedule-content/_components/design-container";
-import { isMobile } from "react-device-detect";
 import ContentListItem from "./content-list-item";
 import { ScheduleData } from "@/src/libs/sources";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
 import { TimePicker } from "@/src/components/ui/time-picker";
-import { startOfDay } from "date-fns";
+import { addHours, isSameDay, startOfDay, startOfHour } from "date-fns";
 import { Tables } from "@/types/db";
 import { getContentIdbKey, getRangeStart } from "@/src/libs/content";
 import _ from "lodash";
@@ -113,14 +110,13 @@ const ContentListForTemplate = ({
         const contentIdbKey = getContentIdbKey(sourceId, range, template);
         return {
           ...prev,
-          [contentIdbKey]: date,
+          [contentIdbKey]: isSameDay(date, new Date())
+            ? startOfHour(addHours(new Date(), 1))
+            : date,
         };
       });
     }
   }, []);
-
-  const carouselCount = (window.innerWidth - SIDEBAR_WIDTH - 150) / DESIGN_WIDTH;
-  const showCarousel = Object.keys(scheduleDataByRange).length >= carouselCount && !isMobile;
 
   const renderContentListItem = (contentIdbKey: string, schedule: ScheduleData) => {
     return (

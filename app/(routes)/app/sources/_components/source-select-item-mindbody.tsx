@@ -51,7 +51,7 @@ export default function SourceSelectItemMindbody({ source }: { source: Tables<"s
         <MindbodyLogo className="w-[180px]" />
       ) : (
         <Link href={activationData.link} target="_blank">
-          <Button className="mt-2 w-full" variant="outline">
+          <Button className="w-full" variant="outline">
             Activate site <MindbodyLogo className="ml-1.5 w-[100px]" />
           </Button>
         </Link>
