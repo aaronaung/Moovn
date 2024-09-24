@@ -51,6 +51,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     resolver: zodResolver(formSchema),
   });
   const selectedSourceType = watch("type");
+  const siteId = watch("settings.siteId");
 
   useEffect(() => {
     setValue("settings", {});
@@ -58,7 +59,12 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
 
   const { user } = useAuthUser();
   const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(saveSource, {
-    invalidate: [["getSourcesForAuthUser"], ["getScheduleDataForSource", defaultValues?.id ?? ""]],
+    invalidate: [
+      ["getSourcesForAuthUser"],
+      ["getScheduleDataForSource", defaultValues?.id ?? ""],
+      ["getMindbodyActivationCodeAndLink", siteId],
+      ["getMindbodySiteData", siteId],
+    ],
     onSuccess: () => {
       onSubmitted();
     },

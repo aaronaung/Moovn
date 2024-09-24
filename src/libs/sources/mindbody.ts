@@ -95,4 +95,38 @@ export class MindbodyClient implements SourceClient {
       })),
     };
   }
+
+  async getActivationCodeAndLink() {
+    const resp = await fetch(`https://api.mindbodyonline.com/public/v6/site/activationcode`, {
+      headers: {
+        "API-Key": this.apiKey,
+        siteId: this.siteId,
+      },
+    });
+    const result = await resp.json();
+
+    if (result.Error) {
+      throw new Error(result.Error.Message);
+    }
+    return {
+      code: result.ActivationCode,
+      link: result.ActivationLink,
+    };
+  }
+
+  async getSiteData() {
+    const sites = await this.getSites();
+    const site = sites.find((site: any) => site.Id == this.siteId);
+    if (!site) {
+      return null;
+    }
+
+    return {
+      id: site.Id,
+      name: site.Name,
+      timeZone: site.TimeZone,
+      description: site.Description,
+      logoUrl: site.LogoUrl,
+    };
+  }
 }

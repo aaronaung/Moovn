@@ -1,10 +1,10 @@
 import { Checkbox } from "@/src/components/ui/checkbox";
-import { MindbodyLogo } from "@/src/components/ui/icons/mindbody";
 import { Pike13Logo } from "@/src/components/ui/icons/pike13";
 import { SourceTypes } from "@/src/consts/sources";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import SourceSelectItemMindbody from "./source-select-item-mindbody";
 
 export const SourceSelectItem = ({
   isSelected,
@@ -22,12 +22,12 @@ export const SourceSelectItem = ({
     source?: Tables<"sources">;
   }) => void;
 }) => {
-  const renderLogo = () => {
+  const renderSelectItem = () => {
     switch (source.type) {
       case SourceTypes.Pike13:
         return <Pike13Logo />;
       case SourceTypes.Mindbody:
-        return <MindbodyLogo className="w-[180px]" />;
+        return <SourceSelectItemMindbody source={source} />;
       default:
         return <></>;
     }
@@ -37,7 +37,7 @@ export const SourceSelectItem = ({
     <div
       key={source.id}
       className={cn(
-        "relative flex h-[220px] min-w-[350px] cursor-pointer flex-col gap-2 rounded-md px-4 pb-4 pt-2 hover:bg-secondary",
+        "relative flex h-[220px] w-[350px] shrink-0 cursor-pointer flex-col gap-2 rounded-md px-4 pb-4 pt-2 hover:bg-secondary",
         isSelected && "bg-secondary",
       )}
       onClick={() => {
@@ -71,7 +71,7 @@ export const SourceSelectItem = ({
         </div>
       </div>
       <div className="flex h-full w-full items-center justify-center rounded-md bg-secondary-foreground p-8">
-        {renderLogo()}
+        {renderSelectItem()}
       </div>
     </div>
   );

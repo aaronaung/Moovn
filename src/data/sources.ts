@@ -102,3 +102,19 @@ export const getScheduleDataFromAllSourcesByTimeRange = async (
     {} as { [key: string]: ScheduleData },
   );
 };
+
+export async function getMindbodySiteData(siteId: string) {
+  const response = await fetch(`/api/sources/mindbody/sites/${siteId}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch Mindbody site data");
+  }
+  return response.json();
+}
+
+export async function getMindbodyActivationCodeAndLink(siteId: string) {
+  const response = await fetch(`/api/sources/mindbody/sites/${siteId}/activation`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch Mindbody activation code and link");
+  }
+  return response.json();
+}
