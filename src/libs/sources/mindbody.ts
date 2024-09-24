@@ -51,7 +51,7 @@ export class MindbodyClient implements SourceClient {
     const formattedEvents = events.map((event) => {
       return {
         ...event,
-        date: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
+        date: startOfDay(toDate(event.StartDateTime, { timeZone })),
       };
     });
 
@@ -74,8 +74,8 @@ export class MindbodyClient implements SourceClient {
         date: eventsByDay[0].date,
         event: eventsByDay.map((event: any) => ({
           name: event.ClassDescription?.Name ?? "Untitled",
-          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }).toISOString(),
-          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }).toISOString(),
+          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }),
+          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }),
           staff: [
             {
               name: event.Staff?.Name,
