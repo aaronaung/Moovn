@@ -42,16 +42,30 @@ export class MindbodyClient implements SourceClient {
     return (await resp.json()).Classes;
   }
 
-  private groupEventsByDay(events: any[]) {
+  private groupEventsByDay(events: any[], timeZone: string) {
     if ((events ?? []).length === 0) {
       return [];
     }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
+      console.log({
+        startDateTime: event.StartDateTime,
+        parseISO: parseISO(event.StartDateTime),
+        startOfDay: startOfDay(parseISO(event.StartDateTime)),
+        formatInTimeZone: formatInTimeZone(
+          startOfDay(parseISO(event.StartDateTime)),
+          timeZone,
+          "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        ),
+      });
       return {
         ...event,
-        date: formatInTimeZone(startOfDay(event.StartDateTime), "UTC", "yyyy-MM-dd'T'HH:mm:ssXXX"), // Convert to timezone, get start of day, then convert back to ISO string
+        date: formatInTimeZone(
+          startOfDay(parseISO(event.StartDateTime)),
+          timeZone,
+          "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        ),
       };
     });
 
@@ -67,7 +81,7 @@ export class MindbodyClient implements SourceClient {
     const site = sites.find((site: any) => site.Id == this.siteId);
 
     const events = await this.getRawEventOcurrences(from, to);
-    const groupedEvents = this.groupEventsByDay(events);
+    const groupedEvents = this.groupEventsByDay(events, site?.TimeZone ?? "America/Los_Angeles");
     const siteTimeZone = site?.TimeZone ?? "America/Los_Angeles";
     return {
       day: groupedEvents.map((eventsByDay: any) => ({
