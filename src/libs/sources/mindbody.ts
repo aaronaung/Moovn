@@ -2,7 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO, startOfDay } from "date-fns";
 import _ from "lodash";
-import { formatInTimeZone } from "date-fns-tz";
+import { toDate } from "date-fns-tz";
 
 export type MindbodySourceSettings = {
   siteId: string;
@@ -48,12 +48,12 @@ export class MindbodyClient implements SourceClient {
     }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
-    const formattedEvents = events.map((event) => ({
-      ...event,
-      date: startOfDay(
-        formatInTimeZone(event.StartDateTime, timeZone, "yyyy-MM-dd'T'HH:mm:ss"),
-      ).toISOString(),
-    }));
+    const formattedEvents = events.map((event) => {
+      return {
+        ...event,
+        date: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
+      };
+    });
 
     // Group the events by the formatted date
     const groupedEvents = _.groupBy(formattedEvents, "date");
@@ -68,13 +68,14 @@ export class MindbodyClient implements SourceClient {
 
     const events = await this.getRawEventOcurrences(from, to);
     const groupedEvents = this.groupEventsByDay(events, site?.TimeZone ?? "America/Los_Angeles");
+    const siteTimeZone = site?.TimeZone ?? "America/Los_Angeles";
     return {
       day: groupedEvents.map((eventsByDay: any) => ({
         date: eventsByDay[0].date,
         event: eventsByDay.map((event: any) => ({
           name: event.ClassDescription?.Name ?? "Untitled",
-          start: new Date(event.StartDateTime).toISOString(),
-          end: new Date(event.EndDateTime).toISOString(),
+          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }).toISOString(),
+          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }).toISOString(),
           staff: [
             {
               name: event.Staff?.Name,
