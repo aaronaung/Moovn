@@ -1,8 +1,8 @@
 import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
-import { compareAsc, parseISO, startOfDay } from "date-fns";
+import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
-import { formatInTimeZone } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 export type Pike13SourceSettings = {
   url: string;
@@ -44,16 +44,25 @@ export class Pike13Client implements SourceClient {
     return resp.staff_members || [];
   }
 
-  private groupEventsByDay(events: any[]) {
+  private groupEventsByDay(events: any[], timeZone: string) {
     if (events.length === 0) {
       return [];
     }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.start_at), parseISO(b.start_at)));
-    const formattedEvents = events.map((event) => ({
-      ...event,
-      date: formatInTimeZone(startOfDay(event.start_at), "UTC", "yyyy-MM-dd'T'HH:mm:ssXXX"), // The first event's start date is used to determine the day.
-    }));
+    const formattedEvents = events.map((event) => {
+      // event.start_at is in the format of "2024-07-20T00:00:00Z". It already has timezone info.
+      // We can't use date-fns startOfDay, because it will use the server's timezone which can be different from the event's timezone.
+
+      const inTimeZone = formatInTimeZone(event.start_at, timeZone, "yyyy-MM-dd'T'HH:mm:ss");
+      const date = inTimeZone.split("T")[0];
+      const startOfDay = fromZonedTime(date, timeZone);
+
+      return {
+        ...event,
+        date: startOfDay,
+      };
+    });
 
     // Group the events by the formatted date
     const groupedEvents = _.groupBy(formattedEvents, "date");
@@ -66,7 +75,10 @@ export class Pike13Client implements SourceClient {
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
     const staffMembersById = _.keyBy(staffMembers, "id");
-    const groupedEvents = this.groupEventsByDay(events);
+    const groupedEvents = this.groupEventsByDay(
+      events,
+      events[0].timezone ?? "America/Los_Angeles",
+    );
 
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
     return {

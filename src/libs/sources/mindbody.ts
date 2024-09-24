@@ -1,8 +1,8 @@
 import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
-import { compareAsc, parseISO, startOfDay } from "date-fns";
+import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
-import { toDate, toZonedTime } from "date-fns-tz";
+import { fromZonedTime, toDate } from "date-fns-tz";
 
 export type MindbodySourceSettings = {
   siteId: string;
@@ -49,21 +49,14 @@ export class MindbodyClient implements SourceClient {
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
-      const parsedDate = parseISO(event.StartDateTime); // Parse the date string properly
-
-      console.log({
-        startDateTime: event.StartDateTime,
-        parsedDate,
-        toZonedTime: toZonedTime(parsedDate, timeZone).toISOString(),
-        startOfDay: startOfDay(toZonedTime(parsedDate, timeZone)).toISOString(),
-        final: toZonedTime(startOfDay(toZonedTime(parsedDate, timeZone)), timeZone).toISOString(),
-        timeZone,
-      });
+      // event.StartDateTime is in the format of "2024-07-20T00:00:00". It does not have timezone info.
+      // We can't use date-fns startOfDay, because it will use the server's timezone which can be different from the event's timezone.
+      const date = event.StartDateTime.split("T")[0];
+      const startOfDay = fromZonedTime(date, timeZone);
 
       return {
         ...event,
-        // Ensure date calculation is consistent across environments
-        date: toZonedTime(startOfDay(toZonedTime(parsedDate, timeZone)), timeZone),
+        date: startOfDay,
       };
     });
 
