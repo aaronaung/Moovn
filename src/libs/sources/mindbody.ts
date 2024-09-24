@@ -49,9 +49,15 @@ export class MindbodyClient implements SourceClient {
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
+      console.log({
+        start: event.StartDateTime,
+        toDate: toDate(event.StartDateTime, { timeZone }),
+        timeZone,
+        startOfDay: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
+      });
       return {
         ...event,
-        date: startOfDay(toDate(event.StartDateTime, { timeZone })),
+        date: startOfDay(toDate(event.StartDateTime, { timeZone })).toISOString(),
       };
     });
 
@@ -74,8 +80,8 @@ export class MindbodyClient implements SourceClient {
         date: eventsByDay[0].date,
         event: eventsByDay.map((event: any) => ({
           name: event.ClassDescription?.Name ?? "Untitled",
-          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }),
-          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }),
+          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }).toISOString(),
+          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }).toISOString(),
           staff: [
             {
               name: event.Staff?.Name,
