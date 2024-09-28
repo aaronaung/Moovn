@@ -24,8 +24,8 @@ export default memo(
     template: Tables<"templates">;
     isSelected: boolean;
     onSelectChange: (selected: boolean) => void;
-    publishDateTime: Date;
-    onPublishDateTimeChange: (dateTime: Date) => void;
+    publishDateTime: { date: Date; error: string | undefined };
+    onPublishDateTimeChange: (dateTime: { date: Date; error: string | undefined }) => void;
   }) {
     const { isJobPending } = useDesignGenQueue();
     const renderContent = () => {
@@ -53,7 +53,7 @@ export default memo(
       <div className="flex w-full flex-col gap-2 sm:w-fit">
         <div className="ml-1 flex items-center gap-2">
           <Checkbox
-            disabled={designLoading}
+            disabled={designLoading || !!publishDateTime.error}
             checked={isSelected}
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
@@ -62,16 +62,29 @@ export default memo(
               <DateTimePicker
                 isDisabled={designLoading}
                 value={{
-                  date: publishDateTime,
+                  date: publishDateTime.date,
                   hasTime: true,
                 }}
-                className="h-[32px] w-full min-w-0 rounded-md px-3 "
+                disablePastDateTime
+                className={cn(
+                  "h-[32px] w-full min-w-0 rounded-md px-3",
+                  publishDateTime.error && "border border-red-500",
+                )}
                 onChange={(dateTime) => {
-                  onPublishDateTimeChange(dateTime.date);
+                  onPublishDateTimeChange({
+                    date: dateTime.date,
+                    error: dateTime.error,
+                  });
                 }}
               />
             </TooltipTrigger>
-            <TooltipContent>{`Date time to publish`}</TooltipContent>
+            <TooltipContent>
+              {publishDateTime.error ? (
+                <p className="text-xs text-red-500">{publishDateTime.error}</p>
+              ) : (
+                `Date time to publish`
+              )}
+            </TooltipContent>
           </Tooltip>
         </div>
         <div

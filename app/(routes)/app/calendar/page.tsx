@@ -147,7 +147,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="h-[calc(100vh_-_100px)]">
+    <div className="h-[calc(100vh_-_32px)]">
       {eventDialog.content && eventDialog.event && (
         <EventDialog
           isOpen={eventDialog.isOpen}

@@ -35,8 +35,12 @@ export function useScheduleContent({
 
   const scheduleContentItem = async (
     contentIdbKey: string,
-    publishDateTime: Date,
+    publishDateTime: { date: Date; error: string | undefined },
   ): Promise<ScheduleContentRequest[0] | null> => {
+    if (publishDateTime.error) {
+      return null;
+    }
+
     const { templateId, range } = deconstructContentIdbKey(contentIdbKey);
     const designs = await db.designs.where("key").startsWith(contentIdbKey).toArray();
     if (designs.length === 0) {
@@ -58,7 +62,7 @@ export function useScheduleContent({
     }
     const ownerId = template.owner_id;
 
-    const scheduleExpression = atScheduleExpression(publishDateTime);
+    const scheduleExpression = atScheduleExpression(publishDateTime.date);
 
     const content = await _saveContent({
       source_id: sourceId,
@@ -149,7 +153,7 @@ export function useScheduleContent({
 
   const scheduleContent = async (
     contentIdbKeys: string[],
-    publishDateTimeMap: { [key: string]: Date },
+    publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } },
   ) => {
     const schedules = [];
     setIsScheduling(true);

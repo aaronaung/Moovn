@@ -161,7 +161,7 @@ export const handler = async (event: any) => {
           publishedMediaIds.map(async (id) => {
             const media = await igClient.getInstagramMedia(id);
 
-            sbClient.from("published_content").insert({
+            const { data, error: insertErr } = await sbClient.from("published_content").insert({
               content_id: contentId,
               owner_id: content.destination.owner_id,
               ig_media_id: id,
@@ -169,6 +169,12 @@ export const handler = async (event: any) => {
               ig_permalink: media.permalink,
               published_at: new Date().toISOString(),
             });
+            if (insertErr) {
+              throw new Error(
+                `Failed to insert published content for content ${contentId}: ${insertErr.message}`,
+              );
+            }
+            return data;
           }),
         );
         console.log("Published media ids", publishedMediaIds);

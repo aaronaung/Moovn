@@ -26,6 +26,7 @@ import { useScheduleContent } from "@/src/hooks/use-schedule-content";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
+import { cn } from "@/src/utils";
 
 export default function EventDialog({
   isOpen,
@@ -42,7 +43,12 @@ export default function EventDialog({
 }) {
   const queryClient = useQueryClient();
 
-  const [publishDateTime, setPublishDateTime] = useState(event.start);
+  const [publishDateTime, setPublishDateTime] = useState<{ date: Date; error: string | undefined }>(
+    {
+      date: event.start,
+      error: undefined,
+    },
+  );
   const [selectedDesign, setSelectedDesign] = useState<"current" | "new">("current");
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -65,7 +71,10 @@ export default function EventDialog({
 
   useEffect(() => {
     if (event.start) {
-      setPublishDateTime(event.start);
+      setPublishDateTime({
+        date: event.start,
+        error: undefined,
+      });
     }
   }, [event]);
 
@@ -187,19 +196,32 @@ export default function EventDialog({
             <TooltipTrigger autoFocus={false}>
               <DateTimePicker
                 value={{
-                  date: publishDateTime,
+                  date: publishDateTime.date,
                   hasTime: true,
                 }}
-                className="mb-2 h-[32px] w-full min-w-0 rounded-md px-3"
+                disablePastDateTime
+                className={cn(
+                  "mb-2 h-[32px] w-full min-w-0 rounded-md px-3",
+                  publishDateTime.error && "border border-red-500",
+                )}
                 onChange={(dateTime) => {
-                  setPublishDateTime(dateTime.date);
+                  setPublishDateTime({
+                    date: dateTime.date,
+                    error: dateTime.error,
+                  });
                 }}
               />
             </TooltipTrigger>
             <TooltipContent
               side="right"
               className="mb-3" // because the date picker intrinsicly has some margin bottom
-            >{`Update date time to reschedule`}</TooltipContent>
+            >
+              {publishDateTime.error ? (
+                <p className="text-xs text-red-500">{publishDateTime.error}</p>
+              ) : (
+                `Update date time to reschedule`
+              )}
+            </TooltipContent>
           </Tooltip>
         </div>
         <RadioGroup
@@ -255,12 +277,15 @@ export default function EventDialog({
     );
   };
 
-  const publishDateChanged = event.start.getTime() !== publishDateTime.getTime();
+  const publishDateChanged = event.start.getTime() !== publishDateTime.date.getTime();
   return (
     <Dialog
       open={isOpen}
       onOpenChange={() => {
-        setPublishDateTime(event.start);
+        setPublishDateTime({
+          date: event.start,
+          error: undefined,
+        });
         setSelectedDesign("current");
         onClose();
       }}
@@ -280,8 +305,9 @@ export default function EventDialog({
           <Button
             onClick={handleRescheduleEvent}
             disabled={
-              (isJobPending(idbKey) || isRescheduling || isDeleting || !publishDateChanged) &&
-              selectedDesign === "current"
+              !!publishDateTime.error ||
+              ((isJobPending(idbKey) || isRescheduling || isDeleting || !publishDateChanged) &&
+                selectedDesign === "current")
             }
           >
             {isRescheduling ? (

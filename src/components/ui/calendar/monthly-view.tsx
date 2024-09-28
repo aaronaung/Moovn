@@ -13,7 +13,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { CalendarEvent } from "./full-calendar";
-import { ClockIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { ClockIcon } from "@heroicons/react/24/outline";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -257,27 +257,33 @@ const EventPill = ({
     hour: "numeric",
     minute: "2-digit",
   });
-  console.log(event.content.published_content);
+  const hasPublishedContent = event.content.published_content.length > 0;
+
   return (
     <Tooltip>
       <TooltipTrigger className="w-full">
         <li
           className="group/event-li w-full"
           onClick={() => {
-            onEventClick?.(event);
+            if (hasPublishedContent && event.content.published_content[0].ig_permalink) {
+              window.open(event.content.published_content[0].ig_permalink, "_blank");
+            } else {
+              onEventClick?.(event);
+            }
           }}
         >
           <div
             className={cn(
-              `flex w-full cursor-pointer items-center gap-1 rounded-full bg-secondary px-1.5 dark:bg-neutral-700`,
-              event.hasDataChanged && "text-orange-500",
+              `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-300`,
+              event.hasDataChanged && "bg-orange-500 dark:bg-orange-600",
+              hasPublishedContent && "bg-neutral-500 dark:bg-neutral-700",
             )}
           >
-            {event.hasDataChanged && <InformationCircleIcon className="h-4 w-4 " />}
             <p
               className={cn(
                 "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
-                event.hasDataChanged && "text-orange-500 group-hover/event-li:text-orange-500",
+                (event.hasDataChanged || hasPublishedContent) &&
+                  "text-white group-hover/event-li:text-white",
               )}
             >
               {event.title}
@@ -286,7 +292,8 @@ const EventPill = ({
               dateTime={event.start.toISOString()}
               className={cn(
                 "ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block",
-                event.hasDataChanged && "text-orange-500 group-hover/event-li:text-orange-500",
+                (event.hasDataChanged || hasPublishedContent) &&
+                  "text-white group-hover/event-li:text-white",
               )}
             >
               {time}
@@ -295,16 +302,26 @@ const EventPill = ({
         </li>
       </TooltipTrigger>
       <TooltipContent side="right" className="w-full cursor-pointer">
-        <p className={cn("font-semibold", event.hasDataChanged && "mb-1 text-orange-500")}>
-          {event.title} {time}
+        <p
+          className={cn(
+            "mb-1 font-semibold text-secondary-foreground",
+            !hasPublishedContent && event.hasDataChanged && "text-orange-500",
+          )}
+        >
+          {event.title} - {time}
         </p>
-        {event.hasDataChanged && (
-          <div className="flex items-center gap-1">
-            <p className="text-xs text-orange-500">
+        {JSON.stringify(event.content.published_content[0]?.ig_permalink)}
+        <div className="flex items-center justify-between gap-1 text-xs text-secondary-foreground">
+          {hasPublishedContent && event.content.published_content[0].ig_permalink ? (
+            <p>Content has been published. Click to view.</p>
+          ) : event.hasDataChanged ? (
+            <p className="text-orange-500 ">
               The schedule data has changed. Review the content before it gets published.
             </p>
-          </div>
-        )}
+          ) : (
+            "Content has not been published yet."
+          )}
+        </div>
       </TooltipContent>
     </Tooltip>
   );
@@ -319,6 +336,11 @@ const EventLineItem = ({
   previewUrls: Map<string, string[]>;
   onEventClick?: (event: CalendarEvent) => void;
 }) => {
+  const hasPublishedContent = event.content.published_content.length > 0;
+  const colorTheme = hasPublishedContent
+    ? "text-blue-500"
+    : event.hasDataChanged && "text-orange-500";
+
   return (
     <li
       onClick={() => {
@@ -328,26 +350,15 @@ const EventLineItem = ({
     >
       <div className="flex-auto">
         <div className="flex items-center gap-1">
-          <p
-            className={cn(
-              "line-clamp-2 font-semibold text-secondary-foreground",
-              event.hasDataChanged && "text-orange-500",
-            )}
-          >
+          <p className={cn("line-clamp-2 font-semibold text-secondary-foreground", colorTheme)}>
             {event.title}
           </p>
         </div>
         <time
           dateTime={event.start.toISOString()}
-          className={cn(
-            "mt-2 flex items-center text-secondary-foreground",
-            event.hasDataChanged && "text-orange-500",
-          )}
+          className={cn("mt-2 flex items-center text-secondary-foreground", colorTheme)}
         >
-          <ClockIcon
-            className={cn("mr-2 h-5 w-5 text-gray-400", event.hasDataChanged && "text-orange-500")}
-            aria-hidden="true"
-          />
+          <ClockIcon className={cn("mr-2 h-5 w-5 text-gray-400", colorTheme)} aria-hidden="true" />
           {event.start.toLocaleTimeString([], {
             hour: "numeric",
             minute: "2-digit",

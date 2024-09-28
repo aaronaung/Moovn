@@ -2,7 +2,7 @@
 import { CalendarDateTime } from "@internationalized/date";
 import { format } from "date-fns";
 import { CalendarIcon, ClockIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DateValue,
   TimeValue,
@@ -53,11 +53,13 @@ function DateSegment({ segment, state }: DateSegmentProps) {
 }
 
 function TimeField({
+  className,
   hasTime,
   onHasTimeChange,
   disabled,
   ...props
 }: {
+  className?: string;
   disabled: boolean;
   hasTime: boolean;
   onHasTimeChange: (hasTime: boolean) => void;
@@ -79,6 +81,7 @@ function TimeField({
       className={cn(
         "mt-1 flex items-center space-x-2",
         disabled ? "cursor-not-allowed opacity-70" : "",
+        className,
       )}
     >
       <Toggle
@@ -94,7 +97,10 @@ function TimeField({
       {hasTime && (
         <div
           ref={ref}
-          className="inline-flex h-10 w-full flex-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className={cn(
+            "inline-flex h-10 w-full flex-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            className,
+          )}
         >
           {state.segments.map((segment, i) => (
             <DateSegment key={i} segment={segment} state={state} />
@@ -114,38 +120,46 @@ const dateToCalendarDateTime = (date: Date): CalendarDateTime => {
   const second = date.getSeconds();
   const millisecond = date.getMilliseconds();
 
-  return new CalendarDateTime(
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second,
-    millisecond,
-  );
+  return new CalendarDateTime(year, month, day, hour, minute, second, millisecond);
 };
 
 type DatePickerProps = {
   value?: { date?: Date | null; hasTime: boolean };
   button?: React.ReactNode;
-  onChange: (value: { date: Date; hasTime: boolean }) => void;
+  onChange: (value: { date: Date; hasTime: boolean; error?: string }) => void;
   isDisabled?: boolean;
   className?: string;
   disableTimePicker?: boolean;
-  disablePastDays?: boolean;
+  disablePastDateTime?: boolean;
   placeholder?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
 };
 const DateTimePicker = (props: DatePickerProps) => {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
+  const [timeError, setTimeError] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const hasTime = props.value?.hasTime || false;
 
+  useEffect(() => {
+    if (props.disablePastDateTime) {
+      onChangeWrapper(dateToCalendarDateTime(props.value?.date ?? new Date()));
+    }
+  }, []);
+
   const onChangeWrapper = (value: DateValue, newHasTime?: boolean) => {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const newDate = value.toDate(timeZone);
+
+    let error;
+    if (props.disablePastDateTime && newDate.getTime() < Date.now()) {
+      error = "Selected datetime must be in the future";
+    }
+
+    setTimeError(error);
     props.onChange({
-      date: value.toDate(timeZone),
+      date: newDate,
+      error,
       hasTime: newHasTime ?? hasTime,
     });
     if (props.disableTimePicker) {
@@ -153,9 +167,7 @@ const DateTimePicker = (props: DatePickerProps) => {
     }
   };
   const datePickerProps: DatePickerStateOptions<CalendarDateTime> = {
-    value: props.value?.date
-      ? dateToCalendarDateTime(props.value.date)
-      : undefined,
+    value: props.value?.date ? dateToCalendarDateTime(props.value.date) : undefined,
     onChange: onChangeWrapper,
     isDisabled: props.isDisabled,
     granularity: "minute",
@@ -197,24 +209,42 @@ const DateTimePicker = (props: DatePickerProps) => {
         <Calendar
           mode="single"
           selected={props.value?.date || undefined}
-          disablePastDays={props.disablePastDays || false}
-          onSelect={(value) => onChangeWrapper(dateToCalendarDateTime(value!))}
+          disablePastDays={props.disablePastDateTime || false}
+          onSelect={(value) => {
+            onChangeWrapper(dateToCalendarDateTime(value ?? new Date()));
+          }}
           initialFocus
           footer={
             props.disableTimePicker ? undefined : (
-              <TimeField
-                aria-label="Time Picker"
-                disabled={!props.value?.date}
-                hasTime={hasTime}
-                onHasTimeChange={(newHasTime) =>
-                  onChangeWrapper(
-                    dateToCalendarDateTime(props.value?.date!),
-                    newHasTime,
-                  )
-                }
-                value={hasTime ? state.timeValue : null}
-                onChange={state.setTimeValue}
-              />
+              <>
+                {timeError && <p className="text-xs text-red-500">{timeError}</p>}
+                <TimeField
+                  className={cn(timeError && "border-red-500")}
+                  aria-label="Time Picker"
+                  disabled={!props.value?.date}
+                  hasTime={hasTime}
+                  onHasTimeChange={(newHasTime) =>
+                    onChangeWrapper(
+                      dateToCalendarDateTime(props.value?.date ?? new Date()),
+                      newHasTime,
+                    )
+                  }
+                  value={hasTime ? state.timeValue : null}
+                  onChange={(value) => {
+                    if (props.disablePastDateTime) {
+                      const current = new Date();
+                      const selectedDateTime = props.value?.date ?? new Date();
+                      selectedDateTime.setHours(value.hour, value.minute, value.second);
+                      if (selectedDateTime.getTime() < current.getTime()) {
+                        setTimeError("Time must be in the future");
+                      } else {
+                        setTimeError(undefined);
+                      }
+                    }
+                    state.setTimeValue(value);
+                  }}
+                />
+              </>
             )
           }
         />

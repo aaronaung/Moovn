@@ -44,7 +44,9 @@ export default function ContentSchedulingForm({
   availableDestinations: Tables<"destinations">[];
 }) {
   const [selectedContentItems, setSelectedContentItems] = useState<string[]>([]);
-  const [publishDateTimeMap, setPublishDateTimeMap] = useState<{ [key: string]: Date }>({});
+  const [publishDateTimeMap, setPublishDateTimeMap] = useState<{
+    [key: string]: { date: Date; error: string | undefined };
+  }>({});
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -200,6 +202,8 @@ export default function ContentSchedulingForm({
     );
   }
 
+  const hasDateTimeError = Object.values(publishDateTimeMap).some((dateTime) => dateTime.error);
+
   return (
     <div>
       <div
@@ -217,7 +221,7 @@ export default function ContentSchedulingForm({
           )}
           <Button
             onClick={handleScheduleForPublishing}
-            disabled={selectedContentItems.length === 0 || isScheduling}
+            disabled={selectedContentItems.length === 0 || isScheduling || hasDateTimeError}
             className="h-12"
           >
             {isScheduling ? <Spinner className="text-secondary" /> : "Schedule for publishing"}
@@ -252,7 +256,6 @@ export default function ContentSchedulingForm({
             rhfKey="schedule_range"
             control={control}
             error={errors.schedule_range?.message}
-            disablePastDays
           />
         </div>
         <InputMultiSelect

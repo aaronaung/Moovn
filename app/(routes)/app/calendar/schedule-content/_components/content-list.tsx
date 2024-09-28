@@ -33,8 +33,10 @@ export default function ContentList({
   scheduleData: ScheduleData;
   selectedContentItems: string[];
   setSelectedContentItems: Dispatch<SetStateAction<string[]>>;
-  publishDateTimeMap: { [key: string]: Date };
-  setPublishDateTimeMap: Dispatch<SetStateAction<{ [key: string]: Date }>>;
+  publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } };
+  setPublishDateTimeMap: Dispatch<
+    SetStateAction<{ [key: string]: { date: Date; error: string | undefined } }>
+  >;
 }) {
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesByIds, {
     queryKey: ["getTemplatesByIds", templateIds],
@@ -93,8 +95,10 @@ const ContentListForTemplate = ({
   scheduleData: ScheduleData;
   selectedContentItems: string[];
   setSelectedContentItems: Dispatch<SetStateAction<string[]>>;
-  publishDateTimeMap: { [key: string]: Date };
-  setPublishDateTimeMap: Dispatch<SetStateAction<{ [key: string]: Date }>>;
+  publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } };
+  setPublishDateTimeMap: Dispatch<
+    SetStateAction<{ [key: string]: { date: Date; error: string | undefined } }>
+  >;
 }) => {
   const [timeForAll, setTimeForAll] = useState<Date | null>(null);
 
@@ -110,9 +114,10 @@ const ContentListForTemplate = ({
         const contentIdbKey = getContentIdbKey(sourceId, range, template);
         return {
           ...prev,
-          [contentIdbKey]: isSameDay(date, new Date())
-            ? startOfHour(addHours(new Date(), 1))
-            : date,
+          [contentIdbKey]: {
+            date: isSameDay(date, new Date()) ? startOfHour(addHours(new Date(), 1)) : date,
+            error: undefined,
+          },
         };
       });
     }
@@ -125,7 +130,9 @@ const ContentListForTemplate = ({
         contentIdbKey={contentIdbKey}
         template={template}
         scheduleData={schedule}
-        publishDateTime={publishDateTimeMap[contentIdbKey]}
+        publishDateTime={
+          publishDateTimeMap[contentIdbKey] ?? { date: new Date(), error: undefined }
+        }
         onPublishDateTimeChange={(publishDateTime) => {
           setPublishDateTimeMap((prev) => ({
             ...prev,
@@ -185,15 +192,24 @@ const ContentListForTemplate = ({
                   Object.keys(scheduleDataByRange).forEach((scheduleRange) => {
                     setPublishDateTimeMap((prev) => {
                       const contentIdbKey = getContentIdbKey(sourceId, scheduleRange, template);
-                      const prevDate = prev[contentIdbKey];
+                      const prevDate = prev[contentIdbKey].date;
+
                       const newDate = new Date(d.getTime());
                       newDate.setDate(prevDate.getDate());
                       newDate.setMonth(prevDate.getMonth());
                       newDate.setFullYear(prevDate.getFullYear());
 
+                      let dateErr = prev[contentIdbKey].error;
+                      if (newDate.getTime() < Date.now()) {
+                        dateErr = "Selected datetime must be in the future";
+                      }
+
                       return {
                         ...prev,
-                        [contentIdbKey]: newDate,
+                        [contentIdbKey]: {
+                          date: newDate,
+                          error: dateErr,
+                        },
                       };
                     });
                   });

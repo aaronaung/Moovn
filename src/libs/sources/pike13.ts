@@ -53,7 +53,6 @@ export class Pike13Client implements SourceClient {
     const formattedEvents = events.map((event) => {
       // event.start_at is in the format of "2024-07-20T00:00:00Z". It already has timezone info.
       // We can't use date-fns startOfDay, because it will use the server's timezone which can be different from the event's timezone.
-
       const inTimeZone = formatInTimeZone(event.start_at, timeZone, "yyyy-MM-dd'T'HH:mm:ss");
       const date = inTimeZone.split("T")[0];
       const startOfDay = fromZonedTime(date, timeZone);

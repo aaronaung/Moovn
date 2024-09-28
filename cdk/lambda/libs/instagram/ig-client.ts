@@ -94,23 +94,28 @@ export class InstagramAPIClient {
       url.search = options.searchParams.toString();
     }
 
-    const resp = await (
-      await fetch(url.toString(), {
-        method: options.method,
-        headers: {
-          Authorization: `Bearer ${this.token.accessToken}`,
-          ...(options.body ? { "Content-Type": "application/json" } : {}),
-        },
-        ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-      })
-    ).text();
+    const resp = await fetch(url.toString(), {
+      method: options.method,
+      headers: {
+        Authorization: `Bearer ${this.token.accessToken}`,
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+    });
 
     try {
-      const result = JSON.parse(resp);
-      console.log(result);
+      const result = JSON.parse(await resp.text());
+      console.log({
+        url: url.toString(),
+        method: options.method,
+        body: options.body,
+        status: resp.status,
+        statusText: resp.statusText,
+        result,
+      });
       return result;
     } catch (err) {
-      console.error("Failed to parse json response", resp);
+      console.error("Failed to parse json response", err);
       throw err;
     }
   }

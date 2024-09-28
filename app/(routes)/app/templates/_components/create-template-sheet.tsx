@@ -417,7 +417,7 @@ const SelectTemplateCreatorSection = ({
           <div>
             <div className="mt-3">
               <FileDropzone
-                label="Upload your design"
+                label="Upload your design (PSD format)"
                 options={{
                   accept: {
                     "image/vnd.adobe.photoshop": [".psd"],
