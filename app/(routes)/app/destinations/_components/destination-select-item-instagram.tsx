@@ -2,13 +2,14 @@ import { env } from "@/env.mjs";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import { FacebookIcon } from "@/src/components/ui/icons/facebook";
-import Image from "@/src/components/ui/image";
+
 import { DestinationTypes } from "@/src/consts/destinations";
 import { getInstagramAccount, linkInstagramAccount } from "@/src/data/destinations-ig";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { isLocal } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { CheckIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 const generateInstagramLoginUrl = (
   destinationId: string,
@@ -73,9 +74,10 @@ export default function InstagramDestinationItem({
       <div className="flex items-center gap-x-2 ">
         <Image
           alt={igAccount.username}
+          width={28}
+          height={28}
           className="h-7 w-7 rounded-full"
           src={igAccount.profilePictureUrl}
-          retryOnError
         />
         <p className="line-clamp-1 text-sm">{igAccount.username}</p>
       </div>

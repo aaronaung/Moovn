@@ -137,7 +137,6 @@ type DatePickerProps = {
 const DateTimePicker = (props: DatePickerProps) => {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const [timeError, setTimeError] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const hasTime = props.value?.hasTime || false;
 
@@ -156,7 +155,6 @@ const DateTimePicker = (props: DatePickerProps) => {
       error = "Selected datetime must be in the future";
     }
 
-    setTimeError(error);
     props.onChange({
       date: newDate,
       error,
@@ -217,9 +215,7 @@ const DateTimePicker = (props: DatePickerProps) => {
           footer={
             props.disableTimePicker ? undefined : (
               <>
-                {timeError && <p className="text-xs text-red-500">{timeError}</p>}
                 <TimeField
-                  className={cn(timeError && "border-red-500")}
                   aria-label="Time Picker"
                   disabled={!props.value?.date}
                   hasTime={hasTime}
@@ -232,14 +228,8 @@ const DateTimePicker = (props: DatePickerProps) => {
                   value={hasTime ? state.timeValue : null}
                   onChange={(value) => {
                     if (props.disablePastDateTime) {
-                      const current = new Date();
                       const selectedDateTime = props.value?.date ?? new Date();
                       selectedDateTime.setHours(value.hour, value.minute, value.second);
-                      if (selectedDateTime.getTime() < current.getTime()) {
-                        setTimeError("Time must be in the future");
-                      } else {
-                        setTimeError(undefined);
-                      }
                     }
                     state.setTimeValue(value);
                   }}

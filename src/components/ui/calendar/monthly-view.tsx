@@ -18,7 +18,7 @@ import { ClockIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
-import Image from "../image";
+import Image from "next/image";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -369,8 +369,10 @@ const EventLineItem = ({
         {previewUrls.has(event.content.id) && (
           <Image
             className="h-[50px] w-[50px] rounded-sm object-contain"
-            src={previewUrls.get(event.content.id)?.[0]}
+            src={previewUrls.get(event.content.id)?.[0] || ""}
             alt={"preview"}
+            width={50}
+            height={50}
           />
         )}
       </div>

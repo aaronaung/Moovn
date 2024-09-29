@@ -202,7 +202,7 @@ export default function EventDialog({
                 disablePastDateTime
                 className={cn(
                   "mb-2 h-[32px] w-full min-w-0 rounded-md px-3",
-                  publishDateTime.error && "border border-red-500",
+                  publishDateTime.error && "border-2 border-red-500",
                 )}
                 onChange={(dateTime) => {
                   setPublishDateTime({

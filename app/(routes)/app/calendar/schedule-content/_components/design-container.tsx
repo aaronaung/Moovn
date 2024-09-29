@@ -24,9 +24,10 @@ import { db } from "@/src/libs/indexeddb/indexeddb";
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { ScheduleData } from "@/src/libs/sources";
 import { getDesignOverwrites } from "@/src/libs/designs/util";
-import Image from "@/src/components/ui/image";
+
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 import { deleteObject, uploadObject } from "@/src/data/r2";
+import Image from "next/image";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -350,7 +351,15 @@ export const DesignImageWithIGTags = ({
             </span>
           ))}
         </div>
-        <Image src={url} onClick={onClick} alt="Design" className={className} style={{ width }} />
+        <Image
+          src={url}
+          onClick={onClick}
+          alt="Design"
+          className={className}
+          width={width}
+          height={width}
+          blurDataURL={url}
+        />
       </div>
     );
   }

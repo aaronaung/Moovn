@@ -1,4 +1,5 @@
 import { FileIcon } from "lucide-react";
+import Image from "next/image";
 import { ReactNode } from "react";
 import { DropzoneOptions, FileRejection, useDropzone } from "react-dropzone";
 
@@ -29,10 +30,12 @@ export default function FileDropzone({
       <div className="text-center">
         {acceptedFiles.length > 0 ? (
           acceptedFiles[0].type.includes("image") ? (
-            <img
+            <Image
               src={URL.createObjectURL(acceptedFiles[0])}
               alt="Preview"
               className="m-auto h-28 rounded-md bg-cover"
+              width={100}
+              height={100}
             />
           ) : (
             acceptedFiles[0].name

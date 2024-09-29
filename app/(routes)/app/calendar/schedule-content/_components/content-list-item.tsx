@@ -54,7 +54,7 @@ export default memo(
         <div className="ml-1 flex items-center gap-2">
           <Checkbox
             disabled={designLoading || !!publishDateTime.error}
-            checked={isSelected}
+            checked={!!publishDateTime.error ? false : isSelected}
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
           <Tooltip>
@@ -68,7 +68,7 @@ export default memo(
                 disablePastDateTime
                 className={cn(
                   "h-[32px] w-full min-w-0 rounded-md px-3",
-                  publishDateTime.error && "border border-red-500",
+                  publishDateTime.error && "border-2 border-red-500",
                 )}
                 onChange={(dateTime) => {
                   onPublishDateTimeChange({

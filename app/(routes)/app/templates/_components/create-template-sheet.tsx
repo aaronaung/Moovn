@@ -26,7 +26,9 @@ import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { Tables } from "@/types/db";
+import Image from "next/image";
 import { useEffect, useState } from "react";
+import { isMobile } from "react-device-detect";
 import { v4 as uuidv4 } from "uuid";
 
 enum TemplateCreator {
@@ -473,7 +475,7 @@ const SelectTemplateCreatorSection = ({
                       </p>
                     </div>
 
-                    <img
+                    <Image
                       style={{
                         boxShadow:
                           selectedTemplateIndex === index.toString()
@@ -485,6 +487,8 @@ const SelectTemplateCreatorSection = ({
                       onClick={() => {
                         onTemplateSelect(`${index}`);
                       }}
+                      width={isMobile ? 150 : 200}
+                      height={isMobile ? 150 : 200}
                       alt={`Template ${index}`}
                     />
                   </div>
