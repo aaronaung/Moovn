@@ -190,10 +190,14 @@ export default function EventDialog({
 
     return (
       <div className="flex flex-col gap-2 ">
-        <div>
+        <div
+          onFocusCapture={(e) => {
+            e.stopPropagation();
+          }}
+        >
           <p className="mb-2 text-sm font-medium">Publish date time</p>
           <Tooltip>
-            <TooltipTrigger autoFocus={false}>
+            <TooltipTrigger>
               <DateTimePicker
                 value={{
                   date: publishDateTime.date,
@@ -213,6 +217,7 @@ export default function EventDialog({
               />
             </TooltipTrigger>
             <TooltipContent
+              autoFocus={false}
               side="right"
               className="mb-3" // because the date picker intrinsicly has some margin bottom
             >

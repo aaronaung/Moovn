@@ -274,14 +274,15 @@ const EventPill = ({
         >
           <div
             className={cn(
-              `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-300`,
+              `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-600`,
               event.hasDataChanged && "bg-orange-500 dark:bg-orange-600",
-              hasPublishedContent && "bg-neutral-500 dark:bg-neutral-700",
+              hasPublishedContent && "bg-green-600 dark:bg-green-700",
             )}
           >
             <p
               className={cn(
                 "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
+
                 (event.hasDataChanged || hasPublishedContent) &&
                   "text-white group-hover/event-li:text-white",
               )}
@@ -310,7 +311,6 @@ const EventPill = ({
         >
           {event.title} - {time}
         </p>
-        {JSON.stringify(event.content.published_content[0]?.ig_permalink)}
         <div className="flex items-center justify-between gap-1 text-xs text-secondary-foreground">
           {hasPublishedContent && event.content.published_content[0].ig_permalink ? (
             <p>Content has been published. Click to view.</p>
@@ -338,13 +338,17 @@ const EventLineItem = ({
 }) => {
   const hasPublishedContent = event.content.published_content.length > 0;
   const colorTheme = hasPublishedContent
-    ? "text-blue-500"
+    ? "text-green-600"
     : event.hasDataChanged && "text-orange-500";
 
   return (
     <li
       onClick={() => {
-        onEventClick?.(event);
+        if (hasPublishedContent && event.content.published_content[0].ig_permalink) {
+          window.open(event.content.published_content[0].ig_permalink, "_blank");
+        } else {
+          onEventClick?.(event);
+        }
       }}
       className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
     >

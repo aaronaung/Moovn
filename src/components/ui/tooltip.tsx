@@ -22,6 +22,10 @@ const TooltipContent = React.forwardRef<
 >(({ className, sideOffset = 4, ...props }, ref) => (
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
+      onFocusCapture={(e) => {
+        // This ensures that the tooltip does not start opened when a dialog/popover is opened.
+        e.stopPropagation();
+      }}
       ref={ref}
       side={"bottom"}
       sideOffset={sideOffset}

@@ -60,7 +60,7 @@ function usePhotopeaHeadless() {
 }
 
 const LAYER_CHECK_INTERVAL = 500; // ms
-const DEFAULT_TIMEOUT = 60_000;
+const DEFAULT_TIMEOUT = 30_000;
 
 function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
   // Every state here is a map of namespace to some value.
