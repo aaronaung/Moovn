@@ -240,11 +240,11 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
             }
             // }
 
-            clearTimeout(timeoutMap.current[namespace]);
             markStepDone(namespace, "export");
             debugGenStepMap.current[namespace] = "completed/exported";
             onDesignExportMap[namespace](mostRecentExport);
             clear(namespace);
+            clearTimeout(timeoutMap.current[namespace]);
             return;
           }
         }

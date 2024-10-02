@@ -1,4 +1,3 @@
-import { Tables } from "@/types/db";
 import { Header2 } from "@/src/components/common/header";
 import { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
 import {
@@ -13,10 +12,16 @@ import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog"
 import { Button } from "@/src/components/ui/button";
 import { ClockIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
-import { deleteContentSchedule } from "@/src/data/content";
+import { deleteContentSchedule, saveContent, saveContentSchedule } from "@/src/data/content";
 import { toast } from "@/src/components/ui/use-toast";
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { deconstructScheduleName, getContentIdbKey } from "@/src/libs/content";
+import {
+  atScheduleExpression,
+  deconstructScheduleName,
+  generateCaption,
+  getContentIdbKey,
+  getScheduleName,
+} from "@/src/libs/content";
 import InstagramContent from "../schedule-content/_components/instagram-content";
 import { isMobile } from "react-device-detect";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
@@ -27,21 +32,25 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { cn } from "@/src/utils";
+import { scheduleContent as upsertSchedulesOnEventBridge } from "@/src/data/content";
+import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 
 export default function EventDialog({
   isOpen,
   onClose,
-  content,
   event,
   previewUrls,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  content: Tables<"content"> & { template: Tables<"templates"> | null };
   event: CalendarEvent;
   previewUrls: Map<string, string[]>;
 }) {
+  const { content } = event;
   const queryClient = useQueryClient();
+  const { mutateAsync: _deleteContentSchedule } = useSupaMutation(deleteContentSchedule);
+  const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
+  const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
   const [publishDateTime, setPublishDateTime] = useState<{ date: Date; error: string | undefined }>(
     {
@@ -49,8 +58,11 @@ export default function EventDialog({
       error: undefined,
     },
   );
+  const [currCaption, setCurrCaption] = useState<string>(content.ig_caption ?? "");
+  const [newCaption, setNewCaption] = useState<string>(
+    generateCaption(content.template?.ig_caption_template ?? "", event.data),
+  );
   const [selectedDesign, setSelectedDesign] = useState<"current" | "new">("current");
-
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
 
@@ -61,22 +73,33 @@ export default function EventDialog({
 
   const { isJobPending } = useDesignGenQueue();
 
-  const { mutateAsync: _deleteContentSchedule } = useSupaMutation(deleteContentSchedule);
-
   const { scheduleContent } = useScheduleContent({
     sourceId: content.source_id,
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
   });
 
+  const publishDateChanged = event.start.getTime() !== publishDateTime.date.getTime();
+
   useEffect(() => {
-    if (event.start) {
-      setPublishDateTime({
-        date: event.start,
-        error: undefined,
-      });
-    }
+    resetState();
+    // we need to reset the state when the event changes.
   }, [event]);
+
+  const resetState = () => {
+    setPublishDateTime({
+      date: event.start,
+      error: undefined,
+    });
+    setSelectedDesign("current");
+    setCurrCaption(content.ig_caption ?? "");
+    setNewCaption(generateCaption(content.template?.ig_caption_template ?? "", event.data));
+  };
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
 
   const handleDeleteEvent = async () => {
     setIsDeleting(true);
@@ -90,7 +113,7 @@ export default function EventDialog({
         title: "Content schedule deleted.",
         variant: "success",
       });
-      onClose();
+      handleClose();
       queryClient.invalidateQueries({
         queryKey: ["getContentsForAuthUser"],
       });
@@ -121,19 +144,55 @@ export default function EventDialog({
     try {
       // Reschedule the content
       const contentIdbKey = getContentIdbKey(content.source_id, range, content.template);
-      await scheduleContent([contentIdbKey], { [contentIdbKey]: publishDateTime });
 
-      // Delete the existing schedule
-      await _deleteContentSchedule({
-        ownerId: content.owner_id,
-        contentId: content.id,
-        scheduleName: event.scheduleName,
-      });
+      if (selectedDesign === "current") {
+        const currCaptionChanged = currCaption !== content.ig_caption;
+
+        if (currCaptionChanged) {
+          await _saveContent({
+            ...content,
+            ig_caption: currCaption,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        if (publishDateChanged) {
+          const scheduleName = getScheduleName(range, content.id);
+          const newScheduleExpression = atScheduleExpression(publishDateTime.date);
+          await _saveContentSchedule({
+            content_id: content.id,
+            name: scheduleName,
+            owner_id: content.owner_id,
+            schedule_expression: newScheduleExpression,
+            updated_at: new Date().toISOString(),
+          });
+          await upsertSchedulesOnEventBridge([
+            {
+              contentId: content.id,
+              contentPath: `${content.owner_id}/${content.id}`,
+              scheduleName,
+              scheduleExpression: newScheduleExpression,
+            },
+          ]);
+        }
+      } else {
+        await scheduleContent(
+          [contentIdbKey],
+          { [contentIdbKey]: publishDateTime },
+          { [contentIdbKey]: newCaption },
+        );
+        // Delete the existing schedule
+        await _deleteContentSchedule({
+          ownerId: content.owner_id,
+          contentId: content.id,
+          scheduleName: event.scheduleName,
+        });
+      }
+
       toast({
         title: "Content rescheduled successfully.",
         variant: "success",
       });
-      onClose();
+      handleClose();
       queryClient.invalidateQueries({
         queryKey: ["getContentsForAuthUser"],
       });
@@ -190,11 +249,7 @@ export default function EventDialog({
 
     return (
       <div className="flex flex-col gap-2 ">
-        <div
-          onFocusCapture={(e) => {
-            e.stopPropagation();
-          }}
-        >
+        <div>
           <p className="mb-2 text-sm font-medium">Publish date time</p>
           <Tooltip>
             <TooltipTrigger>
@@ -250,7 +305,7 @@ export default function EventDialog({
                 </div>
               )}
               {design}
-              <p className={`whitespace-pre-wrap p-2 text-sm`}>{content.ig_caption}</p>
+              <EditableCaption initialCaption={currCaption} onSave={setCurrCaption} />
             </div>
 
             {event.data && content.template && event.hasDataChanged && (
@@ -273,6 +328,8 @@ export default function EventDialog({
                   template={content.template}
                   width={width}
                   disableImageViewer={true}
+                  caption={newCaption}
+                  onCaptionChange={setNewCaption}
                 />
               </div>
             )}
@@ -282,19 +339,8 @@ export default function EventDialog({
     );
   };
 
-  const publishDateChanged = event.start.getTime() !== publishDateTime.date.getTime();
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={() => {
-        setPublishDateTime({
-          date: event.start,
-          error: undefined,
-        });
-        setSelectedDesign("current");
-        onClose();
-      }}
-    >
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-h-[calc(100vh_-_50px)] sm:max-w-max">
         <div className="flex flex-col ">
           <Header2 className="mb-4" title={content.template?.name ?? "Untitled"} />
@@ -310,9 +356,11 @@ export default function EventDialog({
           <Button
             onClick={handleRescheduleEvent}
             disabled={
+              isRescheduling ||
               !!publishDateTime.error ||
               ((isJobPending(idbKey) || isRescheduling || isDeleting || !publishDateChanged) &&
-                selectedDesign === "current")
+                selectedDesign === "current" &&
+                currCaption === content.ig_caption)
             }
           >
             {isRescheduling ? (

@@ -19,6 +19,7 @@ enum CalendarView {
 export type CalendarEvent = {
   content: Tables<"content"> & {
     published_content: Tables<"published_content">[];
+    template: Tables<"templates"> | null;
   };
   scheduleName: string;
   title: string;

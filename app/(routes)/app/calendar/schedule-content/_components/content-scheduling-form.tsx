@@ -13,8 +13,7 @@ import { Spinner } from "@/src/components/common/loading-spinner";
 import { toast } from "@/src/components/ui/use-toast";
 import { isMobile } from "react-device-detect";
 import { cn } from "@/src/utils";
-import { saveContent, saveContentSchedule } from "@/src/data/content";
-import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { getScheduleDataForSourceByTimeRange } from "@/src/data/sources";
 import { differenceInDays, format, isBefore, startOfToday } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -47,6 +46,8 @@ export default function ContentSchedulingForm({
   const [publishDateTimeMap, setPublishDateTimeMap] = useState<{
     [key: string]: { date: Date; error: string | undefined };
   }>({});
+  const [captionMap, setCaptionMap] = useState<{ [key: string]: string }>({});
+
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -156,10 +157,6 @@ export default function ContentSchedulingForm({
       enabled: !errors.schedule_range,
     },
   );
-  const { mutateAsync: _saveContent } = useSupaMutation(saveContent, {
-    invalidate: [["getContentsForAuthUser"]],
-  });
-  const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
   const { scheduleContent, isScheduling } = useScheduleContent({
     sourceId,
@@ -173,7 +170,7 @@ export default function ContentSchedulingForm({
     }
 
     try {
-      await scheduleContent(selectedContentItems, publishDateTimeMap);
+      await scheduleContent(selectedContentItems, publishDateTimeMap, captionMap);
       toast({
         variant: "success",
         title: "Content scheduled successfully",
@@ -305,6 +302,8 @@ export default function ContentSchedulingForm({
             setSelectedContentItems={setSelectedContentItems}
             publishDateTimeMap={publishDateTimeMap}
             setPublishDateTimeMap={setPublishDateTimeMap}
+            captionMap={captionMap}
+            setCaptionMap={setCaptionMap}
           />
         )}
       </form>

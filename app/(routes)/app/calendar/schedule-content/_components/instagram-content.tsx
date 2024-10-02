@@ -9,9 +9,10 @@ import {
   CarouselDots,
   CarouselItem,
 } from "@/src/components/ui/carousel";
+import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
-import { renderCaption } from "@/src/libs/content";
+import { generateCaption } from "@/src/libs/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -27,6 +28,8 @@ export default memo(
     className,
     width = DESIGN_WIDTH,
     disableImageViewer = false,
+    caption,
+    onCaptionChange,
   }: {
     contentIdbKey: string;
     template: Tables<"templates">;
@@ -35,6 +38,8 @@ export default memo(
     className?: string;
     width?: number;
     disableImageViewer?: boolean;
+    caption: string;
+    onCaptionChange: (caption: string) => void;
   }) {
     const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
 
@@ -118,17 +123,20 @@ export default memo(
           {renderDesignContainer()}
         </div>
         {!_.isEmpty(scheduleData) && template.ig_caption_template && (
-          <p
-            className={`overflow-scroll whitespace-pre-wrap p-2 text-sm`}
-            style={{ maxWidth: width }}
-          >
-            {renderCaption(template.ig_caption_template || "", scheduleData as any)}
-          </p>
+          <EditableCaption
+            initialCaption={
+              caption || generateCaption(template.ig_caption_template || "", scheduleData as any)
+            }
+            onSave={onCaptionChange}
+          />
         )}
       </div>
     );
   },
   (prevProps, nextProps) => {
-    return _.isEqual(prevProps, nextProps);
+    return (
+      prevProps.caption === nextProps.caption &&
+      _.isEqual(prevProps.scheduleData, nextProps.scheduleData)
+    );
   },
 );

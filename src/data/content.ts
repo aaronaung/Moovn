@@ -3,6 +3,7 @@ import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { deleteObject, listObjects } from "./r2";
+import _ from "lodash";
 
 export const saveContent = async (
   content: Partial<Tables<"content">>,
@@ -11,7 +12,7 @@ export const saveContent = async (
   return throwOrData(
     client
       .from("content")
-      .upsert(content as Tables<"content">)
+      .upsert(_.omit(content, "destination", "template", "published_content") as Tables<"content">)
       .select("id")
       .limit(1)
       .single(),

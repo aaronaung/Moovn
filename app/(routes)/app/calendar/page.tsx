@@ -6,7 +6,6 @@ import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content"
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
 import { getSignedUrls } from "@/src/libs/storage";
-import { Tables } from "@/types/db";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
@@ -33,7 +32,6 @@ export default function Calendar() {
 
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
-    content?: Tables<"content"> & { template: Tables<"templates"> | null };
     event?: CalendarEvent;
   }>({
     isOpen: false,
@@ -148,11 +146,10 @@ export default function Calendar() {
 
   return (
     <div className="h-[calc(100vh_-_32px)]">
-      {eventDialog.content && eventDialog.event && (
+      {eventDialog.event && (
         <EventDialog
           isOpen={eventDialog.isOpen}
           onClose={() => setEventDialog((prev) => ({ ...prev, isOpen: false }))}
-          content={eventDialog.content}
           event={eventDialog.event}
           previewUrls={previewUrls}
         />
@@ -163,10 +160,8 @@ export default function Calendar() {
         events={calendarEvents}
         previewUrls={previewUrls}
         onEventClick={(event) => {
-          const content = contents?.find((c) => c.id === event.content.id);
           setEventDialog({
             isOpen: true,
-            content,
             event,
           });
         }}

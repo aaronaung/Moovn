@@ -23,6 +23,8 @@ export default function ContentList({
   setSelectedContentItems,
   publishDateTimeMap,
   setPublishDateTimeMap,
+  captionMap,
+  setCaptionMap,
 }: {
   sourceId: string;
   templateIds: string[];
@@ -37,6 +39,8 @@ export default function ContentList({
   setPublishDateTimeMap: Dispatch<
     SetStateAction<{ [key: string]: { date: Date; error: string | undefined } }>
   >;
+  captionMap: { [key: string]: string };
+  setCaptionMap: Dispatch<SetStateAction<{ [key: string]: string }>>;
 }) {
   const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesByIds, {
     queryKey: ["getTemplatesByIds", templateIds],
@@ -66,6 +70,8 @@ export default function ContentList({
             setSelectedContentItems={setSelectedContentItems}
             publishDateTimeMap={publishDateTimeMap}
             setPublishDateTimeMap={setPublishDateTimeMap}
+            captionMap={captionMap}
+            setCaptionMap={setCaptionMap}
           />
           {index !== templates.length - 1 && (
             <hr className="mb-2 mt-4 rounded-full border-2 border-muted" />
@@ -85,6 +91,8 @@ const ContentListForTemplate = ({
   setSelectedContentItems,
   publishDateTimeMap,
   setPublishDateTimeMap,
+  captionMap,
+  setCaptionMap,
 }: {
   sourceId: string;
   template: Tables<"templates">;
@@ -99,6 +107,8 @@ const ContentListForTemplate = ({
   setPublishDateTimeMap: Dispatch<
     SetStateAction<{ [key: string]: { date: Date; error: string | undefined } }>
   >;
+  captionMap: { [key: string]: string };
+  setCaptionMap: Dispatch<SetStateAction<{ [key: string]: string }>>;
 }) => {
   const [timeForAll, setTimeForAll] = useState<Date | null>(null);
 
@@ -137,6 +147,13 @@ const ContentListForTemplate = ({
           setPublishDateTimeMap((prev) => ({
             ...prev,
             [contentIdbKey]: publishDateTime,
+          }));
+        }}
+        caption={captionMap[contentIdbKey]}
+        onCaptionChange={(caption) => {
+          setCaptionMap((prev) => ({
+            ...prev,
+            [contentIdbKey]: caption,
           }));
         }}
         isSelected={selectedContentItems.includes(contentIdbKey)}

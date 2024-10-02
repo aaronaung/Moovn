@@ -1,6 +1,5 @@
 "use client";
 import { Spinner } from "@/src/components/common/loading-spinner";
-import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/src/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { toast } from "@/src/components/ui/use-toast";
@@ -8,9 +7,7 @@ import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { TrashIcon } from "@heroicons/react/24/outline";
 
-import { useState } from "react";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
-import InputTextArea from "@/src/components/ui/input/textarea";
 import { ContentType } from "@/src/consts/content";
 import TemplateContainer from "./template-container";
 import {
@@ -23,6 +20,7 @@ import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-obje
 import { GalleryHorizontal, MailIcon } from "lucide-react";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { saveTemplate } from "@/src/data/templates";
+import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 
 export const TEMPLATE_WIDTH = 320;
 
@@ -38,18 +36,16 @@ export const InstagramTemplate = ({
   templateCreationRequest?: Tables<"template_creation_requests">;
 }) => {
   const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
-  const [isEditingIgCaption, setIsEditingIgCaption] = useState(false);
-  const [igCaption, setIgCaption] = useState<string>(template.ig_caption_template || "");
 
   const { mutateAsync: _saveTemplate } = useSupaMutation(saveTemplate, {
     invalidate: [["getTemplatesForAuthUser"]],
   });
 
-  const handleUpdateIgCaption = async () => {
+  const handleUpdateIgCaption = async (newIgCaption: string) => {
     try {
       await _saveTemplate({
         ...template,
-        ig_caption_template: igCaption,
+        ig_caption_template: newIgCaption,
       } as Tables<"templates">);
     } catch (err) {
       toast({
@@ -175,52 +171,11 @@ export const InstagramTemplate = ({
       </CardContent>
 
       {template.content_type === ContentType.InstagramPost && !templateCreationRequest && (
-        <div className="group mt-3 rounded-md px-3 pb-4">
-          {isEditingIgCaption ? (
-            <div>
-              <InputTextArea
-                value={igCaption || null}
-                onChange={(e) => {
-                  setIgCaption(e.target.value);
-                }}
-                className="mt-0"
-                inputProps={
-                  {
-                    placeholder: "Add caption for Instagram post",
-                    rows: Math.min(12, igCaption.split("\n").length),
-                  } as React.TextareaHTMLAttributes<HTMLTextAreaElement>
-                }
-              />
-              <Button
-                onClick={() => {
-                  setIsEditingIgCaption(false);
-                  handleUpdateIgCaption();
-                }}
-                className="mt-2 w-full rounded-md"
-                size={"sm"}
-              >
-                Save
-              </Button>
-            </div>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger className="w-full">
-                <p
-                  onClick={() => {
-                    setIsEditingIgCaption(true);
-                  }}
-                  className={cn(
-                    "max-h-[300px] w-full cursor-pointer overflow-scroll whitespace-pre-wrap p-2 text-left text-sm group-hover:bg-secondary",
-                    !igCaption && "text-muted-foreground",
-                  )}
-                >
-                  {igCaption || "Add caption for Instagram post here..."}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent>Click to {!igCaption ? "add" : "edit"}</TooltipContent>
-            </Tooltip>
-          )}
-        </div>
+        <EditableCaption
+          initialCaption={template.ig_caption_template || ""}
+          onSave={handleUpdateIgCaption}
+          className="px-3 pb-4"
+        />
       )}
     </Card>
   );

@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import { ContentType } from "@/src/consts/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { Tables } from "@/types/db";
@@ -5,11 +6,23 @@ import InstagramContent from "./instagram-content";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { cn } from "@/src/utils";
-import { memo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
+import _ from "lodash";
 
-export default memo(
+interface ContentListItemProps {
+  contentIdbKey: string;
+  scheduleData: ScheduleData;
+  template: Tables<"templates">;
+  isSelected: boolean;
+  onSelectChange: (selected: boolean) => void;
+  publishDateTime: { date: Date; error: string | undefined };
+  onPublishDateTimeChange: (dateTime: { date: Date; error: string | undefined }) => void;
+  caption: string;
+  onCaptionChange: (caption: string) => void;
+}
+
+const ContentListItem: React.FC<ContentListItemProps> = memo(
   function ContentListItem({
     contentIdbKey,
     scheduleData,
@@ -18,34 +31,28 @@ export default memo(
     onSelectChange,
     publishDateTime,
     onPublishDateTimeChange,
-  }: {
-    contentIdbKey: string;
-    scheduleData: ScheduleData;
-    template: Tables<"templates">;
-    isSelected: boolean;
-    onSelectChange: (selected: boolean) => void;
-    publishDateTime: { date: Date; error: string | undefined };
-    onPublishDateTimeChange: (dateTime: { date: Date; error: string | undefined }) => void;
-  }) {
+    caption,
+    onCaptionChange,
+  }: ContentListItemProps) {
     const { isJobPending } = useDesignGenQueue();
+
     const renderContent = () => {
-      let contentComp = <></>;
       switch (template.content_type) {
         case ContentType.InstagramPost:
         case ContentType.InstagramStory:
-          contentComp = (
+          return (
             <InstagramContent
               key={contentIdbKey}
               contentIdbKey={contentIdbKey}
               scheduleData={scheduleData}
               template={template}
+              caption={caption}
+              onCaptionChange={onCaptionChange}
             />
           );
-          break;
         default:
           return <></>;
       }
-      return contentComp;
     };
 
     const designLoading = isJobPending(contentIdbKey);
@@ -98,12 +105,15 @@ export default memo(
       </div>
     );
   },
-  (prev, next) => {
+  (prevProps, nextProps) => {
     return (
-      prev.contentIdbKey === next.contentIdbKey &&
-      prev.isSelected === next.isSelected &&
-      prev.publishDateTime === next.publishDateTime &&
-      prev.scheduleData === next.scheduleData
+      prevProps.contentIdbKey === nextProps.contentIdbKey &&
+      prevProps.isSelected === nextProps.isSelected &&
+      _.isEqual(prevProps.publishDateTime, nextProps.publishDateTime) &&
+      _.isEqual(prevProps.scheduleData, nextProps.scheduleData) &&
+      prevProps.caption === nextProps.caption
     );
   },
 );
+
+export default ContentListItem;

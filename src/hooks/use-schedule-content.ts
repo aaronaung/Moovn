@@ -36,6 +36,7 @@ export function useScheduleContent({
   const scheduleContentItem = async (
     contentIdbKey: string,
     publishDateTime: { date: Date; error: string | undefined },
+    caption: string,
   ): Promise<ScheduleContentRequest[0] | null> => {
     if (publishDateTime.error) {
       return null;
@@ -72,7 +73,7 @@ export function useScheduleContent({
       template_id: template.id,
       destination_id: destinationId,
       ig_tags: designs.map((d) => d.instagramTags ?? []),
-      ...(template.ig_caption_template ? { ig_caption: designs[0].instagramCaption } : {}),
+      ...(template.ig_caption_template ? { ig_caption: caption } : {}),
       data_hash: designs[0].hash, //the hash is the same for all designs in the carousel
       updated_at: new Date().toISOString(),
     });
@@ -154,6 +155,7 @@ export function useScheduleContent({
   const scheduleContent = async (
     contentIdbKeys: string[],
     publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } },
+    captionMap: { [key: string]: string },
   ) => {
     const schedules = [];
     setIsScheduling(true);
@@ -169,7 +171,8 @@ export function useScheduleContent({
 
         const contentIdbKey = contentIdbKeys[doneCount];
         const publishDateTime = publishDateTimeMap[contentIdbKey];
-        schedulePromises.push(scheduleContentItem(contentIdbKey, publishDateTime));
+        const caption = captionMap[contentIdbKey];
+        schedulePromises.push(scheduleContentItem(contentIdbKey, publishDateTime, caption));
         doneCount++;
       }
 

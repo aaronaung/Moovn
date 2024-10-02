@@ -4,6 +4,7 @@ import { getAuthUser } from "./users";
 import { throwOrData } from "./util";
 import { SourceDataView } from "../consts/sources";
 import { deleteObject } from "./r2";
+import _ from "lodash";
 
 export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
   return throwOrData(
@@ -49,7 +50,7 @@ export const saveTemplate = async (
   return throwOrData(
     client
       .from("templates")
-      .upsert(template as Tables<"templates">)
+      .upsert(_.omit(template, ["template_creation_requests"]) as Tables<"templates">)
       .select("*")
       .single(),
   );

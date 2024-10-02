@@ -2,7 +2,7 @@ import { Tables } from "@/types/db";
 import { format, parse, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
-export function renderCaption(template: string, schedule?: { [key: string]: string }): string {
+export function generateCaption(template: string, schedule?: { [key: string]: string }): string {
   if (!schedule) {
     return template;
   }
