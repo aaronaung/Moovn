@@ -283,7 +283,7 @@ export default function CreateTemplateSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="flex h-[95dvh] flex-col ">
+      <SheetContent side="bottom" className="flex h-[95dvh] flex-col">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>

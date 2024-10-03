@@ -30,22 +30,22 @@ export const EditableCaption: React.FC<EditableCaptionProps> = ({
 
   if (isEditing) {
     return (
-      <div className={cn("group mt-3 rounded-md", className)}>
+      <div className={cn("group mt-3 rounded-md px-1", className)}>
         <InputTextArea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
-          className="mt-0"
+          className="mt-0 placeholder:text-xs "
           inputProps={
             {
               style: {
                 fontSize: "14px",
               },
-              placeholder: "Add caption for Instagram post",
+              placeholder: "Instagram caption",
               rows: Math.min(12, caption.split("\n").length),
             } as React.TextareaHTMLAttributes<HTMLTextAreaElement>
           }
         />
-        <div className="mt-2 flex gap-2">
+        <div className="flex gap-2 py-2">
           <Button onClick={handleSave} className="flex-1 rounded-md" size="sm">
             Save
           </Button>
@@ -63,12 +63,12 @@ export const EditableCaption: React.FC<EditableCaptionProps> = ({
         <p
           onClick={() => setIsEditing(true)}
           className={cn(
-            "max-h-[300px] w-full cursor-pointer overflow-scroll whitespace-pre-wrap p-2 text-left text-sm group-hover:bg-secondary",
+            "mt-2 max-h-[300px] w-full cursor-pointer overflow-scroll whitespace-pre-wrap p-2 text-left text-sm group-hover:bg-secondary",
             !caption && "text-muted-foreground",
             className,
           )}
         >
-          {caption || "Add caption for Instagram post here..."}
+          {caption || "Add caption here..."}
         </p>
       </TooltipTrigger>
       <TooltipContent>Click to {!caption ? "add" : "edit"}</TooltipContent>

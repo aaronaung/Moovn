@@ -8,7 +8,6 @@ import {
 } from "@/src/components/ui/carousel";
 import { DesignImageWithIGTags } from "../schedule-content/_components/design-container";
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
-import { Dialog, DialogContent, DialogFooter } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { ClockIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
@@ -34,6 +33,13 @@ import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { cn } from "@/src/utils";
 import { scheduleContent as upsertSchedulesOnEventBridge } from "@/src/data/content";
 import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/src/components/ui/sheet";
 
 export default function EventDialog({
   isOpen,
@@ -248,42 +254,7 @@ export default function EventDialog({
     }
 
     return (
-      <div className="flex flex-col gap-2 ">
-        <div>
-          <p className="mb-2 text-sm font-medium">Publish date time</p>
-          <Tooltip>
-            <TooltipTrigger>
-              <DateTimePicker
-                value={{
-                  date: publishDateTime.date,
-                  hasTime: true,
-                }}
-                disablePastDateTime
-                className={cn(
-                  "mb-2 h-[32px] w-full min-w-0 rounded-md px-3",
-                  publishDateTime.error && "border-2 border-red-500",
-                )}
-                onChange={(dateTime) => {
-                  setPublishDateTime({
-                    date: dateTime.date,
-                    error: dateTime.error,
-                  });
-                }}
-              />
-            </TooltipTrigger>
-            <TooltipContent
-              autoFocus={false}
-              side="right"
-              className="mb-3" // because the date picker intrinsicly has some margin bottom
-            >
-              {publishDateTime.error ? (
-                <p className="text-xs text-red-500">{publishDateTime.error}</p>
-              ) : (
-                `Update date time to reschedule`
-              )}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+      <div className="flex flex-col gap-2 overflow-scroll">
         <RadioGroup
           disabled={isJobPending(idbKey)}
           value={selectedDesign}
@@ -339,20 +310,64 @@ export default function EventDialog({
     );
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[calc(100vh_-_50px)] sm:max-w-max">
-        <div className="flex flex-col ">
-          <Header2 className="mb-4" title={content.template?.name ?? "Untitled"} />
+  const renderPublishDateTime = () => {
+    return (
+      <div>
+        <p className="mb-2 text-sm font-medium">Publish date time</p>
+        <Tooltip>
+          <TooltipTrigger>
+            <DateTimePicker
+              value={{
+                date: publishDateTime.date,
+                hasTime: true,
+              }}
+              disablePastDateTime
+              className={cn(
+                "mb-2 h-[32px] w-full min-w-0 rounded-md px-3",
+                publishDateTime.error && "border-2 border-red-500",
+              )}
+              onChange={(dateTime) => {
+                setPublishDateTime({
+                  date: dateTime.date,
+                  error: dateTime.error,
+                });
+              }}
+            />
+          </TooltipTrigger>
+          <TooltipContent
+            autoFocus={false}
+            side="right"
+            className="mb-3" // because the date picker intrinsicly has some margin bottom
+          >
+            {publishDateTime.error ? (
+              <p className="text-xs text-red-500">{publishDateTime.error}</p>
+            ) : (
+              `Update date time to reschedule`
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    );
+  };
 
+  return (
+    <Sheet open={isOpen} onOpenChange={handleClose}>
+      <SheetContent side="bottom" className="flex h-[95dvh] flex-col items-center">
+        <SheetHeader>
+          <SheetTitle>
+            <Header2 title={content.template?.name ?? "Untitled"} />
+          </SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-2 overflow-scroll">
           {event.hasDataChanged && (
             <p className="mb-4 text-sm text-orange-400">
               The schedule data has changed. Reschedule to publish the newly generated content.
             </p>
           )}
+          {renderPublishDateTime()}
           {renderEventContent()}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button
             onClick={handleRescheduleEvent}
             disabled={
@@ -388,8 +403,8 @@ export default function EventDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

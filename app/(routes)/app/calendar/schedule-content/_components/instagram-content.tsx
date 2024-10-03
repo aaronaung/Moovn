@@ -122,7 +122,7 @@ export default memo(
            */}
           {renderDesignContainer()}
         </div>
-        {!_.isEmpty(scheduleData) && template.ig_caption_template && (
+        {!_.isEmpty(scheduleData) && (
           <EditableCaption
             initialCaption={
               caption || generateCaption(template.ig_caption_template || "", scheduleData as any)
