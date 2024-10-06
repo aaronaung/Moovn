@@ -23,38 +23,26 @@ export default function EarningCalculator({ isBeta }: { isBeta?: boolean }) {
     const pricing = isBeta ? 0 : pricingRules.pricing;
     const classSalesLimit = isBeta ? MAX_SALES : pricingRules.classSalesLimit;
     const reviewSalesLimit = isBeta ? MAX_SALES : pricingRules.reviewSalesLimit;
-    const percentKeepAfterLimit = isBeta
-      ? 1
-      : pricingRules.percentKeepAfterLimit;
+    const percentKeepAfterLimit = isBeta ? 1 : pricingRules.percentKeepAfterLimit;
 
-    const classSalesEarning =
-      Math.min(classSales, classSalesLimit) * averageClassPrice;
-    const reviewSalesEarning =
-      Math.min(reviewSales, reviewSalesLimit) * averageReviewPrice;
+    const classSalesEarning = Math.min(classSales, classSalesLimit) * averageClassPrice;
+    const reviewSalesEarning = Math.min(reviewSales, reviewSalesLimit) * averageReviewPrice;
 
     let platformEarning = pricingRules.pricing;
     let classSalesEarningAfterLimit = 0;
     if (classSales > classSalesLimit) {
       classSalesEarningAfterLimit =
-        (classSales - classSalesLimit) *
-        averageClassPrice *
-        percentKeepAfterLimit;
+        (classSales - classSalesLimit) * averageClassPrice * percentKeepAfterLimit;
       platformEarning +=
-        (classSales - classSalesLimit) *
-        averageClassPrice *
-        (1 - percentKeepAfterLimit);
+        (classSales - classSalesLimit) * averageClassPrice * (1 - percentKeepAfterLimit);
     }
 
     let reviewSalesEarningAfterLimit = 0;
     if (reviewSales > reviewSalesLimit) {
       reviewSalesEarningAfterLimit =
-        (reviewSales - reviewSalesLimit) *
-        averageReviewPrice *
-        percentKeepAfterLimit;
+        (reviewSales - reviewSalesLimit) * averageReviewPrice * percentKeepAfterLimit;
       platformEarning +=
-        (reviewSales - reviewSalesLimit) *
-        averageReviewPrice *
-        (1 - percentKeepAfterLimit);
+        (reviewSales - reviewSalesLimit) * averageReviewPrice * (1 - percentKeepAfterLimit);
     }
 
     return {
@@ -80,9 +68,7 @@ export default function EarningCalculator({ isBeta }: { isBeta?: boolean }) {
       <p className="mb-8 mt-2 text-sm  text-muted-foreground">
         Note: The calculation does not take{" "}
         <Link target="_blank" href="https://stripe.com/pricing">
-          <span className="text-primary hover:font-semibold hover:underline">
-            Stripe fees
-          </span>
+          <span className="text-primary hover:font-semibold hover:underline">Stripe fees</span>
         </Link>{" "}
         into account.{" "}
       </p>
@@ -150,10 +136,7 @@ export default function EarningCalculator({ isBeta }: { isBeta?: boolean }) {
         <>
           <div className="flex flex-col">
             <p className="mt-4 text-2xl font-semibold text-green-600 sm:text-3xl">
-              $
-              {round(
-                calculateEarning(SubscriptionPlan.Hobby).instructorEarning,
-              ).toLocaleString()}
+              ${round(calculateEarning(SubscriptionPlan.Hobby).instructorEarning).toLocaleString()}
             </p>
           </div>
         </>
@@ -169,15 +152,14 @@ export default function EarningCalculator({ isBeta }: { isBeta?: boolean }) {
                     $
                     {round(
                       // @ts-ignore
-                      calculateEarning(SubscriptionPlan[plan])
-                        .instructorEarning,
+                      calculateEarning(SubscriptionPlan[plan]).instructorEarning,
                     ).toLocaleString()}
                   </>
                 </p>
               </div>
             ))}
           </div>
-          {Boolean(params.get("admin")) && (
+          {Boolean(params?.get("admin")) && (
             <div className="grid grid-cols-3">
               {Object.keys(SubscriptionPlan).map((plan: any) => (
                 <div key={plan} className="flex flex-col">
@@ -190,8 +172,7 @@ export default function EarningCalculator({ isBeta }: { isBeta?: boolean }) {
                       $
                       {round(
                         // @ts-ignore
-                        calculateEarning(SubscriptionPlan[plan])
-                          .platformEarning,
+                        calculateEarning(SubscriptionPlan[plan]).platformEarning,
                       ).toLocaleString()}
                     </>
                   </p>

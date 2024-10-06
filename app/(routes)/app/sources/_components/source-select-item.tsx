@@ -1,3 +1,4 @@
+"use client";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Pike13Logo } from "@/src/components/ui/icons/pike13";
 import { SourceTypes } from "@/src/consts/sources";
@@ -5,6 +6,7 @@ import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import SourceSelectItemMindbody from "./source-select-item-mindbody";
+import SourceSelectItemGoogleDrive from "./source-select-item-google-drive";
 
 export const SourceSelectItem = ({
   isSelected,
@@ -28,6 +30,8 @@ export const SourceSelectItem = ({
         return <Pike13Logo />;
       case SourceTypes.Mindbody:
         return <SourceSelectItemMindbody source={source} />;
+      case SourceTypes.GoogleDrive:
+        return <SourceSelectItemGoogleDrive source={source} />;
       default:
         return <></>;
     }

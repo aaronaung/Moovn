@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { useScheduleContent } from "@/src/hooks/use-schedule-content";
 import { useQueryClient } from "@tanstack/react-query";
+import { SourceTypes } from "@/src/consts/sources";
 
 const formSchema = z.object({
   source_id: z.string(),
@@ -52,10 +53,10 @@ export default function ContentSchedulingForm({
   const queryClient = useQueryClient();
 
   const queryParams = useSearchParams();
-  const qSourceId = queryParams.get("source_id");
-  const qTemplateIds = queryParams.get("template_ids")?.split(",").filter(Boolean);
-  const qDestinationId = queryParams.get("destination_id");
-  const qScheduleRangeSplit = queryParams.get("schedule_range")?.split("_");
+  const qSourceId = queryParams?.get("source_id");
+  const qTemplateIds = queryParams?.get("template_ids")?.split(",").filter(Boolean);
+  const qDestinationId = queryParams?.get("destination_id");
+  const qScheduleRangeSplit = queryParams?.get("schedule_range")?.split("_");
 
   let qScheduleRange: { from: Date; to: Date } | undefined;
   if (qScheduleRangeSplit) {
@@ -113,7 +114,7 @@ export default function ContentSchedulingForm({
 
   useEffect(() => {
     // On change of source, update the query params
-    const urlParams = new URLSearchParams(queryParams);
+    const urlParams = new URLSearchParams(queryParams ?? {});
     urlParams.set("source_id", sourceId);
     urlParams.set("template_ids", templateIds.join(","));
     urlParams.set("destination_id", destinationId);
@@ -237,10 +238,12 @@ export default function ContentSchedulingForm({
             label="Source"
             className="w-full md:w-[300px]"
             rhfKey={"source_id"}
-            options={availableSources.map((source) => ({
-              value: source.id,
-              label: source.name,
-            }))}
+            options={availableSources
+              .filter((source) => source.type !== SourceTypes.GoogleDrive)
+              .map((source) => ({
+                value: source.id,
+                label: source.name,
+              }))}
             control={control}
             error={errors.source_id?.message}
             inputProps={{

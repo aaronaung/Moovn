@@ -4,10 +4,6 @@ import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
 import { fromZonedTime, toDate } from "date-fns-tz";
 
-export type MindbodySourceSettings = {
-  siteId: string;
-};
-
 // https://developers.mindbodyonline.com/ui/documentation/public-api
 export class MindbodyClient implements SourceClient {
   private apiKey: string;

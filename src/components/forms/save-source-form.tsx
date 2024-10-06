@@ -79,31 +79,39 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
   });
 
   const renderSourceSettings = () => {
-    return (
-      <>
-        <InputText
-          label="Pike13 URL"
-          rhfKey="settings.url"
-          className={selectedSourceType !== SourceTypes.Pike13 ? "hidden" : ""}
-          register={register}
-          inputProps={{
-            placeholder: "Enter your Pike13 business URL",
-          }}
-          error={(errors.settings as any)?.url?.message}
-        />
+    switch (selectedSourceType) {
+      case SourceTypes.Pike13:
+        return (
+          <>
+            <InputText
+              label="Pike13 URL"
+              rhfKey="settings.url"
+              register={register}
+              inputProps={{
+                placeholder: "Enter your Pike13 business URL",
+              }}
+              error={(errors.settings as any)?.url?.message}
+            />
+          </>
+        );
+      case SourceTypes.Mindbody:
+        return (
+          <>
+            <InputText
+              label="Site ID"
+              rhfKey="settings.siteId"
+              register={register}
+              inputProps={{
+                placeholder: "Enter your Mindbody Site ID",
+              }}
+              error={(errors.settings as any)?.siteId?.message}
+            />
+          </>
+        );
 
-        <InputText
-          label="Site ID"
-          rhfKey="settings.siteId"
-          className={selectedSourceType !== SourceTypes.Mindbody ? "hidden" : ""}
-          register={register}
-          inputProps={{
-            placeholder: "Enter your Mindbody Site ID",
-          }}
-          error={(errors.settings as any)?.siteId?.message}
-        />
-      </>
-    );
+      default:
+        return null;
+    }
   };
 
   const handleOnFormSuccess = async (formValues: SaveSourceFormSchemaType) => {

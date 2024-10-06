@@ -1,9 +1,10 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import { MindbodyLogo } from "@/src/components/ui/icons/mindbody";
+import { MindbodySourceSettings } from "@/src/consts/sources";
 import { getMindbodyActivationCodeAndLink, getMindbodySiteData } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { MindbodySourceSettings } from "@/src/libs/sources/mindbody";
+
 import { Tables } from "@/types/db";
 import { AlertTriangleIcon } from "lucide-react";
 import Link from "next/link";

@@ -230,7 +230,7 @@ function PhotopeaHeadlessProvider({ children }: { children: React.ReactNode }) {
               exportMetadataQueue,
             });
 
-            const debugKey = params.get("debug");
+            const debugKey = params?.get("debug");
             if (debugKey) {
               const debugJpg = document.createElement("img");
               debugJpg.src = URL.createObjectURL(new Blob([mostRecentExport.jpg]));

@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { Tables } from "@/types/db";
 import { supaServerComponentClient } from "@/src/data/clients/server";
 import { TemplateCreationRequestStatus } from "@/src/consts/templates";
+import { SourceTypes } from "@/src/consts/sources";
 
 const MISSING_DETAILS = {
   sources: {
@@ -27,8 +28,10 @@ const MISSING_DETAILS = {
 };
 
 export default async function ScheduleContent() {
-  const availableSources = await getSourcesForAuthUser({ client: supaServerComponentClient() });
+  const allSources = await getSourcesForAuthUser({ client: supaServerComponentClient() });
   const allTemplates = await getTemplatesForAuthUser({ client: supaServerComponentClient() });
+
+  const availableSources = allSources.filter((source) => source.type !== SourceTypes.GoogleDrive);
   const availableTemplates = allTemplates.filter(
     (template) =>
       template.template_creation_requests.length === 0 ||

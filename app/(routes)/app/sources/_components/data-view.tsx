@@ -1,6 +1,6 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import Tab from "@/src/components/ui/tab";
-import { SourceDataView } from "@/src/consts/sources";
+import { SourceDataView, SourceTypes } from "@/src/consts/sources";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
@@ -36,27 +36,44 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     if (isLoadingScheduleData || isRefetching) {
       return <Spinner className="mt-4" />;
     }
-
-    return (
-      <div className="flex-1 overflow-scroll">
-        <ReactJson
-          src={scheduleData || {}}
-          shouldCollapse={(field) => (field.name ? field.name.startsWith("schedules") : false)}
-          displayDataTypes={false}
-          name={false}
-          theme={"chalk"}
-          style={{
-            padding: 16,
-            borderRadius: 8,
-          }}
-        />
-      </div>
-    );
+    switch (selectedSource.type) {
+      case SourceTypes.GoogleDrive:
+        return (
+          <div className="flex-1 overflow-scroll">
+            <ReactJson
+              src={selectedSource.settings as object}
+              displayDataTypes={false}
+              name={false}
+              theme={"chalk"}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+              }}
+            />
+          </div>
+        );
+      default:
+        return (
+          <div className="flex-1 overflow-scroll">
+            <ReactJson
+              src={scheduleData || {}}
+              shouldCollapse={(field) => (field.name ? field.name.startsWith("schedules") : false)}
+              displayDataTypes={false}
+              name={false}
+              theme={"chalk"}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+              }}
+            />
+          </div>
+        );
+    }
   };
 
   return (
     <>
-      {selectedSource && (
+      {selectedSource && selectedSource.type !== SourceTypes.GoogleDrive && (
         <div className="mb-2 flex gap-x-2">
           {Object.values(SourceDataView).map((tab) => {
             return (

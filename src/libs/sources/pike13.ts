@@ -4,10 +4,6 @@ import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
-export type Pike13SourceSettings = {
-  url: string;
-};
-
 export class Pike13Client implements SourceClient {
   private clientId: string;
   private businessUrl: string;

@@ -7,10 +7,7 @@ export const env = createEnv({
    * Will throw if you access these variables on the client.
    */
   server: {
-    // This is optional because it's only used in development.
-    // See https://next-auth.js.org/deployment.
-    SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: z.string().min(1),
-    SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: z.string().min(1),
+    GOOGLE_CLIENT_SECRET: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     // STRIPE_SECRET_KEY: z.string().min(1),
     // STRIPE_WEBHOOK_SECRET: z.string().min(1),
@@ -39,6 +36,7 @@ export const env = createEnv({
     // NEXT_PUBLIC_GOOGLE_MAP_API_KEY: z.string().min(1),
     // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
     NEXT_PUBLIC_INSTAGRAM_CLIENT_ID: z.string().min(1),
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1),
   },
   /*
    * Due to how Next.js bundles environment variables on Edge and Client,
@@ -57,13 +55,13 @@ export const env = createEnv({
     // NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID:
     //   process.env.NEXT_PUBLIC_STRIPE_PRO_PLAN_PRICE_ID,
     NEXT_PUBLIC_INSTAGRAM_CLIENT_ID: process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID,
-
-    SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,
-    SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET,
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
 
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
 
     PIKE13_CLIENT_ID: process.env.PIKE13_CLIENT_ID,
     INSTAGRAM_CLIENT_SECRET: process.env.INSTAGRAM_CLIENT_SECRET,

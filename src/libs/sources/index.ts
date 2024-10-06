@@ -1,9 +1,9 @@
-import { SourceTypes } from "@/src/consts/sources";
+import { MindbodySourceSettings, Pike13SourceSettings, SourceTypes } from "@/src/consts/sources";
 import { supaServerClient } from "@/src/data/clients/server";
 import { getSourceById } from "@/src/data/sources";
-import { Pike13Client, Pike13SourceSettings } from "./pike13";
+import { Pike13Client } from "./pike13";
 import { flattenSchedule } from "./utils";
-import { MindbodyClient, MindbodySourceSettings } from "./mindbody";
+import { MindbodyClient } from "./mindbody";
 
 export interface SourceClient {
   getScheduleData(from: string, to: string): Promise<ScheduleData>;

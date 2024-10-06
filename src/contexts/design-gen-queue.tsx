@@ -95,7 +95,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         const { template, templateIdbKey, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
         try {
           await cleanupIdb();
-          const debug = searchParams.get("debug") === "true";
+          const debug = searchParams?.get("debug") === "true";
 
           const designHash = generateDesignHash(template.id, schedule);
           const designInIdb = await db.designs.get(idbKey);
