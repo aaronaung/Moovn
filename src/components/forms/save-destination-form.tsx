@@ -46,7 +46,7 @@ export default function SaveDestinationForm({
   const { mutate: _saveDestination, isPending: isSavingDestination } = useSupaMutation(
     saveDestination,
     {
-      invalidate: [["getDestinationsForAuthUser"]],
+      invalidate: [["getAllDestinations"]],
       onSuccess: () => {
         onSubmitted();
       },

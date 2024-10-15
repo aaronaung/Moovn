@@ -1,0 +1,37 @@
+create table "public"."content_items" (
+  "id" uuid primary key default gen_random_uuid(),
+  "content_id" uuid not null references "public"."content" ("id") on delete cascade,
+  "type" text not null,
+  "position" int not null,
+  "ig_tags" jsonb,
+  "created_at" timestamp with time zone default now(),
+  "updated_at" timestamp with time zone default now()
+);
+alter table "public"."content_items" enable row level security;
+create policy "Enable owner access to content_items"
+on "public"."content_items"
+as permissive
+for all
+to authenticated
+using (auth.uid() = (select owner_id from public.content where id = content_id))
+with check (auth.uid() = (select owner_id from public.content where id = content_id));
+
+CREATE OR REPLACE FUNCTION update_content_items_position(
+    items jsonb
+)
+RETURNS VOID AS $$
+BEGIN
+    -- Update the position for each item in the input array
+    WITH input_items AS (
+        SELECT 
+            (item->>'id')::uuid AS id,
+            (item->>'position')::int AS new_position
+        FROM jsonb_array_elements(items) AS item
+    )
+    UPDATE public.content_items AS ci
+    SET position = input_items.new_position
+    FROM input_items
+    WHERE ci.id = input_items.id;
+END;
+$$ LANGUAGE plpgsql;
+

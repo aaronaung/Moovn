@@ -40,6 +40,6 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
 
       return flattenSchedule(await mindbodyClient.getScheduleData(from, to));
     default:
-      return null;
+      return {};
   }
 };

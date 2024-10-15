@@ -6,6 +6,11 @@ export enum TemplateCreationRequestStatus {
   Done = "done",
 }
 
+export enum TemplateItemType {
+  Image = "image",
+  DriveVideo = "drive_video",
+}
+
 export const FREE_DESIGN_TEMPLATES: {
   [key: string]: { [key: string]: { title: string; fileName: string }[] };
 } = {

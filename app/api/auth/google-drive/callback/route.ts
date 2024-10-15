@@ -49,9 +49,9 @@ export async function GET(req: NextRequest) {
       throw new Error(`Failed to update source settings: ${error.message}`);
     }
 
-    return NextResponse.redirect("/app/sources");
+    return NextResponse.redirect(`${requestUrl.origin}/app/sources?success=true`);
   } catch (error) {
     console.error("Error in Google Drive OAuth callback:", error);
-    NextResponse.redirect("/app/sources?error=true");
+    return NextResponse.redirect(`${requestUrl.origin}/app/sources?error=true`);
   }
 }

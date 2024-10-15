@@ -1,8 +1,7 @@
 import { Tables } from "@/types/db";
 import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
-import { getAuthUser } from "./users";
-import { SourceDataView } from "../consts/sources";
+import { SourceDataView, SourceTypes } from "../consts/sources";
 import { ScheduleData } from "../libs/sources";
 import { endOfDay, endOfWeek, format, startOfDay, startOfWeek } from "date-fns";
 
@@ -22,17 +21,16 @@ export const deleteSource = async (id: string, { client }: SupabaseOptions) => {
   return throwOrData(client.from("sources").delete().eq("id", id).single());
 };
 
-export const getSourcesForAuthUser = async ({ client }: SupabaseOptions) => {
-  const user = await getAuthUser({ client });
+export const getAllSources = async ({ client }: SupabaseOptions) => {
+  return throwOrData(client.from("sources").select("*").order("created_at", { ascending: false }));
+};
 
-  if (!user) {
-    return [];
-  }
+export const getScheduleSources = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("sources")
       .select("*")
-      .eq("owner_id", user.id)
+      .neq("type", SourceTypes.GoogleDrive)
       .order("created_at", { ascending: false }),
   );
 };
@@ -78,11 +76,17 @@ export const getScheduleDataForSourceByTimeRange = async ({
   return resp.json();
 };
 
-export const getScheduleDataFromAllSourcesByTimeRange = async (
+export const getDataFromScheduleSourcesByTimeRange = async (
   dateRange: { from: Date; to: Date },
   { client }: SupabaseOptions,
 ): Promise<{ [key: string]: ScheduleData }> => {
-  const allSources = await throwOrData(client.from("sources").select("id"));
+  const allSources = await throwOrData(
+    client
+      .from("sources")
+      .select("id")
+      .neq("type", SourceTypes.GoogleDrive)
+      .order("created_at", { ascending: false }),
+  );
   const allSourcesData = await Promise.all(
     allSources.map(
       ({ id }) =>

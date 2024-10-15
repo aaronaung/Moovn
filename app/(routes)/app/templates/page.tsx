@@ -3,46 +3,43 @@ import { Header2 } from "@/src/components/common/header";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confirmation-dialog";
 import { Button } from "@/src/components/ui/button";
-import { deleteTemplate, getTemplatesForAuthUser } from "@/src/data/templates";
+import { deleteTemplate, getAllTemplates } from "@/src/data/templates";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useState } from "react";
 import { InstagramTemplate } from "./_components/instagram-template";
 import { useAuthUser } from "@/src/contexts/auth";
 import { deleteObject } from "@/src/data/r2";
-import CreateTemplateSheet from "./_components/create-template-sheet";
 import EmptyState from "@/src/components/common/empty-state";
-import { TemplateCreationRequestStatus } from "@/src/consts/templates";
+import { useRouter } from "next/navigation";
+import { AddTemplateItemSheet } from "./[id]/_components/add-template-item-sheet";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
+  const router = useRouter();
 
   const [deleteConfirmationDialogState, setDeleteConfirmationDialogState] = useState<{
     isOpen: boolean;
-    template?: Tables<"templates"> & {
-      template_creation_requests: Tables<"template_creation_requests">[];
-    };
+    template?: Awaited<ReturnType<typeof getAllTemplates>>[number];
   }>({
     isOpen: false,
   });
-  const [createTemplateSheetState, setCreateTemplateSheetState] = useState<{
+  const [addTemplateItemSheetState, setAddTemplateItemSheetState] = useState<{
     isOpen: boolean;
-    template?: Tables<"templates"> & {
-      template_creation_requests: Tables<"template_creation_requests">[];
-    };
+    template?: Tables<"templates">;
   }>({
     isOpen: false,
   });
 
-  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getTemplatesForAuthUser, {
-    queryKey: ["getTemplatesForAuthUser"],
+  const { data: templates, isLoading: isLoadingTemplates } = useSupaQuery(getAllTemplates, {
+    queryKey: ["getAllTemplates"],
   });
   const hasTemplates = templates && templates.length > 0;
 
   const { mutateAsync: _deleteTemplate, isPending: isDeletingTemplate } = useSupaMutation(
     deleteTemplate,
     {
-      invalidate: [["getTemplatesForAuthUser"]],
+      invalidate: [["getAllTemplates"]],
     },
   );
 
@@ -53,23 +50,22 @@ export default function TemplatesPage() {
   return (
     <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       {/** Todo: check if the template is associated with any content that's to be published */}
-      <CreateTemplateSheet
+
+      <AddTemplateItemSheet
         user={user}
-        isOpen={createTemplateSheetState.isOpen}
-        onClose={() => setCreateTemplateSheetState({ isOpen: false })}
-        parentTemplate={createTemplateSheetState.template}
-        title={
-          createTemplateSheetState.template
-            ? `Add to existing template (${createTemplateSheetState.template.name})`
-            : "Create template"
-        }
+        isOpen={addTemplateItemSheetState.isOpen}
+        onClose={() => setAddTemplateItemSheetState({ isOpen: false })}
+        parentTemplate={addTemplateItemSheetState.template}
+        itemPosition={0}
+        onAddComplete={() => {
+          setAddTemplateItemSheetState({ isOpen: false });
+        }}
       />
+
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
-          deleteConfirmationDialogState.template?.template_creation_requests[0]
-            ? "The template is currently being worked on by the Moovn team. Are you sure you want to delete this template?"
-            : "Deleting this template will delete all associated scheduled contents. Are you sure you want to delete this template?"
+          "Deleting this template will delete all associated scheduled contents. Are you sure you want to delete this template?"
         }
         isDeleting={isDeletingTemplate}
         onClose={() => {
@@ -105,7 +101,7 @@ export default function TemplatesPage() {
         {hasTemplates && (
           <Button
             onClick={() => {
-              setCreateTemplateSheetState({
+              setAddTemplateItemSheetState({
                 isOpen: true,
               });
             }}
@@ -127,17 +123,8 @@ export default function TemplatesPage() {
                   key={template.id}
                   template={template}
                   onAddToCarousel={() => {
-                    setCreateTemplateSheetState({
-                      isOpen: true,
-                      template,
-                    });
+                    router.push(`/app/templates/${template.id}`);
                   }}
-                  templateCreationRequest={
-                    template.template_creation_requests[0]?.status ===
-                    TemplateCreationRequestStatus.Done
-                      ? undefined
-                      : template.template_creation_requests[0]
-                  }
                   onDeleteTemplate={() => {
                     setDeleteConfirmationDialogState({
                       isOpen: true,
@@ -155,7 +142,7 @@ export default function TemplatesPage() {
           actionButtonOverride={
             <Button
               onClick={() => {
-                setCreateTemplateSheetState({
+                setAddTemplateItemSheetState({
                   isOpen: true,
                 });
               }}

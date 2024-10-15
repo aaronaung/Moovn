@@ -4,26 +4,22 @@ import FileDropzone from "@/src/components/ui/input/file-dropzone";
 import InputSelect from "@/src/components/ui/input/select";
 import InputTextArea from "@/src/components/ui/input/textarea";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/src/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
 import { toast } from "@/src/components/ui/use-toast";
 import { ContentType } from "@/src/consts/content";
 import { LEARN_TEMPLATE_CREATION_GUIDE_LINK } from "@/src/consts/links";
 import { SourceDataView } from "@/src/consts/sources";
-import { TemplateCreationRequestStatus } from "@/src/consts/templates";
+import { TemplateCreationRequestStatus, TemplateItemType } from "@/src/consts/templates";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
-import { moveObject, uploadObject } from "@/src/data/r2";
-import { saveTemplate, saveTemplateCreationRequest } from "@/src/data/templates";
+import { uploadObject } from "@/src/data/r2";
+import {
+  saveTemplate,
+  saveTemplateItem,
+  saveTemplateItemDesignRequest,
+} from "@/src/data/templates";
 import { useGenerateTemplateJpg } from "@/src/hooks/use-generate-template-jpg";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
-import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { Tables } from "@/types/db";
 import Image from "next/image";
@@ -36,18 +32,16 @@ enum TemplateCreator {
   Self = "self",
 }
 
-export default function CreateTemplateSheet({
+export default function CreateCustomDesignTemplateBody({
   user,
-  isOpen,
-  onClose,
   parentTemplate,
-  title,
+  itemPosition,
+  onCreateComplete,
 }: {
   user: Tables<"users">;
-  isOpen: boolean;
-  onClose: () => void;
   parentTemplate?: Tables<"templates">; // if provided, we're adding to a carousel
-  title: string;
+  itemPosition: number;
+  onCreateComplete: (newTemplateItem: Tables<"template_items">) => void;
 }) {
   const {
     open: openPhotopeaEditor,
@@ -55,9 +49,13 @@ export default function CreateTemplateSheet({
     freeDesignTemplates,
     blankDesignTemplates,
   } = usePhotopeaEditor();
-  const [sourceDataView, setSourceDataView] = useState(SourceDataView.Daily);
-  const [contentType, setContentType] = useState(ContentType.InstagramPost);
-  const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(parentTemplate);
+
+  const [sourceDataView, setSourceDataView] = useState(
+    (parentTemplate?.source_data_view as SourceDataView) || SourceDataView.Daily,
+  );
+  const [contentType, setContentType] = useState(
+    (parentTemplate?.content_type as ContentType) || ContentType.InstagramPost,
+  );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<string | undefined>(undefined);
   const [templateCreator, setTemplateCreator] = useState(TemplateCreator.Moovn);
   const [templateDescription, setTemplateDescription] = useState("");
@@ -66,12 +64,15 @@ export default function CreateTemplateSheet({
   const { generateTemplateJpgSync } = useGenerateTemplateJpg();
 
   const { mutateAsync: _saveTemplate } = useSupaMutation(saveTemplate, {
-    invalidate: [["getTemplatesForAuthUser"]],
+    invalidate: [["getAllTemplates"]],
   });
-  const { mutateAsync: _saveTemplateCreationRequest } = useSupaMutation(
-    saveTemplateCreationRequest,
+  const { mutateAsync: _saveTemplateItem } = useSupaMutation(saveTemplateItem, {
+    invalidate: [["getTemplateItemsByTemplateId", parentTemplate?.id ?? ""]],
+  });
+  const { mutateAsync: _saveTemplateItemDesignRequest } = useSupaMutation(
+    saveTemplateItemDesignRequest,
     {
-      invalidate: [["getTemplatesForAuthUser"]],
+      invalidate: [["getAllTemplates"]],
     },
   );
 
@@ -91,71 +92,10 @@ export default function CreateTemplateSheet({
     );
   };
 
-  const handleAddToCarousel = async (designExport: DesignExport) => {
-    if (!parentTemplate) {
-      return;
-    }
-    if (!designExport["psd"] || !designExport["jpg"]) {
-      console.error("missing psd or jpg file in export:", {
-        designExport,
-      });
-      toast({
-        variant: "destructive",
-        title: "Failed to save template. Please try again or contact support.",
-      });
-      return;
-    }
-
-    try {
-      let templatePathForNew;
-      if (templateObjects.length > 1) {
-        templatePathForNew = `${parentTemplate.owner_id}/${parentTemplate.id}/${templateObjects.length}`;
-
-        await uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]]));
-      } else {
-        templatePathForNew = `${templateObjects[0].path}/1`;
-        // Delete the old template and design in idb.
-        await Promise.all([
-          db.designs.where("templateId").equals(parentTemplate.id).delete(),
-          db.templates.where("templateId").equals(parentTemplate.id).delete(),
-          moveObject(
-            "templates",
-            templateObjects[0].path,
-            "templates",
-            `${templateObjects[0].path}/0`,
-          ),
-          uploadObject("templates", templatePathForNew, new Blob([designExport["psd"]])),
-          db.templates.put({
-            key: templatePathForNew,
-            templateId: parentTemplate.id,
-            jpg: designExport["jpg"],
-            psd: designExport["psd"],
-            lastUpdated: new Date(),
-          }),
-          _saveTemplate({
-            id: parentTemplate.id,
-            is_carousel: true,
-          }),
-        ]);
-      }
-      toast({
-        variant: "success",
-        title: `Carousel template saved.`,
-      });
-      close();
-    } catch (err) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Failed to save template. Please try again or contact support.",
-      });
-    }
-  };
-
   const handleTemplateCreate = async (
     designExport: DesignExport,
-    metadataChanges: Partial<PhotopeaEditorMetadata>,
-    isCreationRequest: boolean = false,
+    metadata: Partial<PhotopeaEditorMetadata>,
+    isDesignRequest: boolean = false,
   ): Promise<void> => {
     if (!designExport["psd"] || !designExport["jpg"]) {
       console.error("missing psd or jpg file in export:", {
@@ -169,28 +109,35 @@ export default function CreateTemplateSheet({
     }
 
     try {
-      const saved = await _saveTemplate({
-        name: metadataChanges.title,
-        source_data_view: metadataChanges.source_data_view,
-        content_type: metadataChanges.content_type,
-        owner_id: user.id,
-        is_carousel: false,
-      });
-
-      if (isCreationRequest) {
-        await _saveTemplateCreationRequest({
+      let template = parentTemplate;
+      if (!template) {
+        template = await _saveTemplate({
+          name: metadata.title,
+          source_data_view: metadata.source_data_view,
+          content_type: metadata.content_type,
           owner_id: user.id,
-          template_id: saved.id,
+        });
+      }
+      const savedTemplateItem = await _saveTemplateItem({
+        template_id: template.id,
+        position: itemPosition,
+        type: TemplateItemType.Image,
+      });
+      if (isDesignRequest) {
+        await _saveTemplateItemDesignRequest({
+          owner_id: user.id,
+          template_item_id: savedTemplateItem.id,
           status: TemplateCreationRequestStatus.InProgress,
           description: templateDescription,
         });
       }
 
-      const templatePath = `${user.id}/${saved.id}`;
+      const templatePath = `${user.id}/${template.id}/${savedTemplateItem.id}`;
       await Promise.all([
-        db.templates.put({
-          key: templatePath,
-          templateId: saved.id,
+        db.templateItems.put({
+          key: savedTemplateItem.id,
+          position: itemPosition,
+          templateId: template.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
           lastUpdated: new Date(),
@@ -202,6 +149,7 @@ export default function CreateTemplateSheet({
         variant: "success",
         title: "Template saved",
       });
+      onCreateComplete(savedTemplateItem);
     } catch (err) {
       console.error(err);
       toast({
@@ -227,7 +175,7 @@ export default function CreateTemplateSheet({
         setIsUploadingTemplate(true);
         const psd = await templateFile.arrayBuffer();
         const jpg = await generateTemplateJpgSync({
-          templatePath: uuidv4(), // This is a unique path for the template. It's not used for storage, but just for the generation process.
+          id: uuidv4(), // This is a unique path for the template. It's not used for storage, but just for the generation process.
           templateData: psd,
         });
         const templatePsdAndJpg = {
@@ -235,21 +183,16 @@ export default function CreateTemplateSheet({
           jpg,
         };
 
-        if (parentTemplate) {
-          await handleAddToCarousel(templatePsdAndJpg);
-        } else {
-          await handleTemplateCreate(
-            templatePsdAndJpg,
-            {
-              title: templateFile.name,
-              source_data_view: sourceDataView,
-              content_type: contentType,
-            },
-            true,
-          );
-        }
+        await handleTemplateCreate(
+          templatePsdAndJpg,
+          {
+            title: templateFile.name,
+            source_data_view: sourceDataView,
+            content_type: contentType,
+          },
+          true,
+        );
 
-        onClose();
         clearState();
       } catch (err) {
         console.error(err);
@@ -265,8 +208,8 @@ export default function CreateTemplateSheet({
         },
         getSelectedTemplate(),
         {
-          onSave: parentTemplate ? handleAddToCarousel : handleTemplateCreate,
-          isMetadataEditable: !Boolean(parentTemplate), // Disable editing metadata if we're adding to a carousel
+          onSave: handleTemplateCreate,
+          isMetadataEditable: !Boolean(parentTemplate),
         },
       );
     }
@@ -277,47 +220,47 @@ export default function CreateTemplateSheet({
     setTemplateDescription("");
     setSelectedTemplateIndex(undefined);
     setTemplateCreator(TemplateCreator.Moovn);
-    setSourceDataView(SourceDataView.Daily);
-    setContentType(ContentType.InstagramPost);
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="flex h-[95dvh] flex-col">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-        </SheetHeader>
-        <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
+    <>
+      <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
+        {!parentTemplate && (
           <SelectMetadataSection
             sourceDataView={sourceDataView}
             setSourceDataView={setSourceDataView}
             contentType={contentType}
             setContentType={setContentType}
           />
-          <SelectTemplateCreatorSection
-            sourceDataView={sourceDataView}
-            contentType={contentType}
-            selectedTemplateIndex={selectedTemplateIndex}
-            onTemplateSelect={setSelectedTemplateIndex}
-            templateCreator={templateCreator}
-            setTemplateCreator={setTemplateCreator}
-            templateDescription={templateDescription}
-            setTemplateDescription={setTemplateDescription}
-            onFileDrop={onFileDrop}
-          />
-          {templateCreator === TemplateCreator.Self && <TemplateCreationGuideSection />}
-        </div>
-        <SheetFooter>
-          <Button size="lg" onClick={handleCreateClick} disabled={isUploadingTemplate}>
-            {templateCreator === TemplateCreator.Self ? (
-              "Start editor"
-            ) : (
-              <>{isUploadingTemplate ? <Spinner /> : "Ask Moovn"}</>
-            )}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        )}
+        <SelectTemplateCreatorSection
+          sourceDataView={sourceDataView}
+          contentType={contentType}
+          selectedTemplateIndex={selectedTemplateIndex}
+          onTemplateSelect={setSelectedTemplateIndex}
+          templateCreator={templateCreator}
+          setTemplateCreator={setTemplateCreator}
+          templateDescription={templateDescription}
+          setTemplateDescription={setTemplateDescription}
+          onFileDrop={onFileDrop}
+        />
+        {templateCreator === TemplateCreator.Self && <TemplateCreationGuideSection />}
+      </div>
+      <div className="flex justify-end">
+        <Button
+          className="fixed bottom-[14px] left-[14px] w-[120px]"
+          size="lg"
+          onClick={handleCreateClick}
+          disabled={isUploadingTemplate}
+        >
+          {templateCreator === TemplateCreator.Self ? (
+            "Start editor"
+          ) : (
+            <>{isUploadingTemplate ? <Spinner /> : "Ask Moovn"}</>
+          )}
+        </Button>
+      </div>
+    </>
   );
 }
 

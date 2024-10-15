@@ -20,7 +20,7 @@ export const deleteDestination = async (id: string, { client }: SupabaseOptions)
   return throwOrData(client.from("destinations").delete().eq("id", id).single());
 };
 
-export const getDestinationsForAuthUser = async ({ client }: SupabaseOptions) => {
+export const getAllDestinations = async ({ client }: SupabaseOptions) => {
   const user = await getAuthUser({ client });
 
   if (!user) {

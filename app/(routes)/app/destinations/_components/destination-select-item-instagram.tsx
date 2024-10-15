@@ -38,7 +38,7 @@ export default function InstagramDestinationItem({
   const { mutate: _linkInstagramAccount, isPending: isLinkingInstagramAccount } = useSupaMutation(
     linkInstagramAccount,
     {
-      invalidate: [["getDestinationsForAuthUser"]],
+      invalidate: [["getAllDestinations"]],
     },
   );
 

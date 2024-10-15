@@ -1,44 +1,63 @@
 import Dexie, { EntityTable } from "dexie";
 import { InstagramTag } from "../designs/photopea/utils";
+import { ContentType } from "@/src/consts/content";
+import { TemplateItemType } from "@/src/consts/templates";
 
-export type Design = {
-  key: string; // `${ownerId}/${range}/${templateId} for daily schedule, the range is the date, for weekly schedule, this is "start - end"
-  templateId: string;
-  psd: ArrayBuffer;
-  jpg: ArrayBuffer;
-  hash: string;
-  instagramTags: InstagramTag[];
-  instagramCaption: string;
-  lastUpdated: Date;
+export type ContentItem = {
+  // `${sourceId}/${range}/${templateItemId} for daily schedule, the range is the date, for weekly schedule, this is "start - end"
+  // Because content items aren't created until they are scheduled, this is the key for the content item.
+  key: string;
+  scheduledContentItemId?: string; // If this content item is scheduled, this is the id of the scheduled content item.
+  templateItemId: string;
+  position: number;
+
+  // Applicable for Instagram content
+  psd?: ArrayBuffer;
+  jpg?: ArrayBuffer;
+  instagramTags?: InstagramTag[];
+
+  hash?: string; // used to determine if the content data needs to be updated.
+
+  created_at: Date;
+  updated_at: Date;
 };
 
-export type Template = {
-  key: string; // `${ownerId}/${templateId}`
+export type Content = {
+  // `${sourceId}/${range}/${templateId} for daily schedule, the range is the date, for weekly schedule, this is "start - end"
+  // Because content isn't created until they are scheduled, this is the key for the content.
+  key: string;
+  contentType: ContentType;
+
+  // Applicable for Instagram content
+  instagramCaption?: string;
+
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type TemplateItem = {
+  key: string; // templateItemId.
   templateId: string;
-  psd: ArrayBuffer;
-  jpg: ArrayBuffer;
-  lastUpdated: Date;
+  itemType: TemplateItemType;
+  position: number;
+
+  // Applicable for Instagram template items
+  psd?: ArrayBuffer;
+  jpg?: ArrayBuffer;
+
+  created_at: Date;
+  updated_at: Date;
 };
 
 export const db = new Dexie("moovn") as Dexie & {
-  designs: EntityTable<Design, "key">;
-  templates: EntityTable<Template, "key">;
+  contents: EntityTable<Content, "key">;
+  contentItems: EntityTable<ContentItem, "key">;
+  templateItems: EntityTable<TemplateItem, "key">;
 };
 
-db.version(3).stores({
-  designs: "key, templateId, psd, jpg, hash, instagramTags, lastUpdated",
-  templates: "key, templateId, psd, jpg, lastUpdated",
+db.version(1).stores({
+  contents: "key, contentType, instagramCaption, created_at, updated_at",
+  contentItems:
+    "key, templateId, templateItemId, itemType, position, psd, jpg, hash, instagramTags, instagramCaption, updated_at",
+  templateItems: "key, templateId, itemType, position, psd, jpg, updated_at",
 });
-
-db.version(4)
-  .stores({
-    designs: "key, templateId, psd, jpg, hash, instagramTags, instagramCaption, lastUpdated",
-    templates: "key, templateId, psd, jpg, lastUpdated",
-  })
-  .upgrade((tx) => {
-    tx.table("designs")
-      .toCollection()
-      .modify((design) => {
-        design.instagramCaption = "";
-      });
-  });

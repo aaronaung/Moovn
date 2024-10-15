@@ -50,8 +50,8 @@ export function generateCaption(template: string, schedule?: { [key: string]: st
 export const getContentIdbKey = (
   sourceId: string,
   scheduleRange: string,
-  template: Tables<"templates">,
-) => `${sourceId}/${scheduleRange}/${template.id}`;
+  templateItem: Tables<"template_items">,
+) => `${sourceId}/${scheduleRange}/${templateItem.id}`;
 
 export const deconstructContentIdbKey = (contentIdbKey: string) => {
   const [sourceId, range, templateId] = contentIdbKey.split("/");

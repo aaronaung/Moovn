@@ -16,10 +16,9 @@ import {
   CarouselDots,
   CarouselItem,
 } from "@/src/components/ui/carousel";
-import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
 import { GalleryHorizontal, MailIcon } from "lucide-react";
-import { useSupaMutation } from "@/src/hooks/use-supabase";
-import { saveTemplate } from "@/src/data/templates";
+import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import { getTemplateItemsByTemplateId, saveTemplate } from "@/src/data/templates";
 import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 
 export const TEMPLATE_WIDTH = 320;
@@ -28,17 +27,23 @@ export const InstagramTemplate = ({
   template,
   onDeleteTemplate,
   onAddToCarousel,
-  templateCreationRequest,
+  designRequest,
 }: {
   template: Tables<"templates">;
   onDeleteTemplate: () => void;
   onAddToCarousel: (template: Tables<"templates">) => void;
-  templateCreationRequest?: Tables<"template_creation_requests">;
+  designRequest?: Tables<"template_item_design_requests">;
 }) => {
-  const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
+  const { data: templateItems, isLoading: isLoadingTemplateItems } = useSupaQuery(
+    getTemplateItemsByTemplateId,
+    {
+      arg: template.id,
+      queryKey: ["getTemplateItemsByTemplateId", template.id],
+    },
+  );
 
   const { mutateAsync: _saveTemplate } = useSupaMutation(saveTemplate, {
-    invalidate: [["getTemplatesForAuthUser"]],
+    invalidate: [["getAllTemplates"]],
   });
 
   const handleUpdateIgCaption = async (newIgCaption: string) => {
@@ -56,7 +61,7 @@ export const InstagramTemplate = ({
   };
 
   const renderTemplateContainer = () => {
-    if (isLoadingTemplateObjects) {
+    if (isLoadingTemplateItems) {
       return (
         <div
           style={{ width: TEMPLATE_WIDTH, height: TEMPLATE_WIDTH }}
@@ -66,34 +71,32 @@ export const InstagramTemplate = ({
         </div>
       );
     }
-    if (templateObjects.length === 0) {
-      return <p className="text-sm text-muted-foreground">Template not found.</p>;
+    if (templateItems?.length === 0) {
+      return <p className="p-2 text-sm text-muted-foreground">Template not found.</p>;
     }
-    if (templateObjects.length === 1) {
+    if (templateItems?.length === 1) {
       return (
         <TemplateContainer
-          templatePath={templateObjects[0].path}
           template={template}
-          signedTemplateUrl={templateObjects[0].url}
-          hideActions={!!templateCreationRequest}
+          templateItem={templateItems[0]}
+          hideActions={!!designRequest}
         />
       );
     }
     return (
       <Carousel className="w-[320px]">
         <CarouselContent>
-          {templateObjects.map((obj) => (
+          {(templateItems ?? []).map((item) => (
             <CarouselItem
-              key={obj.path}
+              key={item.id}
               className={cn(
                 "flex max-h-full min-h-[250px] max-w-full cursor-pointer items-center justify-center hover:bg-secondary",
               )}
             >
               <TemplateContainer
-                templatePath={obj.path}
                 template={template}
-                signedTemplateUrl={obj.url}
-                hideActions={!!templateCreationRequest}
+                templateItem={item}
+                hideActions={!!designRequest}
               />
             </CarouselItem>
           ))}
@@ -105,7 +108,7 @@ export const InstagramTemplate = ({
 
   return (
     <Card className={`h-fit w-[320px] shrink-0`}>
-      {templateCreationRequest && (
+      {designRequest && (
         <div className="flex flex-col gap-1 rounded-t-md bg-orange-300 p-2 text-center text-xs dark:bg-orange-700">
           <Tooltip>
             <TooltipTrigger className="w-full">
@@ -148,21 +151,20 @@ export const InstagramTemplate = ({
               }}
               className="h-9 w-9 cursor-pointer rounded-full p-2 text-destructive hover:bg-secondary"
             />
-            {!templateCreationRequest && (
-              <Tooltip>
-                <TooltipTrigger>
-                  <GalleryHorizontal
-                    onClick={() => {
-                      onAddToCarousel(template);
-                    }}
-                    className="h-9 w-9 cursor-pointer rounded-full p-2 text-primary hover:bg-secondary"
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  {templateObjects.length > 1 ? "Add to carousel" : "Convert to carousel"}
-                </TooltipContent>
-              </Tooltip>
-            )}
+
+            <Tooltip>
+              <TooltipTrigger>
+                <GalleryHorizontal
+                  onClick={() => {
+                    onAddToCarousel(template);
+                  }}
+                  className="h-9 w-9 cursor-pointer rounded-full p-2 text-primary hover:bg-secondary"
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                {(templateItems || []).length > 1 ? "Add to carousel" : "Convert to carousel"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </CardHeader>
@@ -170,7 +172,7 @@ export const InstagramTemplate = ({
         {renderTemplateContainer()}
       </CardContent>
 
-      {template.content_type === ContentType.InstagramPost && !templateCreationRequest && (
+      {template.content_type === ContentType.InstagramPost && !designRequest && (
         <EditableCaption
           initialCaption={template.ig_caption_template || ""}
           onSave={handleUpdateIgCaption}

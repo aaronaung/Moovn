@@ -37,17 +37,15 @@ export const DESIGN_WIDTH = 220;
 export const DesignContainer = memo(
   function DesignContainer({
     contentIdbKey,
-    templateIdbKey,
-    signedTemplateUrl,
     template,
+    templateItem,
     schedule,
     width = DESIGN_WIDTH,
     disableImageViewer = false,
   }: {
     contentIdbKey: string;
-    templateIdbKey: string;
-    signedTemplateUrl: string;
     template: Tables<"templates">;
+    templateItem: Tables<"template_items">;
     schedule: ScheduleData;
     width?: number;
     disableImageViewer?: boolean;
@@ -64,7 +62,7 @@ export const DesignContainer = memo(
       jpgUrl?: string;
       psdUrl?: string;
     }>();
-    const designFromIndexedDb = useLiveQuery(async () => {
+    const idbDesigns = useLiveQuery(async () => {
       const design = await db.designs.get(contentIdbKey);
       if (!design) {
         return undefined;
@@ -75,15 +73,14 @@ export const DesignContainer = memo(
         instagramTags: design.instagramTags,
       };
     });
-    const designJpgUrl = designOverwrite?.jpgUrl || designFromIndexedDb?.jpgUrl;
-    const designPsdUrl = designOverwrite?.psdUrl || designFromIndexedDb?.psdUrl;
+    const designJpgUrl = designOverwrite?.jpgUrl || idbDesigns?.jpgUrl;
+    const designPsdUrl = designOverwrite?.psdUrl || idbDesigns?.psdUrl;
 
     const addDesignGenJob = (forceRefresh: boolean = false) => {
       addJob({
         idbKey: contentIdbKey,
         template,
-        templateIdbKey,
-        templateUrl: signedTemplateUrl,
+        templateItem,
         schedule,
         forceRefresh,
         onTimeout: () => {
@@ -107,7 +104,6 @@ export const DesignContainer = memo(
           setIsLoadingOverwrites(false);
         }
       };
-      console.log("fetching overwrites");
       fetchOverwrites();
       addDesignGenJob();
     }, [template, schedule]);
@@ -162,7 +158,7 @@ export const DesignContainer = memo(
         <DesignImageWithIGTags
           width={width}
           url={designJpgUrl}
-          instagramTags={designFromIndexedDb?.instagramTags || []}
+          instagramTags={idbDesigns?.instagramTags || []}
           onClick={() => !disableImageViewer && setIsImageViewerOpen(true)}
         />
       );

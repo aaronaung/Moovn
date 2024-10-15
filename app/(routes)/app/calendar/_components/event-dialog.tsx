@@ -21,7 +21,7 @@ import {
   getContentIdbKey,
   getScheduleName,
 } from "@/src/libs/content";
-import InstagramContent from "../schedule-content/_components/instagram-content";
+import { InstagramContent } from "../schedule-content/_components/instagram-content";
 import { isMobile } from "react-device-detect";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
@@ -121,7 +121,7 @@ export default function EventDialog({
       });
       handleClose();
       queryClient.invalidateQueries({
-        queryKey: ["getContentsForAuthUser"],
+        queryKey: ["getAllContents"],
       });
       queryClient.invalidateQueries({
         queryKey: ["getContentSchedules"],
@@ -200,7 +200,7 @@ export default function EventDialog({
       });
       handleClose();
       queryClient.invalidateQueries({
-        queryKey: ["getContentsForAuthUser"],
+        queryKey: ["getAllContents"],
       });
       queryClient.invalidateQueries({
         queryKey: ["getContentSchedules"],

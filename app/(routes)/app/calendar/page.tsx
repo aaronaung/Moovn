@@ -2,7 +2,7 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
-import { getContentsForAuthUser, getContentSchedules } from "@/src/data/content";
+import { getAllContents, getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
 import { getSignedUrls } from "@/src/libs/storage";
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
 import { add, endOfMonth, format, startOfMonth, startOfToday, sub } from "date-fns";
-import { getScheduleDataFromAllSourcesByTimeRange } from "@/src/data/sources";
+import { getDataFromScheduleSourcesByTimeRange } from "@/src/data/sources";
 import {
   extractScheduleDataWithinRange,
   organizeScheduleDataByView,
@@ -27,8 +27,8 @@ export default function Calendar() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Map<string, string[]>>(new Map());
 
-  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(true);
-  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(true);
+  const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(false);
+  const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(false);
 
   const [eventDialog, setEventDialog] = useState<{
     isOpen: boolean;
@@ -37,29 +37,28 @@ export default function Calendar() {
     isOpen: false,
   });
 
-  const { data: contents } = useSupaQuery(getContentsForAuthUser, {
-    queryKey: ["getContentsForAuthUser"],
+  const { data: contents } = useSupaQuery(getAllContents, {
+    queryKey: ["getAllContents"],
   });
   const { data: contentSchedules } = useSupaQuery(getContentSchedules, {
     queryKey: ["getContentSchedules"],
   });
-  const { data: scheduleDataFromAllSources } = useSupaQuery(
-    getScheduleDataFromAllSourcesByTimeRange,
-    {
-      arg: {
-        from: sub(startOfMonth(today), { days: 7 }),
-        to: add(endOfMonth(today), { days: 7 }),
-      },
-      queryKey: ["getScheduleDataFromAllSourcesByTimeRange"],
-      refetchOnWindowFocus: false,
+  const { data: scheduleDataFromAllSources } = useSupaQuery(getDataFromScheduleSourcesByTimeRange, {
+    arg: {
+      from: sub(startOfMonth(today), { days: 7 }),
+      to: add(endOfMonth(today), { days: 7 }),
     },
-  );
+    queryKey: ["getDataFromScheduleSourcesByTimeRange"],
+    refetchOnWindowFocus: false,
+  });
   useEffect(() => {
     const loadPreviewUrls = async () => {
+      setIsLoadingPreviewUrls(true);
       try {
         const previewUrls = new Map<string, string[]>();
         const previewUrlPromises: Promise<{ contentId: string; urls: string[] }>[] = [];
         for (const content of contents || []) {
+          console.log("fetching preview url for content", content);
           previewUrlPromises.push(
             new Promise(async (resolve) => {
               const signUrlData = await getSignedUrls(
@@ -91,8 +90,10 @@ export default function Calendar() {
     }
   }, [contents]);
 
+  console.log({ contents });
   useEffect(() => {
     const loadCalendarEvents = async () => {
+      setIsLoadingCalendarEvents(true);
       try {
         const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
         const scheduleDataMap = new Map();
@@ -140,6 +141,10 @@ export default function Calendar() {
     }
   }, [contents, contentSchedules, scheduleDataFromAllSources]);
 
+  console.log({
+    isLoadingCalendarEvents,
+    isLoadingPreviewUrls,
+  });
   if (isLoadingCalendarEvents || isLoadingPreviewUrls) {
     return <Spinner className="mt-8" />;
   }

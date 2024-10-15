@@ -1,9 +1,9 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import ContentSchedulingFormWrapper from "./_components/content-scheduling-form-wrapper";
 import { Button } from "@/src/components/ui/button";
-import { getDestinationsForAuthUser } from "@/src/data/destinations";
-import { getSourcesForAuthUser } from "@/src/data/sources";
-import { getTemplatesForAuthUser } from "@/src/data/templates";
+import { getAllDestinations } from "@/src/data/destinations";
+import { getScheduleSources } from "@/src/data/sources";
+import { getAllTemplates } from "@/src/data/templates";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -28,18 +28,22 @@ const MISSING_DETAILS = {
 };
 
 export default async function ScheduleContent() {
-  const allSources = await getSourcesForAuthUser({ client: supaServerComponentClient() });
-  const allTemplates = await getTemplatesForAuthUser({ client: supaServerComponentClient() });
+  const allSources = await getScheduleSources({ client: supaServerComponentClient() });
+  const allTemplates = await getAllTemplates({ client: supaServerComponentClient() });
 
   const availableSources = allSources.filter((source) => source.type !== SourceTypes.GoogleDrive);
   const availableTemplates = allTemplates.filter(
     (template) =>
-      template.template_creation_requests.length === 0 ||
-      template.template_creation_requests.every(
-        (r) => r.status === TemplateCreationRequestStatus.Done,
+      template.template_items.length > 0 ||
+      template.template_items.every(
+        (item) =>
+          item.template_item_design_requests.length === 0 ||
+          item.template_item_design_requests.every(
+            (r) => r.status === TemplateCreationRequestStatus.Done,
+          ),
       ),
   );
-  const availableDestinations = await getDestinationsForAuthUser({
+  const availableDestinations = await getAllDestinations({
     client: supaServerComponentClient(),
   });
   const connectedDestinations = (availableDestinations ?? []).filter(
@@ -64,6 +68,7 @@ export default async function ScheduleContent() {
     redirect(MISSING_DETAILS.connectedDestinations.link);
   }
 
+  console.log("AVAILABLE SOURCES", availableSources);
   return (
     <div>
       <Link href="/app/calendar" passHref>

@@ -5,12 +5,13 @@ import { throwOrData } from "./util";
 import { SourceDataView } from "../consts/sources";
 import { deleteObject } from "./r2";
 import _ from "lodash";
+import { db } from "../libs/indexeddb/indexeddb";
 
-export const getTemplatesForAuthUser = async ({ client }: SupabaseOptions) => {
+export const getAllTemplates = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("templates")
-      .select("*, template_creation_requests(*)")
+      .select("*, template_items(*, template_item_design_requests(*))")
       .order("created_at", { ascending: false }),
   );
 };
@@ -50,7 +51,7 @@ export const saveTemplate = async (
   return throwOrData(
     client
       .from("templates")
-      .upsert(_.omit(template, ["template_creation_requests"]) as Tables<"templates">)
+      .upsert(_.omit(template, ["template_item_design_requests"]) as Tables<"templates">)
       .select("*")
       .single(),
   );
@@ -62,18 +63,62 @@ export const deleteTemplate = async (
 ) => {
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
   await deleteObject("templates", `${template.owner_id}/${template.id}`);
+  await db.templateItems.where("templateId").equals(template.id).delete();
   return resp;
 };
 
-export const saveTemplateCreationRequest = async (
-  templateCreationRequest: Partial<Tables<"template_creation_requests">>,
+export const saveTemplateItemDesignRequest = async (
+  designRequest: Partial<Tables<"template_item_design_requests">>,
   { client }: SupabaseOptions,
 ) => {
   return throwOrData(
     client
-      .from("template_creation_requests")
-      .upsert(templateCreationRequest as Tables<"template_creation_requests">)
+      .from("template_item_design_requests")
+      .upsert(designRequest as Tables<"template_item_design_requests">)
       .select("*")
       .single(),
+  );
+};
+
+export const saveTemplateItem = async (
+  templateItem: Partial<Tables<"template_items">>,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("template_items")
+      .upsert(templateItem as Tables<"template_items">)
+      .select("*")
+      .single(),
+  );
+};
+
+export const deleteTemplateItem = async (id: string, { client }: SupabaseOptions) => {
+  const resp = throwOrData(client.from("template_items").delete().eq("id", id));
+  await db.templateItems.delete(id);
+  return resp;
+};
+
+export const getTemplateItemsByTemplateId = async (
+  templateId: string,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client.from("template_items").select("*").eq("template_id", templateId).order("position"),
+  );
+};
+
+export const setTemplateItemOrder = async (
+  order: { id: string; position: number }[],
+  { client }: SupabaseOptions,
+) => {
+  console.log("Calling setTemplateItemOrder");
+  for (const item of order) {
+    db.templateItems.update(item.id, { position: item.position });
+  }
+  return throwOrData(
+    client.rpc("update_template_items_position", {
+      items: order,
+    }),
   );
 };

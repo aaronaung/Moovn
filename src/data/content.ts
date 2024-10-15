@@ -23,7 +23,7 @@ export const deleteContent = async (id: string, { client }: SupabaseOptions) => 
   return throwOrData(client.from("content").delete().eq("id", id).single());
 };
 
-export const getContentsForAuthUser = async ({ client }: SupabaseOptions) => {
+export const getAllContents = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("content")

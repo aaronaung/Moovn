@@ -11,7 +11,9 @@ import {
 } from "@/src/components/ui/carousel";
 import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
-import { useTemplateStorageObjects } from "@/src/hooks/use-template-storage-objects";
+import { TemplateItemType } from "@/src/consts/templates";
+import { getTemplateItemsByTemplateId } from "@/src/data/templates";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { generateCaption } from "@/src/libs/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { cn } from "@/src/utils";
@@ -19,7 +21,7 @@ import { Tables } from "@/types/db";
 import _ from "lodash";
 import { memo } from "react";
 
-export default memo(
+export const InstagramContent = memo(
   function InstagramContent({
     contentIdbKey,
     template,
@@ -41,10 +43,16 @@ export default memo(
     caption: string;
     onCaptionChange: (caption: string) => void;
   }) {
-    const { templateObjects, isLoadingTemplateObjects } = useTemplateStorageObjects(template);
+    const { data: templateItems, isLoading: isLoadingTemplateItems } = useSupaQuery(
+      getTemplateItemsByTemplateId,
+      {
+        arg: template.id,
+        queryKey: ["getTemplateItemsByTemplateId", template.id],
+      },
+    );
 
     const renderDesignContainer = () => {
-      if (isLoadingTemplateObjects) {
+      if (isLoadingTemplateItems || !templateItems) {
         return (
           <div
             style={{
@@ -57,17 +65,16 @@ export default memo(
           </div>
         );
       }
-      if (templateObjects.length === 0) {
-        return <p className="text-sm text-muted-foreground">Template not found.</p>;
+      if (templateItems.length === 0) {
+        return <p className="p-2 text-sm text-muted-foreground">Template not found.</p>;
       }
-      if (templateObjects.length === 1) {
+      if (templateItems.length === 1) {
         return (
-          <DesignContainer
+          <ContentContainer
             contentIdbKey={contentIdbKey}
-            templateIdbKey={templateObjects[0].path}
             template={template}
+            templateItem={templateItems[0]}
             schedule={scheduleData}
-            signedTemplateUrl={templateObjects[0].url}
             width={width}
             disableImageViewer={disableImageViewer}
           />
@@ -76,19 +83,18 @@ export default memo(
       return (
         <Carousel style={{ width }}>
           <CarouselContent>
-            {templateObjects.map((obj) => (
+            {(templateItems ?? []).map((item) => (
               <CarouselItem
-                key={obj.path}
+                key={item.id}
                 className={cn(
                   "flex max-h-full min-h-[250px] max-w-full cursor-pointer items-center justify-center hover:bg-secondary",
                 )}
               >
-                <DesignContainer
-                  contentIdbKey={`${contentIdbKey}/${obj.path.split("/").pop()}`}
-                  templateIdbKey={obj.path}
+                <ContentContainer
+                  contentIdbKey={contentIdbKey}
                   template={template}
+                  templateItem={item}
                   schedule={scheduleData}
-                  signedTemplateUrl={obj.url}
                   width={width}
                   disableImageViewer={disableImageViewer}
                 />
@@ -140,3 +146,33 @@ export default memo(
     );
   },
 );
+
+const ContentContainer = ({
+  contentIdbKey,
+  template,
+  templateItem,
+  schedule,
+  width = DESIGN_WIDTH,
+  disableImageViewer = false,
+}: {
+  contentIdbKey: string;
+  template: Tables<"templates">;
+  templateItem: Tables<"template_items">;
+  schedule: ScheduleData;
+  width?: number;
+  disableImageViewer?: boolean;
+}) => {
+  if (templateItem.type === TemplateItemType.DriveVideo) {
+    return <div>Video</div>;
+  }
+  return (
+    <DesignContainer
+      contentIdbKey={contentIdbKey}
+      template={template}
+      templateItem={templateItem}
+      schedule={schedule}
+      width={width}
+      disableImageViewer={disableImageViewer}
+    />
+  );
+};

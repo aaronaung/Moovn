@@ -6,11 +6,14 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { Button } from "@/src/components/ui/button";
+import { useGoogleDrivePicker } from "@/src/hooks/use-google-drive-picker";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.Daily);
+
   const {
     data: scheduleData,
     isLoading: isLoadingScheduleData,
@@ -21,9 +24,12 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
       id: selectedSource?.id,
       view: selectedView,
     },
-    enabled: !!selectedSource,
+    enabled: !!selectedSource && selectedSource.type !== SourceTypes.GoogleDrive,
     refetchOnWindowFocus: false,
   });
+
+  const accessToken = (selectedSource?.settings as any)?.access_token || "";
+  const { createPicker, pickerData } = useGoogleDrivePicker(accessToken);
 
   const handleTabSelect = (tab: SourceDataView) => {
     setSelectedView(tab);
@@ -39,17 +45,22 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     switch (selectedSource.type) {
       case SourceTypes.GoogleDrive:
         return (
-          <div className="flex-1 overflow-scroll">
-            <ReactJson
-              src={selectedSource.settings as object}
-              displayDataTypes={false}
-              name={false}
-              theme={"chalk"}
-              style={{
-                padding: 16,
-                borderRadius: 8,
-              }}
-            />
+          <div className="flex flex-col gap-4 overflow-scroll">
+            <Button onClick={createPicker}>Open Google Drive Picker</Button>
+            {pickerData && (
+              <div className="flex-1 overflow-scroll">
+                <ReactJson
+                  src={pickerData}
+                  displayDataTypes={false}
+                  name={false}
+                  theme={"chalk"}
+                  style={{
+                    padding: 16,
+                    borderRadius: 8,
+                  }}
+                />
+              </div>
+            )}
           </div>
         );
       default:

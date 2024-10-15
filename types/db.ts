@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      carousel_items: {
+        Row: {
+          carousel_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          position: number
+        }
+        Insert: {
+          carousel_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          position: number
+        }
+        Update: {
+          carousel_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carousel_items_carousel_id_fkey"
+            columns: ["carousel_id"]
+            isOneToOne: false
+            referencedRelation: "carousels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carousels: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       content: {
         Row: {
           created_at: string | null
@@ -265,14 +315,14 @@ export type Database = {
           },
         ]
       }
-      template_creation_requests: {
+      template_item_design_requests: {
         Row: {
           created_at: string | null
           description: string | null
           id: string
           owner_id: string
           status: string
-          template_id: string
+          template_item_id: string
           updated_at: string | null
         }
         Insert: {
@@ -281,7 +331,7 @@ export type Database = {
           id?: string
           owner_id: string
           status: string
-          template_id: string
+          template_item_id: string
           updated_at?: string | null
         }
         Update: {
@@ -290,19 +340,57 @@ export type Database = {
           id?: string
           owner_id?: string
           status?: string
-          template_id?: string
+          template_item_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "template_creation_requests_owner_id_fkey"
+            foreignKeyName: "template_item_design_requests_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "template_creation_requests_template_id_fkey"
+            foreignKeyName: "template_item_design_requests_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          position: number
+          template_id: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          position: number
+          template_id: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          position?: number
+          template_id?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_items_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
@@ -396,6 +484,12 @@ export type Database = {
         Args: {
           arg_content_id: string
           new_template_ids: string[]
+        }
+        Returns: undefined
+      }
+      update_template_items_position: {
+        Args: {
+          items: Json
         }
         Returns: undefined
       }

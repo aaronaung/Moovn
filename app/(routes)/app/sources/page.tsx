@@ -6,12 +6,13 @@ import { DeleteConfirmationDialog } from "@/src/components/dialogs/delete-confir
 import { SaveSourceDialog } from "@/src/components/dialogs/save-source-dialog";
 import { Button } from "@/src/components/ui/button";
 import { toast } from "@/src/components/ui/use-toast";
-import { deleteSource, getSourcesForAuthUser } from "@/src/data/sources";
+import { deleteSource, getAllSources } from "@/src/data/sources";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import { SourceSelectItem } from "./_components/source-select-item";
 import DataView from "./_components/data-view";
+import { useSearchParams } from "next/navigation";
 
 export default function SourcesPage() {
   const [sourceDialogState, setSourceDialogState] = useState<{
@@ -27,8 +28,8 @@ export default function SourcesPage() {
     isOpen: false,
   });
 
-  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getSourcesForAuthUser, {
-    queryKey: ["getSourcesForAuthUser"],
+  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getAllSources, {
+    queryKey: ["getAllSources"],
   });
   const [selectedSource, setSelectedSource] = useState<Tables<"sources">>();
   const hasSources = sources && sources.length > 0;
@@ -41,7 +42,7 @@ export default function SourcesPage() {
   const { mutateAsync: _deleteSource, isPending: isDeletingTemplate } = useSupaMutation(
     deleteSource,
     {
-      invalidate: [["getSourcesForAuthUser"]],
+      invalidate: [["getAllSources"]],
       onSuccess: () => {
         toast({
           title: "Source deleted",
@@ -69,6 +70,25 @@ export default function SourcesPage() {
     }
     return <DataView selectedSource={selectedSource} />;
   };
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const success = searchParams?.get("success");
+    const error = searchParams?.get("error");
+
+    if (success === "true") {
+      toast({
+        title: "Successfully connected to Google Drive",
+        variant: "success",
+      });
+    } else if (error === "true") {
+      toast({
+        title: "Failed to connect to Google Drive",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams]);
 
   if (isLoadingSources) {
     return <Spinner className="mt-8" />;

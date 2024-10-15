@@ -178,7 +178,7 @@ export default function ContentSchedulingForm({
       });
       setSelectedContentItems([]);
       setPublishDateTimeMap({});
-      queryClient.invalidateQueries({ queryKey: ["getContentsForAuthUser"] });
+      queryClient.invalidateQueries({ queryKey: ["getAllContents"] });
       queryClient.invalidateQueries({ queryKey: ["getContentSchedules"] });
       router.push("/app/calendar");
     } catch (err) {

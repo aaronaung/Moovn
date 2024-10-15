@@ -27,30 +27,28 @@ const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
 export default function TemplateContainer({
   template,
-  templatePath,
-  signedTemplateUrl,
+  templateItem,
   hideActions = false,
 }: {
   template: Tables<"templates">;
-  templatePath: string;
-  signedTemplateUrl: string;
+  templateItem: Tables<"template_items">;
   hideActions?: boolean;
 }) {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateTemplateJpg, isLoading: isGeneratingTemplateJpg } = useGenerateTemplateJpg();
   const [isLoadingTemplateSignedUrl, setIsLoadingTemplateSignedUrl] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const templateFromIdb = useLiveQuery(async () => {
-    const templateFromIdb = await db.templates.get(templatePath);
-    if (!templateFromIdb) {
+  const idbTemplateItem = useLiveQuery(async () => {
+    const idbTemplateItem = await db.templateItems.get(templateItem.id);
+    if (!idbTemplateItem) {
       return undefined;
     }
     return {
-      jpgUrl: URL.createObjectURL(new Blob([templateFromIdb.jpg], { type: "image/jpeg" })),
+      jpgUrl: URL.createObjectURL(new Blob([idbTemplateItem.jpg], { type: "image/jpeg" })),
       psdUrl: URL.createObjectURL(
-        new Blob([templateFromIdb.psd], { type: "image/vnd.adobe.photoshop" }),
+        new Blob([idbTemplateItem.psd], { type: "image/vnd.adobe.photoshop" }),
       ),
-      psd: templateFromIdb.psd,
+      psd: idbTemplateItem.psd,
     };
   });
 
@@ -58,12 +56,15 @@ export default function TemplateContainer({
     const generateTemplate = async () => {
       try {
         setIsLoadingTemplateSignedUrl(true);
-        const fromdb = await db.templates.get(templatePath);
+        const fromdb = await db.templateItems.get(templateItem.id);
         if (fromdb?.jpg && fromdb?.psd) {
           setIsLoadingTemplateSignedUrl(false);
           return;
         }
-        generateTemplateJpg({ template, templatePath, signedTemplateUrl });
+        generateTemplateJpg({
+          template,
+          templateItem,
+        });
       } catch (err) {
         console.error("Failed to generate template jpg:", err);
         toast({
@@ -94,10 +95,15 @@ export default function TemplateContainer({
     }
 
     await Promise.all([
-      uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
+      uploadObject(
+        "templates",
+        `${template.id}/${templateItem.id}`,
+        new Blob([designExport["psd"]]),
+      ),
       db.designs.where("templateId").equals(template.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
-      db.templates.put({
-        key: templatePath,
+      db.templateItems.put({
+        key: templateItem.id,
+        position: templateItem.position,
         templateId: template.id,
         jpg: designExport["jpg"],
         psd: designExport["psd"],
@@ -120,7 +126,7 @@ export default function TemplateContainer({
   };
 
   const renderTemplateContent = () => {
-    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !templateFromIdb?.jpgUrl) {
+    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !idbTemplateItem?.jpgUrl) {
       return (
         <div className={`flex h-[320px] w-[320px] items-center justify-center`}>
           <Spinner />
@@ -129,7 +135,7 @@ export default function TemplateContainer({
     }
     return (
       <img
-        src={templateFromIdb.jpgUrl}
+        src={idbTemplateItem.jpgUrl}
         onClick={() => setIsImageViewerOpen(true)}
         alt="Template"
         className=" h-full w-full object-contain"
@@ -144,11 +150,11 @@ export default function TemplateContainer({
         className={`relative flex cursor-pointer items-center justify-center bg-secondary p-0`}
       >
         {renderTemplateContent()}
-        {templateFromIdb?.jpgUrl && (
+        {idbTemplateItem?.jpgUrl && (
           <ImageViewer
             visible={isImageViewerOpen}
             onMaskClick={() => setIsImageViewerOpen(false)}
-            images={[{ src: templateFromIdb.jpgUrl, alt: "Template" }]}
+            images={[{ src: idbTemplateItem.jpgUrl, alt: "Template" }]}
             onClose={() => setIsImageViewerOpen(false)}
           />
         )}
@@ -156,13 +162,13 @@ export default function TemplateContainer({
       {!hideActions && (
         <div className="flex justify-center gap-2 py-3">
           <DropdownMenu>
-            <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !templateFromIdb}>
+            <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}>
               <Tooltip>
                 <TooltipTrigger>
                   <Button
                     className="group hover:bg-secondary-foreground hover:text-secondary"
                     variant="secondary"
-                    disabled={isLoadingTemplateSignedUrl || !templateFromIdb}
+                    disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}
                   >
                     <DownloadCloudIcon width={18} className="group-hover:text-secondary" />
                   </Button>
@@ -171,21 +177,21 @@ export default function TemplateContainer({
               </Tooltip>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {templateFromIdb?.psdUrl && (
+              {idbTemplateItem?.psdUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
-                    download(templateFromIdb.psdUrl, `${template.name}.psd`);
+                    download(idbTemplateItem.psdUrl, `${template.name}.psd`);
                   }}
                 >
                   PSD
                 </DropdownMenuItem>
               )}
-              {templateFromIdb?.jpgUrl && (
+              {idbTemplateItem?.jpgUrl && (
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
-                    download(templateFromIdb.jpgUrl, `${template.name}.jpg`);
+                    download(idbTemplateItem.jpgUrl, `${template.name}.jpg`);
                   }}
                 >
                   JPEG
@@ -199,16 +205,16 @@ export default function TemplateContainer({
               <Button
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary"
-                disabled={isLoadingTemplateSignedUrl || !templateFromIdb?.psd}
+                disabled={isLoadingTemplateSignedUrl || !idbTemplateItem?.psd}
                 onClick={async () => {
-                  if (templateFromIdb?.psd) {
+                  if (idbTemplateItem?.psd) {
                     openPhotopeaEditor(
                       {
                         title: template.name || "Untitled",
                         source_data_view: template.source_data_view,
                         content_type: template.content_type,
                       },
-                      templateFromIdb.psd,
+                      idbTemplateItem.psd,
                       {
                         onSave: handleTemplateSave,
                         isMetadataEditable: true,

@@ -9,7 +9,7 @@ import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import DestinationSelectItem from "./_components/destination-select-item";
-import { deleteDestination, getDestinationsForAuthUser } from "@/src/data/destinations";
+import { deleteDestination, getAllDestinations } from "@/src/data/destinations";
 import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination-dialog";
 import { DestinationTypes } from "@/src/consts/destinations";
 import InstagramDestinationView from "./_components/destination-view-instagram";
@@ -33,8 +33,8 @@ export default function DestinationsPage() {
     data: destinations,
     isLoading: isLoadingDestinations,
     isRefetching: isRefetchingDestinations,
-  } = useSupaQuery(getDestinationsForAuthUser, {
-    queryKey: ["getDestinationsForAuthUser"],
+  } = useSupaQuery(getAllDestinations, {
+    queryKey: ["getAllDestinations"],
   });
   const [selectedDestination, setSelectedDestination] = useState<Tables<"destinations">>();
   const hasDestinations = destinations && destinations.length > 0;
@@ -47,7 +47,7 @@ export default function DestinationsPage() {
   const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(
     deleteDestination,
     {
-      invalidate: [["getDestinationsForAuthUser"]],
+      invalidate: [["getAllDestinations"]],
       onSuccess: () => {
         toast({
           title: "Destination deleted",

@@ -9,16 +9,15 @@ import { readPsd } from "ag-psd";
 import { determineDesignGenSteps } from "../libs/designs/photoshop-v2";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { usePhotopeaHeadless } from "./photopea-headless";
-import { deleteObject } from "../data/r2";
+import { deleteObject, signUrl } from "../data/r2";
 import { useSearchParams } from "next/navigation";
 import { Tables } from "@/types/db";
 import { isMobile } from "react-device-detect";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
-  templateIdbKey: string;
   template: Tables<"templates">;
-  templateUrl: string;
+  templateItem: Tables<"template_items">;
   schedule: ScheduleData;
   forceRefresh?: boolean;
   onTimeout?: () => void;
@@ -92,7 +91,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         setActiveJobs((prevJobs) => [...prevJobs, nextJob]);
         setQueuedJobs(remainingJobs);
 
-        const { template, templateIdbKey, templateUrl, idbKey, schedule, forceRefresh } = nextJob;
+        const { template, templateItem, idbKey, schedule, forceRefresh } = nextJob;
         try {
           await cleanupIdb();
           const debug = searchParams?.get("debug") === "true";
@@ -117,9 +116,13 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
             ]);
           }
 
-          const templateInIdb = await db.templates.get(templateIdbKey);
-          let templateFile = templateInIdb?.psd;
+          const idbTemplateItem = await db.templateItems.get(templateItem.id);
+          let templateFile = idbTemplateItem?.psd;
           if (!templateFile) {
+            const templateUrl = await signUrl(
+              "templates",
+              `${template.owner_id}/${template.id}/${templateItem.id}.psd`,
+            );
             templateFile = await (await fetch(templateUrl)).arrayBuffer();
           }
           const templatePsd = readPsd(templateFile);
@@ -143,6 +146,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
                 await db.designs.put({
                   key: idbKey,
                   templateId: template.id,
+                  templateItemId: templateItem.id,
                   jpg: designExport["jpg"],
                   psd: designExport["psd"],
                   hash: designHash,

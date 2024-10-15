@@ -60,7 +60,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
   const { user } = useAuthUser();
   const { mutate: _saveSource, isPending: isSavingSource } = useSupaMutation(saveSource, {
     invalidate: [
-      ["getSourcesForAuthUser"],
+      ["getAllSources"],
       ["getScheduleDataForSource", defaultValues?.id ?? ""],
       ["getMindbodyActivationCodeAndLink", siteId],
       ["getMindbodySiteData", siteId],

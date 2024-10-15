@@ -3,29 +3,23 @@ import { usePhotopeaHeadless } from "../contexts/photopea-headless";
 import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { db } from "../libs/indexeddb/indexeddb";
+import { signUrl } from "../data/r2";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { initialize } = usePhotopeaHeadless();
 
   const generateTemplateJpgSync = async ({
-    templatePath,
-    signedTemplateUrl,
+    id,
     templateData,
   }: {
-    templatePath: string;
-    signedTemplateUrl?: string;
-    templateData?: ArrayBuffer;
+    id: string;
+    templateData: ArrayBuffer;
   }): Promise<ArrayBuffer> => {
     return new Promise(async (resolve, reject) => {
-      if (!templateData && !signedTemplateUrl) {
-        reject("Either templateFile or signedTemplateUrl must be provided");
-      }
-      const psdArrayBuffer =
-        templateData ?? (await (await fetch(signedTemplateUrl!)).arrayBuffer());
       const photopeaEl = addHeadlessPhotopeaToDom();
-      initialize(templatePath, photopeaEl, {
-        initialData: psdArrayBuffer,
+      initialize(id, photopeaEl, {
+        initialData: templateData,
         onTimeout: () => {
           reject("Photopea timeout");
         },
@@ -45,28 +39,33 @@ export const useGenerateTemplateJpg = () => {
 
   const generateTemplateJpg = async ({
     template,
-    templatePath,
+    templateItem,
     signedTemplateUrl,
     templateData,
   }: {
     template: Tables<"templates">;
-    templatePath: string;
+    templateItem: Tables<"template_items">;
     signedTemplateUrl?: string;
     templateData?: ArrayBuffer;
   }) => {
-    if (!templateData && !signedTemplateUrl) {
-      throw new Error("Either templateFile or signedTemplateUrl must be provided");
-    }
     setIsLoading(true);
+    if (!templateData) {
+      signedTemplateUrl = await signUrl(
+        "templates",
+        `${template.owner_id}/${template.id}/${templateItem.id}`,
+      );
+    }
     const psdArrayBuffer = templateData ?? (await (await fetch(signedTemplateUrl!)).arrayBuffer());
 
-    const photopeaEl = addHeadlessPhotopeaToDom();
-    initialize(templatePath, photopeaEl, {
+    const photopeaEl = addHeadlessPhotopeaToDom(true);
+    initialize(templateItem.id, photopeaEl, {
       initialData: psdArrayBuffer,
       onDesignExport: async (designExport) => {
+        console.log("designExport", designExport);
         if (designExport?.["jpg"]) {
-          await db.templates.put({
-            key: templatePath,
+          await db.templateItems.put({
+            key: templateItem.id,
+            position: templateItem.position,
             jpg: designExport["jpg"],
             psd: psdArrayBuffer,
             templateId: template.id,

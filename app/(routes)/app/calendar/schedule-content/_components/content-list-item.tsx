@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { ContentType } from "@/src/consts/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { Tables } from "@/types/db";
-import InstagramContent from "./instagram-content";
+import { InstagramContent } from "./instagram-content";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { DateTimePicker } from "@/src/components/ui/date-time-picker";
 import { cn } from "@/src/utils";
