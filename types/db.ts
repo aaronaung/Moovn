@@ -65,8 +65,7 @@ export type Database = {
           data_hash: string | null
           destination_id: string
           id: string
-          ig_caption: string | null
-          ig_tags: Json | null
+          metadata: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
@@ -79,8 +78,7 @@ export type Database = {
           data_hash?: string | null
           destination_id: string
           id?: string
-          ig_caption?: string | null
-          ig_tags?: Json | null
+          metadata?: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
@@ -93,8 +91,7 @@ export type Database = {
           data_hash?: string | null
           destination_id?: string
           id?: string
-          ig_caption?: string | null
-          ig_tags?: Json | null
+          metadata?: Json | null
           owner_id?: string
           source_data_view?: string
           source_id?: string
@@ -129,6 +126,57 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_items: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          hash: string | null
+          id: string
+          metadata: Json | null
+          position: number
+          template_item_id: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          hash?: string | null
+          id?: string
+          metadata?: Json | null
+          position: number
+          template_item_id?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          hash?: string | null
+          id?: string
+          metadata?: Json | null
+          position?: number
+          template_item_id?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "template_items"
             referencedColumns: ["id"]
           },
         ]
@@ -487,6 +535,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_content_items_position: {
+        Args: {
+          items: Json
+        }
+        Returns: undefined
+      }
       update_template_items_position: {
         Args: {
           items: Json
@@ -583,4 +637,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

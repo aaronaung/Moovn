@@ -9,7 +9,8 @@ import { toast } from "@/src/components/ui/use-toast";
 import { ContentType } from "@/src/consts/content";
 import { LEARN_TEMPLATE_CREATION_GUIDE_LINK } from "@/src/consts/links";
 import { SourceDataView } from "@/src/consts/sources";
-import { TemplateCreationRequestStatus, TemplateItemType } from "@/src/consts/templates";
+import { TemplateCreationRequestStatus } from "@/src/consts/templates";
+import { ContentItemType } from "@/src/consts/content";
 import { PhotopeaEditorMetadata, usePhotopeaEditor } from "@/src/contexts/photopea-editor";
 import { DesignExport } from "@/src/contexts/photopea-headless";
 import { uploadObject } from "@/src/data/r2";
@@ -32,7 +33,7 @@ enum TemplateCreator {
   Self = "self",
 }
 
-export default function CreateCustomDesignTemplateBody({
+export default function CreateAutoGenDesignTemplateBody({
   user,
   parentTemplate,
   itemPosition,
@@ -57,7 +58,7 @@ export default function CreateCustomDesignTemplateBody({
     (parentTemplate?.content_type as ContentType) || ContentType.InstagramPost,
   );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<string | undefined>(undefined);
-  const [templateCreator, setTemplateCreator] = useState(TemplateCreator.Moovn);
+  const [templateCreator, setTemplateCreator] = useState(TemplateCreator.Self);
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
@@ -121,7 +122,7 @@ export default function CreateCustomDesignTemplateBody({
       const savedTemplateItem = await _saveTemplateItem({
         template_id: template.id,
         position: itemPosition,
-        type: TemplateItemType.Image,
+        type: ContentItemType.AutoGenDesign,
       });
       if (isDesignRequest) {
         await _saveTemplateItemDesignRequest({
@@ -140,7 +141,7 @@ export default function CreateCustomDesignTemplateBody({
           templateId: template.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
-          lastUpdated: new Date(),
+          updatedAt: new Date(),
         }),
         uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       ]);
@@ -355,8 +356,8 @@ const SelectTemplateCreatorSection = ({
         }}
       >
         <TabsList className="mb-2">
-          <TabsTrigger value={TemplateCreator.Moovn}>Ask Moovn</TabsTrigger>
           <TabsTrigger value={TemplateCreator.Self}>Do it yourself</TabsTrigger>
+          <TabsTrigger value={TemplateCreator.Moovn}>Ask Moovn</TabsTrigger>
         </TabsList>
         <TabsContent value={TemplateCreator.Moovn}>
           <div>

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { TemplateItemType } from "@/src/consts/templates";
+import { ContentItemType } from "@/src/consts/content";
 import InputSelect from "@/src/components/ui/input/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/src/components/ui/sheet";
-import CreateCustomDesignTemplateBody from "./create-custom-design-template-body";
+import CreateAutoGenDesignTemplateBody from "./create-auto-gen-design-template-body";
 import { Tables } from "@/types/db";
 
 interface AddTemplateItemSheetProps {
@@ -22,20 +22,18 @@ export function AddTemplateItemSheet({
   onClose,
   onAddComplete,
 }: AddTemplateItemSheetProps) {
-  const [templateItemType, setTemplateItemType] = useState<TemplateItemType>(
-    TemplateItemType.Image,
-  );
+  const [forItemType, setForItemType] = useState<ContentItemType>(ContentItemType.AutoGenDesign);
 
   function handleOnClose() {
-    setTemplateItemType(TemplateItemType.Image);
+    setForItemType(ContentItemType.AutoGenDesign);
     onClose();
   }
 
   const renderSheetBody = () => {
-    switch (templateItemType) {
-      case TemplateItemType.Image:
+    switch (forItemType) {
+      case ContentItemType.AutoGenDesign:
         return (
-          <CreateCustomDesignTemplateBody
+          <CreateAutoGenDesignTemplateBody
             user={user}
             parentTemplate={parentTemplate}
             itemPosition={itemPosition}
@@ -43,7 +41,7 @@ export function AddTemplateItemSheet({
           />
         );
 
-      case TemplateItemType.DriveVideo:
+      case ContentItemType.DriveFile:
         return <div>Video</div>;
     }
   };
@@ -56,14 +54,14 @@ export function AddTemplateItemSheet({
         </SheetHeader>
         <div>
           <InputSelect
-            label="Template item type"
+            label="What is the template for?"
             className="mb-4 w-[300px]"
-            options={Object.values(TemplateItemType).map((type) => ({
+            options={Object.values(ContentItemType).map((type) => ({
               label: type,
               value: type,
             }))}
-            value={templateItemType}
-            onChange={(value) => setTemplateItemType(value as TemplateItemType)}
+            value={forItemType}
+            onChange={(value) => setForItemType(value as ContentItemType)}
           />
           {renderSheetBody()}
         </div>

@@ -1,14 +1,14 @@
 import { ContentType } from "./content";
 import { SourceDataView } from "./sources";
 
+export type TemplateItemMetadata = DriveTemplateItemMetadata;
+export type DriveTemplateItemMetadata = {
+  path_prefix: string;
+};
+
 export enum TemplateCreationRequestStatus {
   InProgress = "in_progress",
   Done = "done",
-}
-
-export enum TemplateItemType {
-  Image = "image",
-  DriveVideo = "drive_video",
 }
 
 export const FREE_DESIGN_TEMPLATES: {

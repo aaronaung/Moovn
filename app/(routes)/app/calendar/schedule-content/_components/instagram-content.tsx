@@ -11,7 +11,7 @@ import {
 } from "@/src/components/ui/carousel";
 import { EditableCaption } from "@/src/components/ui/content/instagram/editable-caption";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
-import { TemplateItemType } from "@/src/consts/templates";
+import { ContentItemType } from "@/src/consts/content";
 import { getTemplateItemsByTemplateId } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { generateCaption } from "@/src/libs/content";
@@ -162,7 +162,7 @@ const ContentContainer = ({
   width?: number;
   disableImageViewer?: boolean;
 }) => {
-  if (templateItem.type === TemplateItemType.DriveVideo) {
+  if (templateItem.type === ContentItemType.DriveFile) {
     return <div>Video</div>;
   }
   return (

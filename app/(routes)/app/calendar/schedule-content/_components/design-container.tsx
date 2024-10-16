@@ -63,8 +63,8 @@ export const DesignContainer = memo(
       psdUrl?: string;
     }>();
     const idbDesigns = useLiveQuery(async () => {
-      const design = await db.designs.get(contentIdbKey);
-      if (!design) {
+      const design = await db.contentItems.get(contentIdbKey);
+      if (!design || !design.jpg || !design.psd) {
         return undefined;
       }
       return {

@@ -53,7 +53,7 @@ export const TemplateDetails = ({
         idbTemplateItems
           .map((t) => ({
             id: t.key,
-            imageUrl: URL.createObjectURL(new Blob([t.jpg])),
+            imageUrl: URL.createObjectURL(new Blob([t.jpg ?? ""], { type: "image/jpeg" })),
             contentType: template.content_type as ContentType,
             position: t.position,
           }))
@@ -183,9 +183,9 @@ const DraggableTemplateItem = ({
       return undefined;
     }
     return {
-      jpgUrl: URL.createObjectURL(new Blob([idbTemplateItem.jpg], { type: "image/jpeg" })),
+      jpgUrl: URL.createObjectURL(new Blob([idbTemplateItem.jpg ?? ""], { type: "image/jpeg" })),
       psdUrl: URL.createObjectURL(
-        new Blob([idbTemplateItem.psd], { type: "image/vnd.adobe.photoshop" }),
+        new Blob([idbTemplateItem.psd ?? ""], { type: "image/vnd.adobe.photoshop" }),
       ),
       psd: idbTemplateItem.psd,
     };
