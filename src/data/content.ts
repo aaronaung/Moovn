@@ -28,7 +28,7 @@ export const getAllContents = async ({ client }: SupabaseOptions) => {
     client
       .from("content")
       .select(
-        "*, destination:destinations(*), template:templates(*), published_content:published_content(*)",
+        "*, destination:destinations(*), template:templates(*), published_content:published_content(*), content_items:content_items(*)",
       )
       .order("created_at", { ascending: false }),
   );
@@ -110,4 +110,18 @@ export const deleteContentSchedule = async (
       "Content-Type": "application/json",
     },
   });
+};
+
+export const saveContentItem = async (
+  contentItem: Partial<Tables<"content_items">>,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("content_items")
+      .upsert(contentItem as Tables<"content_items">)
+      .select("id")
+      .limit(1)
+      .single(),
+  );
 };

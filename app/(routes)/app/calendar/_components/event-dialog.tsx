@@ -6,8 +6,7 @@ import {
   CarouselDots,
   CarouselItem,
 } from "@/src/components/ui/carousel";
-import { DesignImageWithIGTags } from "../schedule-content/_components/design-container";
-import { InstagramTag } from "@/src/libs/designs/photopea/utils";
+import { DesignImageWithIGTags } from "../schedule-content/_components/design-content-item";
 import { Button } from "@/src/components/ui/button";
 import { ClockIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
@@ -40,6 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/src/components/ui/sheet";
+import { IgContentItemMetadata, IgContentMetadata } from "@/src/consts/content";
 
 export default function EventDialog({
   isOpen,
@@ -50,9 +50,12 @@ export default function EventDialog({
   isOpen: boolean;
   onClose: () => void;
   event: CalendarEvent;
-  previewUrls: Map<string, string[]>;
+  previewUrls: Map<string, string>;
 }) {
   const { content } = event;
+  const contentMetadata = content.metadata as IgContentMetadata;
+  const contentItems = content.content_items;
+
   const queryClient = useQueryClient();
   const { mutateAsync: _deleteContentSchedule } = useSupaMutation(deleteContentSchedule);
   const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
@@ -64,7 +67,7 @@ export default function EventDialog({
       error: undefined,
     },
   );
-  const [currCaption, setCurrCaption] = useState<string>(content.ig_caption ?? "");
+  const [currCaption, setCurrCaption] = useState<string>(contentMetadata.ig_caption ?? "");
   const [newCaption, setNewCaption] = useState<string>(
     generateCaption(content.template?.ig_caption_template ?? "", event.data),
   );
@@ -79,7 +82,7 @@ export default function EventDialog({
 
   const { isJobPending } = useDesignGenQueue();
 
-  const { scheduleContent } = useScheduleContent({
+  const { scheduleContents: scheduleContent } = useScheduleContent({
     sourceId: content.source_id,
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
@@ -98,7 +101,7 @@ export default function EventDialog({
       error: undefined,
     });
     setSelectedDesign("current");
-    setCurrCaption(content.ig_caption ?? "");
+    setCurrCaption(contentMetadata.ig_caption ?? "");
     setNewCaption(generateCaption(content.template?.ig_caption_template ?? "", event.data));
   };
 
@@ -152,12 +155,15 @@ export default function EventDialog({
       const contentIdbKey = getContentIdbKey(content.source_id, range, content.template);
 
       if (selectedDesign === "current") {
-        const currCaptionChanged = currCaption !== content.ig_caption;
+        const currCaptionChanged = currCaption !== contentMetadata.ig_caption;
 
         if (currCaptionChanged) {
           await _saveContent({
             ...content,
-            ig_caption: currCaption,
+            metadata: {
+              ...contentMetadata,
+              ig_caption: currCaption,
+            },
             updated_at: new Date().toISOString(),
           });
         }
@@ -218,19 +224,18 @@ export default function EventDialog({
 
   const renderEventContent = () => {
     const width = isMobile ? 320 : 400;
-    const previewUrlsForContent = previewUrls.get(event.content.id);
-    if (!previewUrlsForContent || previewUrlsForContent.length === 0) {
+    if (contentItems.length === 0) {
       return <p className="text-sm text-muted-foreground">No preview available.</p>;
     }
 
     let design = <></>;
-    if (previewUrlsForContent.length === 1) {
+    if (contentItems.length === 1) {
       design = (
         <div className="shrink-0">
           <DesignImageWithIGTags
             width={width}
-            url={previewUrlsForContent[0]}
-            instagramTags={(content.ig_tags as InstagramTag[][])?.[0] ?? []}
+            url={previewUrls.get(contentItems[0].id)}
+            instagramTags={(contentItems[0].metadata as IgContentItemMetadata).ig_tags ?? []}
           />
         </div>
       );
@@ -238,12 +243,12 @@ export default function EventDialog({
       design = (
         <Carousel style={{ width }}>
           <CarouselContent>
-            {previewUrlsForContent.map((url, index) => (
-              <CarouselItem key={url}>
+            {contentItems.map((item, index) => (
+              <CarouselItem key={item.id}>
                 <DesignImageWithIGTags
                   width={width}
-                  url={url}
-                  instagramTags={(content.ig_tags as InstagramTag[][])?.[index] ?? []}
+                  url={previewUrls.get(item.id)}
+                  instagramTags={(item.metadata as IgContentItemMetadata).ig_tags ?? []}
                 />
               </CarouselItem>
             ))}
@@ -375,7 +380,7 @@ export default function EventDialog({
               !!publishDateTime.error ||
               ((isJobPending(idbKey) || isRescheduling || isDeleting || !publishDateChanged) &&
                 selectedDesign === "current" &&
-                currCaption === content.ig_caption)
+                currCaption === contentMetadata.ig_caption)
             }
           >
             {isRescheduling ? (

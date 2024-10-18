@@ -21,6 +21,7 @@ with check (auth.uid() = (select owner_id from public.content where id = content
 
 alter table "public"."content" drop column "ig_caption";
 alter table "public"."content" drop column "ig_tags";
+alter table "public"."content" drop column "data_hash";
 alter table "public"."content" add column "metadata" jsonb;
 
 CREATE OR REPLACE FUNCTION update_content_items_position(

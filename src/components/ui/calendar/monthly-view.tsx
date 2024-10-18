@@ -55,7 +55,7 @@ export default function FullCalendarMonthlyView({
 }: {
   month: string;
   selectedDay: Date;
-  previewUrls: Map<string, string[]>;
+  previewUrls: Map<string, string>;
   onDaySelect: (day: Date) => void;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
@@ -333,7 +333,7 @@ const EventLineItem = ({
   onEventClick,
 }: {
   event: CalendarEvent;
-  previewUrls: Map<string, string[]>;
+  previewUrls: Map<string, string>;
   onEventClick?: (event: CalendarEvent) => void;
 }) => {
   const hasPublishedContent = event.content.published_content.length > 0;
@@ -370,15 +370,16 @@ const EventLineItem = ({
         </time>
       </div>
       <div>
-        {previewUrls.has(event.content.id) && (
-          <Image
-            className="h-[50px] w-[50px] rounded-sm object-contain"
-            src={previewUrls.get(event.content.id)?.[0] || ""}
-            alt={"preview"}
-            width={50}
-            height={50}
-          />
-        )}
+        {event.content.content_items.length > 0 &&
+          previewUrls.has(event.content.content_items[0].id) && (
+            <Image
+              className="h-[50px] w-[50px] rounded-sm object-contain"
+              src={previewUrls.get(event.content.content_items[0].id) || ""}
+              alt={"preview"}
+              width={50}
+              height={50}
+            />
+          )}
       </div>
     </li>
   );

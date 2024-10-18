@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { db } from "../libs/indexeddb/indexeddb";
 import { signUrl } from "../data/r2";
+import { ContentItemType } from "../consts/content";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -61,15 +62,16 @@ export const useGenerateTemplateJpg = () => {
     initialize(templateItem.id, photopeaEl, {
       initialData: psdArrayBuffer,
       onDesignExport: async (designExport) => {
-        console.log("designExport", designExport);
         if (designExport?.["jpg"]) {
           await db.templateItems.put({
             key: templateItem.id,
+            template_id: template.id,
+            type: ContentItemType.AutoGenDesign,
             position: templateItem.position,
             jpg: designExport["jpg"],
             psd: psdArrayBuffer,
-            templateId: template.id,
-            lastUpdated: new Date(),
+            updated_at: new Date(),
+            created_at: new Date(),
           });
           if (document.body.contains(photopeaEl)) {
             document.body.removeChild(photopeaEl);

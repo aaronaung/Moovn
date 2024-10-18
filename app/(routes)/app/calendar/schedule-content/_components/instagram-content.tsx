@@ -1,7 +1,7 @@
 import {
   DESIGN_WIDTH,
-  DesignContainer,
-} from "@/app/(routes)/app/calendar/schedule-content/_components/design-container";
+  DesignContentItem,
+} from "@/app/(routes)/app/calendar/schedule-content/_components/design-content-item";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import {
   Carousel,
@@ -14,7 +14,11 @@ import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { ContentItemType } from "@/src/consts/content";
 import { getTemplateItemsByTemplateId } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { generateCaption } from "@/src/libs/content";
+import {
+  deconstructContentIdbKey,
+  generateCaption,
+  getContentItemIdbKey,
+} from "@/src/libs/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
@@ -50,6 +54,7 @@ export const InstagramContent = memo(
         queryKey: ["getTemplateItemsByTemplateId", template.id],
       },
     );
+    const { sourceId, range } = deconstructContentIdbKey(contentIdbKey);
 
     const renderDesignContainer = () => {
       if (isLoadingTemplateItems || !templateItems) {
@@ -70,8 +75,9 @@ export const InstagramContent = memo(
       }
       if (templateItems.length === 1) {
         return (
-          <ContentContainer
+          <ContentItemContainer
             contentIdbKey={contentIdbKey}
+            contentItemIdbKey={getContentItemIdbKey(sourceId, range, templateItems[0].id)}
             template={template}
             templateItem={templateItems[0]}
             schedule={scheduleData}
@@ -90,8 +96,9 @@ export const InstagramContent = memo(
                   "flex max-h-full min-h-[250px] max-w-full cursor-pointer items-center justify-center hover:bg-secondary",
                 )}
               >
-                <ContentContainer
+                <ContentItemContainer
                   contentIdbKey={contentIdbKey}
+                  contentItemIdbKey={getContentItemIdbKey(sourceId, range, item.id)}
                   template={template}
                   templateItem={item}
                   schedule={scheduleData}
@@ -147,8 +154,9 @@ export const InstagramContent = memo(
   },
 );
 
-const ContentContainer = ({
+const ContentItemContainer = ({
   contentIdbKey,
+  contentItemIdbKey,
   template,
   templateItem,
   schedule,
@@ -156,6 +164,7 @@ const ContentContainer = ({
   disableImageViewer = false,
 }: {
   contentIdbKey: string;
+  contentItemIdbKey: string;
   template: Tables<"templates">;
   templateItem: Tables<"template_items">;
   schedule: ScheduleData;
@@ -166,8 +175,9 @@ const ContentContainer = ({
     return <div>Video</div>;
   }
   return (
-    <DesignContainer
+    <DesignContentItem
       contentIdbKey={contentIdbKey}
+      contentItemIdbKey={contentItemIdbKey}
       template={template}
       templateItem={templateItem}
       schedule={schedule}

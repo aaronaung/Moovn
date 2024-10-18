@@ -18,6 +18,7 @@ enum CalendarView {
 
 export type CalendarEvent = {
   content: Tables<"content"> & {
+    content_items: Tables<"content_items">[];
     published_content: Tables<"published_content">[];
     template: Tables<"templates"> | null;
   };
@@ -28,20 +29,20 @@ export type CalendarEvent = {
   data: any;
   hasDataChanged: boolean;
   color?: string;
-  previewUrls?: string[];
+  previewUrls?: Map<string, string>;
 };
 
 export default function FullCalendar({
   actionButtons,
   events = [],
-  previewUrls = new Map<string, string[]>(),
+  previewUrls = new Map<string, string>(),
   onEventClick,
   currentMonth,
   setCurrentMonth,
 }: {
   actionButtons?: React.ReactNode[];
   events?: CalendarEvent[];
-  previewUrls?: Map<string, string[]>;
+  previewUrls?: Map<string, string>;
   onEventClick?: (event: CalendarEvent) => void;
   currentMonth: string;
   setCurrentMonth: (month: string) => void;

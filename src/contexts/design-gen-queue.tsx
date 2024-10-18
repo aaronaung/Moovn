@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
-import { deconstructContentIdbKey, getRangeStart, generateCaption } from "../libs/content";
+import { getRangeStart, deconstructContentItemIdbKey } from "../libs/content";
 import { isBefore, startOfYesterday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
 import { readPsd } from "ag-psd";
@@ -13,9 +13,11 @@ import { deleteObject, signUrl } from "../data/r2";
 import { useSearchParams } from "next/navigation";
 import { Tables } from "@/types/db";
 import { isMobile } from "react-device-detect";
+import { ContentItemType } from "../consts/content";
 
 type DesignJob = {
   idbKey: string; // Unique IndexedDB key where the design is stored.
+  contentIdbKey: string; // Unique IndexedDB key of the content the design content item belongs to.
   template: Tables<"templates">;
   templateItem: Tables<"template_items">;
   schedule: ScheduleData;
@@ -53,26 +55,26 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const cleanupIdb = async () => {
-    let designs = await db.designs.toArray();
-    const oldDesigns = [];
-    for (const design of designs) {
-      const { range } = deconstructContentIdbKey(design.key);
+    let contentItems = await db.contentItems.toArray();
+    const oldContentItems = [];
+    for (const item of contentItems) {
+      const { range } = deconstructContentItemIdbKey(item.key);
       const rangeStart = getRangeStart(range);
       if (isBefore(rangeStart, startOfYesterday())) {
-        oldDesigns.push(design);
+        oldContentItems.push(item);
       }
     }
-    await Promise.all(oldDesigns.map((d) => db.designs.delete(d.key)));
+    await Promise.all(oldContentItems.map((d) => db.contentItems.delete(d.key)));
 
-    designs = await db.designs.toArray();
-    designs.sort((a, b) => {
-      const { range: aRange } = deconstructContentIdbKey(a.key);
-      const { range: bRange } = deconstructContentIdbKey(b.key);
+    contentItems = await db.contentItems.toArray();
+    contentItems.sort((a, b) => {
+      const { range: aRange } = deconstructContentItemIdbKey(a.key);
+      const { range: bRange } = deconstructContentItemIdbKey(b.key);
       return getRangeStart(aRange).getTime() - getRangeStart(bRange).getTime();
     });
-    if (designs.length > MAX_DESIGNS_IN_IDB) {
-      const designsToDelete = designs.slice(0, designs.length - MAX_DESIGNS_IN_IDB);
-      await Promise.all(designsToDelete.map((d) => db.designs.delete(d.key)));
+    if (contentItems.length > MAX_DESIGNS_IN_IDB) {
+      const contentItemsToDelete = contentItems.slice(0, contentItems.length - MAX_DESIGNS_IN_IDB);
+      await Promise.all(contentItemsToDelete.map((d) => db.contentItems.delete(d.key)));
     }
   };
 
@@ -91,13 +93,13 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         setActiveJobs((prevJobs) => [...prevJobs, nextJob]);
         setQueuedJobs(remainingJobs);
 
-        const { template, templateItem, idbKey, schedule, forceRefresh } = nextJob;
+        const { contentIdbKey, template, templateItem, idbKey, schedule, forceRefresh } = nextJob;
         try {
           await cleanupIdb();
           const debug = searchParams?.get("debug") === "true";
 
-          const designHash = generateDesignHash(template.id, schedule);
-          const designInIdb = await db.designs.get(idbKey);
+          const designHash = generateDesignHash(templateItem.id, schedule);
+          const designInIdb = await db.contentItems.get(idbKey);
 
           if (!forceRefresh && designInIdb?.hash === designHash) {
             console.info(
@@ -109,7 +111,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
 
           if (designInIdb && designInIdb.hash !== designHash) {
             // Schedule data has changed, delete the overwritten design.
-            await db.designs.delete(idbKey);
+            await db.contentItems.delete(idbKey);
             await Promise.all([
               deleteObject("design-overwrites", `${template.owner_id}/${idbKey}.psd`),
               deleteObject("design-overwrites", `${template.owner_id}/${idbKey}.jpg`),
@@ -143,16 +145,21 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
             },
             onDesignExport: async (designExport) => {
               if (designExport?.["psd"] && designExport?.["jpg"]) {
-                await db.designs.put({
+                await db.contentItems.put({
                   key: idbKey,
-                  templateId: template.id,
-                  templateItemId: templateItem.id,
+                  content_idb_key: contentIdbKey,
+                  template_id: template.id,
+                  template_item_id: templateItem.id,
                   jpg: designExport["jpg"],
                   psd: designExport["psd"],
                   hash: designHash,
-                  instagramTags: designExport.instagramTags ?? [],
-                  instagramCaption: generateCaption(template?.ig_caption_template || "", schedule),
-                  lastUpdated: new Date(),
+                  type: templateItem.type as ContentItemType,
+                  position: templateItem.position,
+                  metadata: {
+                    ig_tags: designExport.instagramTags ?? [],
+                  },
+                  updated_at: new Date(),
+                  created_at: new Date(),
                 });
                 const end = performance.now();
                 console.log(`design generation took: ${idbKey} ${end - start}ms`);

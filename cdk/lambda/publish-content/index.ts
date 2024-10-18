@@ -29,7 +29,7 @@ export const handler = async (event: any) => {
 
     const { data: content, error: getContentErr } = await sbClient
       .from("content")
-      .select("*, destination:destinations(*)")
+      .select("*, destination:destinations(*), content_items:content_items(*)")
       .eq("id", contentId)
       .single();
     if (getContentErr) {
@@ -69,36 +69,25 @@ export const handler = async (event: any) => {
         );
 
         const toPublish = [];
-        const hasIgTags = content.ig_tags && content.ig_tags.length > 0;
-
-        const objects = await r2.listObjects(getBucketName("scheduled-content"), contentPath);
-        if (objects.length === 0) {
-          // It's not a directory.
-
-          const signedUrl = await r2.signUrl(getBucketName("scheduled-content"), contentPath);
-          toPublish.push({
-            url: signedUrl,
-            ...(hasIgTags ? { tags: content.ig_tags[0] } : {}),
-          });
-        } else {
-          for (const obj of objects) {
-            if (!obj.Key) {
-              throw new Error(`Missing Key for object in scheduled-content bucket`);
-            }
-            // file name is the index for tags.
-            const signedUrl = await r2.signUrl(getBucketName("scheduled-content"), obj.Key);
-            const tagsIndex = parseInt(obj.Key);
-            toPublish.push({
-              url: signedUrl,
-              ...(hasIgTags && !isNaN(tagsIndex) ? { tags: content.ig_tags[tagsIndex] } : {}),
-            });
-          }
-        }
-
-        if (toPublish.length === 0) {
+        if (content.content_items.length === 0) {
           console.log(`No content to publish for content id: ${contentId}`);
           return success({ message: "No content to publish" });
         }
+
+        const sortedContentItems = content.content_items.sort(
+          (a: any, b: any) => a.position - b.position,
+        );
+        for (const item of sortedContentItems) {
+          const signedUrl = await r2.signUrl(
+            getBucketName("scheduled-content"),
+            `${contentPath}/${item.id}`,
+          );
+          toPublish.push({
+            url: signedUrl,
+            tags: item.metadata?.ig_tags ?? [],
+          });
+        }
+
         console.log("Content to publish", toPublish);
         let publishedMediaIds = [];
         switch (content.type) {

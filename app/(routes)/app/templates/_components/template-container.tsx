@@ -22,6 +22,7 @@ import { DownloadCloudIcon } from "lucide-react";
 import { download } from "@/src/utils";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
 import { uploadObject } from "@/src/data/r2";
+import { ContentItemType } from "@/src/consts/content";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -40,7 +41,7 @@ export default function TemplateContainer({
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const idbTemplateItem = useLiveQuery(async () => {
     const idbTemplateItem = await db.templateItems.get(templateItem.id);
-    if (!idbTemplateItem) {
+    if (!idbTemplateItem || !idbTemplateItem.jpg || !idbTemplateItem.psd) {
       return undefined;
     }
     return {
@@ -100,14 +101,16 @@ export default function TemplateContainer({
         `${template.id}/${templateItem.id}`,
         new Blob([designExport["psd"]]),
       ),
-      db.designs.where("templateId").equals(template.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
+      db.contentItems.where("template_item_id").equals(templateItem.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.
       db.templateItems.put({
         key: templateItem.id,
         position: templateItem.position,
-        templateId: template.id,
+        template_id: template.id,
         jpg: designExport["jpg"],
         psd: designExport["psd"],
-        lastUpdated: new Date(),
+        updated_at: new Date(),
+        created_at: new Date(),
+        type: templateItem.type as ContentItemType,
       }),
     ]);
 

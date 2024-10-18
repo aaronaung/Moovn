@@ -137,11 +137,13 @@ export default function CreateAutoGenDesignTemplateBody({
       await Promise.all([
         db.templateItems.put({
           key: savedTemplateItem.id,
+          type: ContentItemType.AutoGenDesign,
           position: itemPosition,
-          templateId: template.id,
+          template_id: template.id,
           jpg: designExport["jpg"],
           psd: designExport["psd"],
-          updatedAt: new Date(),
+          updated_at: new Date(),
+          created_at: new Date(),
         }),
         uploadObject("templates", templatePath, new Blob([designExport["psd"]])),
       ]);

@@ -5,7 +5,6 @@ import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-c
 import { getAllContents, getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
-import { getSignedUrls } from "@/src/libs/storage";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventDialog from "./_components/event-dialog";
@@ -17,6 +16,7 @@ import {
 } from "@/src/libs/sources/utils";
 import { generateDesignHash } from "@/src/libs/designs/util";
 import { SourceDataView } from "@/src/consts/sources";
+import { signUrl } from "@/src/data/r2";
 
 export default function Calendar() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<Map<string, string[]>>(new Map());
+  const [previewUrls, setPreviewUrls] = useState<Map<string, string>>(new Map());
 
   const [isLoadingCalendarEvents, setIsLoadingCalendarEvents] = useState(false);
   const [isLoadingPreviewUrls, setIsLoadingPreviewUrls] = useState(false);
@@ -51,33 +51,38 @@ export default function Calendar() {
     queryKey: ["getDataFromScheduleSourcesByTimeRange"],
     refetchOnWindowFocus: false,
   });
+
   useEffect(() => {
     const loadPreviewUrls = async () => {
       setIsLoadingPreviewUrls(true);
       try {
-        const previewUrls = new Map<string, string[]>();
-        const previewUrlPromises: Promise<{ contentId: string; urls: string[] }>[] = [];
+        const contentItemPreviewUrlPromises: Promise<{
+          contentItemId: string;
+          url: string;
+        }>[] = [];
         for (const content of contents || []) {
-          console.log("fetching preview url for content", content);
-          previewUrlPromises.push(
-            new Promise(async (resolve) => {
-              const signUrlData = await getSignedUrls(
-                "scheduled-content",
-                `${content.owner_id}/${content.id}`,
-                content.template?.is_carousel || false,
-              );
-              resolve({
-                contentId: content.id,
-                urls: signUrlData.map((data) => data.url),
-              });
-            }),
-          );
+          const contentItems = content.content_items;
+          for (const item of contentItems) {
+            contentItemPreviewUrlPromises.push(
+              new Promise(async (resolve) => {
+                const signedUrl = await signUrl(
+                  "scheduled-content",
+                  `${content.owner_id}/${content.id}/${item.id}`,
+                );
+                resolve({
+                  contentItemId: item.id,
+                  url: signedUrl,
+                });
+              }),
+            );
+          }
         }
-        const previewUrlData = await Promise.all(previewUrlPromises);
-        for (const data of previewUrlData) {
-          previewUrls.set(data.contentId, data.urls);
+        const contentItemPreviewUrlData = await Promise.all(contentItemPreviewUrlPromises);
+        const contentItemPreviewUrls = new Map<string, string>();
+        for (const data of contentItemPreviewUrlData) {
+          contentItemPreviewUrls.set(data.contentItemId, data.url);
         }
-        setPreviewUrls(previewUrls);
+        setPreviewUrls(contentItemPreviewUrls);
       } catch (err) {
         console.error(err);
       } finally {
@@ -90,7 +95,6 @@ export default function Calendar() {
     }
   }, [contents]);
 
-  console.log({ contents });
   useEffect(() => {
     const loadCalendarEvents = async () => {
       setIsLoadingCalendarEvents(true);
@@ -116,8 +120,9 @@ export default function Calendar() {
             scheduleDataMap.get(content.source_id)!,
           );
 
-          const dataHash = generateDesignHash(content.template?.id || "", dataForEvent);
-          const hasDataChanged = dataHash !== content.data_hash;
+          const hasDataChanged = content.content_items.some(
+            (item) => generateDesignHash(item.template_item_id || "", dataForEvent) !== item.hash,
+          );
 
           return {
             content,
@@ -141,10 +146,6 @@ export default function Calendar() {
     }
   }, [contents, contentSchedules, scheduleDataFromAllSources]);
 
-  console.log({
-    isLoadingCalendarEvents,
-    isLoadingPreviewUrls,
-  });
   if (isLoadingCalendarEvents || isLoadingPreviewUrls) {
     return <Spinner className="mt-8" />;
   }

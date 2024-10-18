@@ -44,7 +44,7 @@ export const TemplateDetails = ({
   });
 
   const idbTemplateItems = useLiveQuery(async () => {
-    return db.templateItems.where("templateId").equals(template.id).toArray();
+    return db.templateItems.where("template_id").equals(template.id).toArray();
   }, [template]);
 
   useEffect(() => {

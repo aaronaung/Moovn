@@ -58,6 +58,17 @@ export const deconstructContentIdbKey = (contentIdbKey: string) => {
   return { sourceId, range, templateId };
 };
 
+export const getContentItemIdbKey = (
+  sourceId: string,
+  scheduleRange: string,
+  templateItemId: string,
+) => `${sourceId}/${scheduleRange}/${templateItemId}`;
+
+export const deconstructContentItemIdbKey = (contentItemIdbKey: string) => {
+  const [sourceId, range, templateItemId] = contentItemIdbKey.split("/");
+  return { sourceId, range, templateItemId };
+};
+
 export const getRangeStart = (range: string) =>
   parse(range.split("_")[0], "yyyy-MM-dd", new Date());
 

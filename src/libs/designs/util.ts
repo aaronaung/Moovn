@@ -107,12 +107,13 @@ export const determinePSDActions = (schedules: ScheduleData, psd: Psd): PSDActio
   return psdActions;
 };
 
-export const generateDesignHash = (templateId: string, data: any) => hash({ templateId, data });
+export const generateDesignHash = (templateItemId: string, data: any) =>
+  hash({ templateItemId, data });
 
-export const getDesignOverwrites = async (ownerId: string, contentIdbKey: string) => {
+export const getDesignOverwrites = async (ownerId: string, contentItemIdbKey: string) => {
   const [psdUrl, jpgUrl] = await Promise.all([
-    signUrl("design-overwrites", `${ownerId}/${contentIdbKey}.psd`),
-    signUrl("design-overwrites", `${ownerId}/${contentIdbKey}.jpg`),
+    signUrl("design-overwrites", `${ownerId}/${contentItemIdbKey}.psd`),
+    signUrl("design-overwrites", `${ownerId}/${contentItemIdbKey}.jpg`),
   ]);
   return {
     psdUrl,

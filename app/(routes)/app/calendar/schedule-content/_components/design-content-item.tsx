@@ -34,9 +34,10 @@ const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
 export const DESIGN_WIDTH = 220;
 
-export const DesignContainer = memo(
-  function DesignContainer({
+export const DesignContentItem = memo(
+  function DesignContentItem({
     contentIdbKey,
+    contentItemIdbKey,
     template,
     templateItem,
     schedule,
@@ -44,6 +45,7 @@ export const DesignContainer = memo(
     disableImageViewer = false,
   }: {
     contentIdbKey: string;
+    contentItemIdbKey: string;
     template: Tables<"templates">;
     templateItem: Tables<"template_items">;
     schedule: ScheduleData;
@@ -62,23 +64,24 @@ export const DesignContainer = memo(
       jpgUrl?: string;
       psdUrl?: string;
     }>();
-    const idbDesigns = useLiveQuery(async () => {
-      const design = await db.contentItems.get(contentIdbKey);
+    const idbDesign = useLiveQuery(async () => {
+      const design = await db.contentItems.get(contentItemIdbKey);
       if (!design || !design.jpg || !design.psd) {
         return undefined;
       }
       return {
         jpgUrl: URL.createObjectURL(new Blob([design.jpg], { type: "image/jpeg" })),
         psdUrl: URL.createObjectURL(new Blob([design.psd], { type: "image/vnd.adobe.photoshop" })),
-        instagramTags: design.instagramTags,
+        instagramTags: design.metadata?.ig_tags,
       };
     });
-    const designJpgUrl = designOverwrite?.jpgUrl || idbDesigns?.jpgUrl;
-    const designPsdUrl = designOverwrite?.psdUrl || idbDesigns?.psdUrl;
+    const designJpgUrl = designOverwrite?.jpgUrl || idbDesign?.jpgUrl;
+    const designPsdUrl = designOverwrite?.psdUrl || idbDesign?.psdUrl;
 
     const addDesignGenJob = (forceRefresh: boolean = false) => {
       addJob({
-        idbKey: contentIdbKey,
+        idbKey: contentItemIdbKey,
+        contentIdbKey,
         template,
         templateItem,
         schedule,
@@ -92,7 +95,7 @@ export const DesignContainer = memo(
       const fetchOverwrites = async () => {
         try {
           setIsLoadingOverwrites(true);
-          const designOverwrites = await getDesignOverwrites(template.owner_id, contentIdbKey);
+          const designOverwrites = await getDesignOverwrites(template.owner_id, contentItemIdbKey);
 
           if (designOverwrites.jpgUrl && designOverwrites.psdUrl) {
             setDesignOverwrite({
@@ -120,8 +123,8 @@ export const DesignContainer = memo(
         return;
       }
       // upload overwrite content to storage.
-      const psdPath = `${template.owner_id}/${contentIdbKey}.psd`;
-      const jpgPath = `${template.owner_id}/${contentIdbKey}.jpg`;
+      const psdPath = `${template.owner_id}/${contentItemIdbKey}.psd`;
+      const jpgPath = `${template.owner_id}/${contentItemIdbKey}.jpg`;
 
       await Promise.all([
         uploadObject("design-overwrites", psdPath, new Blob([designExport["psd"]])),
@@ -133,7 +136,7 @@ export const DesignContainer = memo(
       });
     };
 
-    const isGeneratingDesign = isJobPending(contentIdbKey);
+    const isGeneratingDesign = isJobPending(contentItemIdbKey);
     const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
     const renderDesignContent = () => {
@@ -158,7 +161,7 @@ export const DesignContainer = memo(
         <DesignImageWithIGTags
           width={width}
           url={designJpgUrl}
-          instagramTags={idbDesigns?.instagramTags || []}
+          instagramTags={idbDesign?.instagramTags || []}
           onClick={() => !disableImageViewer && setIsImageViewerOpen(true)}
         />
       );
@@ -174,8 +177,8 @@ export const DesignContainer = memo(
             }}
             onConfirm={async () => {
               await Promise.all([
-                deleteObject("design-overwrites", `${template.owner_id}/${contentIdbKey}.psd`),
-                deleteObject("design-overwrites", `${template.owner_id}/${contentIdbKey}.jpg`),
+                deleteObject("design-overwrites", `${template.owner_id}/${contentItemIdbKey}.psd`),
+                deleteObject("design-overwrites", `${template.owner_id}/${contentItemIdbKey}.jpg`),
               ]);
               setDesignOverwrite(undefined);
               addDesignGenJob(true);

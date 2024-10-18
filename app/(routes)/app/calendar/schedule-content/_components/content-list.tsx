@@ -4,7 +4,7 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn } from "@/src/utils";
-import ContentListItem from "./content-list-item";
+import { Content } from "./content";
 import { ScheduleData } from "@/src/libs/sources";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
@@ -133,9 +133,9 @@ const ContentListForTemplate = ({
     }
   }, []);
 
-  const renderContentListItem = (contentIdbKey: string, schedule: ScheduleData) => {
+  const renderContent = (contentIdbKey: string, schedule: ScheduleData) => {
     return (
-      <ContentListItem
+      <Content
         key={contentIdbKey}
         contentIdbKey={contentIdbKey}
         template={template}
@@ -244,7 +244,7 @@ const ContentListForTemplate = ({
       {!_.isEmpty(scheduleDataByRange) && (
         <div className={cn("flex flex-wrap gap-3 overflow-scroll")}>
           {Object.entries(scheduleDataByRange).map(([scheduleRange, schedule]) =>
-            renderContentListItem(getContentIdbKey(sourceId, scheduleRange, template), schedule),
+            renderContent(getContentIdbKey(sourceId, scheduleRange, template), schedule),
           )}
         </div>
       )}

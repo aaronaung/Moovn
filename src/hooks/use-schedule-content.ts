@@ -5,6 +5,7 @@ import { db } from "@/src/libs/indexeddb/indexeddb";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
 import {
   saveContent,
+  saveContentItem,
   saveContentSchedule,
   scheduleContent as upsertSchedulesOnEventBridge,
 } from "@/src/data/content";
@@ -15,7 +16,8 @@ import {
 } from "@/src/libs/content";
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
-import { copyObject, listObjects, objectExists, uploadObject } from "../data/r2";
+import { copyObject, objectExists, uploadObject } from "../data/r2";
+import { IgContentItemMetadata, IgContentMetadata } from "../consts/content";
 
 const SCHEDULING_BATCH_SIZE = 5;
 
@@ -31,9 +33,10 @@ export function useScheduleContent({
   const [isScheduling, setIsScheduling] = useState(false);
 
   const { mutateAsync: _saveContent } = useSupaMutation(saveContent);
+  const { mutateAsync: _saveContentItem } = useSupaMutation(saveContentItem);
   const { mutateAsync: _saveContentSchedule } = useSupaMutation(saveContentSchedule);
 
-  const scheduleContentItem = async (
+  const scheduleContent = async (
     contentIdbKey: string,
     publishDateTime: { date: Date; error: string | undefined },
     caption: string,
@@ -43,15 +46,19 @@ export function useScheduleContent({
     }
 
     const { templateId, range } = deconstructContentIdbKey(contentIdbKey);
-    const designs = await db.designs.where("key").startsWith(contentIdbKey).toArray();
-    if (designs.length === 0) {
-      console.error(`No designs for content idb key ${contentIdbKey} found in indexedDB`);
+    const contentItems = await db.contentItems
+      .where("content_idb_key")
+      .equals(contentIdbKey)
+      .toArray();
+    if (contentItems.length === 0) {
+      console.error(`No content items for content idb key ${contentIdbKey} found in indexedDB`);
       toast({
         variant: "destructive",
         title: `Designs not found. Please contact support.`,
       });
       return null;
     }
+
     const template = availableTemplates.find((t) => t.id === templateId);
     if (!template) {
       console.error(`Template ${templateId} not found in available templates`);
@@ -72,67 +79,43 @@ export function useScheduleContent({
       owner_id: ownerId,
       template_id: template.id,
       destination_id: destinationId,
-      ig_tags: designs.map((d) => d.instagramTags ?? []),
-      ...(template.ig_caption_template ? { ig_caption: caption } : {}),
-      data_hash: designs[0].hash, //the hash is the same for all designs in the carousel
-      updated_at: new Date().toISOString(),
+      metadata: {
+        ...(template.ig_caption_template ? { ig_caption: caption } : {}),
+      } as IgContentMetadata,
+      data_hash: contentItems[0].hash, //the hash is the same for all designs in the carousel
     });
 
-    const overwrittenDesigns: string[] = [];
-    const singleJpgOverwriteExists = await objectExists(
-      "design-overwrites",
-      `${ownerId}/${contentIdbKey}.jpg`,
-    );
-    if (singleJpgOverwriteExists) {
-      await copyObject(
-        "design-overwrites",
-        `${ownerId}/${contentIdbKey}.jpg`,
-        "scheduled-content",
-        `${ownerId}/${content.id}`,
-      );
-      overwrittenDesigns.push(contentIdbKey);
-    } else {
-      const carouselOverwrite = await listObjects("design-overwrites", contentIdbKey);
-      if (carouselOverwrite && carouselOverwrite.length > 0) {
-        for (const overwrite of carouselOverwrite) {
-          if (!overwrite.Key) {
-            continue;
-          }
-          if (overwrite.Key.endsWith(".jpg")) {
-            const overwritePath = `${ownerId}/${contentIdbKey}/${overwrite.Key}`;
-            await copyObject(
-              "design-overwrites",
-              overwritePath,
-              "scheduled-content",
-              `${ownerId}/${content.id}/${overwrite.Key.replaceAll(".jpg", "")}`,
-            );
-            overwrittenDesigns.push(overwritePath.replaceAll(".jpg", ""));
-          }
-        }
-      }
-    }
+    for (const item of contentItems) {
+      const savedItem = await _saveContentItem({
+        content_id: content.id,
+        hash: item.hash,
+        metadata: {
+          ig_tags: item.metadata?.ig_tags ?? [],
+        } as IgContentItemMetadata,
+        position: item.position,
+        template_item_id: item.template_item_id,
+        type: item.type,
+      });
 
-    // Upload the non-overwritten design(s) from indexedDB
-    if (designs.length === 1) {
-      if (overwrittenDesigns.indexOf(designs[0].key) === -1) {
+      const overwriteExists = await objectExists("design-overwrites", `${ownerId}/${item.key}.jpg`);
+      if (overwriteExists) {
+        await copyObject(
+          "design-overwrites",
+          `${ownerId}/${item.key}.jpg`,
+          "scheduled-content",
+          `${ownerId}/${content.id}/${savedItem.id}`,
+        );
+      } else {
+        if (!item.jpg) {
+          console.error(`No jpg for content item ${item.key} in idb`);
+          continue;
+        }
         await uploadObject(
           "scheduled-content",
-          `${ownerId}/${content.id}`,
-          new Blob([designs[0].jpg]),
+          `${ownerId}/${content.id}/${savedItem.id}`,
+          new Blob([item.jpg]),
         );
       }
-    } else {
-      await Promise.all(
-        designs
-          .filter((d) => overwrittenDesigns.indexOf(d.key) === -1)
-          .map((d) =>
-            uploadObject(
-              "scheduled-content",
-              `${ownerId}/${content.id}/${d.key.split("/").pop()}`,
-              new Blob([d.jpg]),
-            ),
-          ),
-      );
     }
 
     const scheduleName = getScheduleName(range, content.id);
@@ -152,7 +135,7 @@ export function useScheduleContent({
     };
   };
 
-  const scheduleContent = async (
+  const scheduleContents = async (
     contentIdbKeys: string[],
     publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } },
     captionMap: { [key: string]: string },
@@ -172,7 +155,7 @@ export function useScheduleContent({
         const contentIdbKey = contentIdbKeys[doneCount];
         const publishDateTime = publishDateTimeMap[contentIdbKey];
         const caption = captionMap[contentIdbKey];
-        schedulePromises.push(scheduleContentItem(contentIdbKey, publishDateTime, caption));
+        schedulePromises.push(scheduleContent(contentIdbKey, publishDateTime, caption));
         doneCount++;
       }
 
@@ -197,5 +180,5 @@ export function useScheduleContent({
     }
   };
 
-  return { scheduleContent, isScheduling };
+  return { scheduleContents, isScheduling };
 }

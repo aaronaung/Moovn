@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 import _ from "lodash";
 
-interface ContentListItemProps {
+interface ContentProps {
   contentIdbKey: string;
   scheduleData: ScheduleData;
   template: Tables<"templates">;
@@ -22,8 +22,8 @@ interface ContentListItemProps {
   onCaptionChange: (caption: string) => void;
 }
 
-const ContentListItem: React.FC<ContentListItemProps> = memo(
-  function ContentListItem({
+export const Content: React.FC<ContentProps> = memo(
+  function Content({
     contentIdbKey,
     scheduleData,
     template,
@@ -33,7 +33,7 @@ const ContentListItem: React.FC<ContentListItemProps> = memo(
     onPublishDateTimeChange,
     caption,
     onCaptionChange,
-  }: ContentListItemProps) {
+  }: ContentProps) {
     const { isJobPending } = useDesignGenQueue();
 
     const renderContent = () => {
@@ -55,7 +55,7 @@ const ContentListItem: React.FC<ContentListItemProps> = memo(
       }
     };
 
-    const designLoading = isJobPending(contentIdbKey);
+    const designLoading = isJobPending(contentIdbKey); // TODO: change this to ContentItemKey
     return (
       <div className="flex w-full flex-col gap-2 sm:w-fit">
         <div className="ml-1 flex items-center gap-2">
@@ -115,5 +115,3 @@ const ContentListItem: React.FC<ContentListItemProps> = memo(
     );
   },
 );
-
-export default ContentListItem;

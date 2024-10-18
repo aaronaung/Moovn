@@ -159,7 +159,7 @@ export default function ContentSchedulingForm({
     },
   );
 
-  const { scheduleContent, isScheduling } = useScheduleContent({
+  const { scheduleContents: scheduleContent, isScheduling } = useScheduleContent({
     sourceId,
     destinationId,
     availableTemplates,

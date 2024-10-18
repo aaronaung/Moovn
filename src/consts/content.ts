@@ -9,6 +9,8 @@ export enum ContentType {
 // Metadata at the content level
 export type ContentMetadata = IgContentMetadata;
 export type IgContentMetadata = {
+  schedule_range_start: string;
+  schedule_range_end: string;
   ig_caption: string;
 };
 
