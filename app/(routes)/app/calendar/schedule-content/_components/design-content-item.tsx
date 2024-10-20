@@ -136,7 +136,7 @@ export const DesignContentItem = memo(
       });
     };
 
-    const isGeneratingDesign = isJobPending(contentItemIdbKey);
+    const isGeneratingDesign = isJobPending(contentIdbKey);
     const isDesignNotReady = isGeneratingDesign || isLoadingOverwrites;
 
     const renderDesignContent = () => {
