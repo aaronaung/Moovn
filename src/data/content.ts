@@ -30,7 +30,8 @@ export const getAllContents = async ({ client }: SupabaseOptions) => {
       .select(
         "*, destination:destinations(*), template:templates(*), published_content:published_content(*), content_items:content_items(*)",
       )
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("position", { ascending: true, referencedTable: "content_items" }),
   );
 };
 

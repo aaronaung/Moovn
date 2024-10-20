@@ -82,7 +82,6 @@ export function useScheduleContent({
       metadata: {
         ...(template.ig_caption_template ? { ig_caption: caption } : {}),
       } as IgContentMetadata,
-      data_hash: contentItems[0].hash, //the hash is the same for all designs in the carousel
     });
 
     for (const item of contentItems) {

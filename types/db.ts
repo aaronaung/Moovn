@@ -9,60 +9,9 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      carousel_items: {
-        Row: {
-          carousel_id: string | null
-          content: string | null
-          created_at: string | null
-          id: string
-          position: number
-        }
-        Insert: {
-          carousel_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          position: number
-        }
-        Update: {
-          carousel_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          position?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "carousel_items_carousel_id_fkey"
-            columns: ["carousel_id"]
-            isOneToOne: false
-            referencedRelation: "carousels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      carousels: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       content: {
         Row: {
           created_at: string | null
-          data_hash: string | null
           destination_id: string
           id: string
           metadata: Json | null
@@ -75,7 +24,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          data_hash?: string | null
           destination_id: string
           id?: string
           metadata?: Json | null
@@ -88,7 +36,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          data_hash?: string | null
           destination_id?: string
           id?: string
           metadata?: Json | null
@@ -528,13 +475,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      set_content_template_links: {
-        Args: {
-          arg_content_id: string
-          new_template_ids: string[]
-        }
-        Returns: undefined
-      }
       update_content_items_position: {
         Args: {
           items: Json
