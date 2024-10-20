@@ -2,7 +2,6 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
-import { fromZonedTime, toDate } from "date-fns-tz";
 
 // https://developers.mindbodyonline.com/ui/documentation/public-api
 export class MindbodyClient implements SourceClient {
@@ -38,21 +37,19 @@ export class MindbodyClient implements SourceClient {
     return (await resp.json()).Classes;
   }
 
-  private groupEventsByDay(events: any[], timeZone: string) {
+  private groupEventsByDay(events: any[], siteTimezone: string) {
     if ((events ?? []).length === 0) {
       return [];
     }
     // Convert the start_at to the same date format using date-fns
     events.sort((a, b) => compareAsc(parseISO(a.StartDateTime), parseISO(b.StartDateTime)));
     const formattedEvents = events.map((event) => {
-      // event.StartDateTime is in the format of "2024-07-20T00:00:00". It does not have timezone info.
-      // We can't use date-fns startOfDay, because it will use the server's timezone which can be different from the event's timezone.
+      // event.StartDateTime is in the format of "2024-07-20T00:00:00" local to the site's timezone.
       const date = event.StartDateTime.split("T")[0];
-      const startOfDay = fromZonedTime(date, timeZone);
 
       return {
         ...event,
-        date: startOfDay,
+        date,
       };
     });
 
@@ -69,14 +66,16 @@ export class MindbodyClient implements SourceClient {
 
     const events = await this.getRawEventOcurrences(from, to);
     const groupedEvents = this.groupEventsByDay(events, site?.TimeZone ?? "America/Los_Angeles");
-    const siteTimeZone = site?.TimeZone ?? "America/Los_Angeles";
+
+    // NOTE: ALL DATE TIMES ARE LOCAL TO THE SITE'S TIMEZONE.
     return {
       day: groupedEvents.map((eventsByDay: any) => ({
         date: eventsByDay[0].date,
+        siteTimeZone: site?.TimeZone ?? "N/A",
         event: eventsByDay.map((event: any) => ({
           name: event.ClassDescription?.Name ?? "Untitled",
-          start: toDate(event.StartDateTime, { timeZone: siteTimeZone }).toISOString(),
-          end: toDate(event.EndDateTime, { timeZone: siteTimeZone }).toISOString(),
+          start: event.StartDateTime, // Site's local time
+          end: event.EndDateTime, // Site's local time
           staff: [
             {
               name: event.Staff?.Name,

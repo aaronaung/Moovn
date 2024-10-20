@@ -2,7 +2,7 @@ import { Spinner } from "@/src/components/common/loading-spinner";
 import { getTemplatesByIds } from "@/src/data/templates";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { organizeScheduleDataByView } from "@/src/libs/sources/utils";
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { cn } from "@/src/utils";
 import { Content } from "./content";
 import { ScheduleData } from "@/src/libs/sources";
@@ -53,8 +53,13 @@ export default function ContentList({
 
   return (
     <div className="relative mb-8">
+      {scheduleData["day#1.siteTimeZone"] && (
+        <p className="mt-2 flex-1 text-sm">
+          The selected source operates in <b>{scheduleData["day#1.siteTimeZone"]}</b> timezone.
+        </p>
+      )}
       <div className="flex">
-        <p className="mb-4 mt-1 hidden flex-1 text-sm text-muted-foreground lg:block">
+        <p className="mb-4 mt-1 hidden flex-1 text-xs text-muted-foreground lg:block">
           Schedule one or more generated designs for publication on any desired date. If a design is
           incorrect, you can refresh or edit it.
         </p>
@@ -111,14 +116,17 @@ const ContentListForTemplate = ({
   setCaptionMap: Dispatch<SetStateAction<{ [key: string]: string }>>;
 }) => {
   const [timeForAll, setTimeForAll] = useState<Date | null>(null);
-
-  const scheduleDataByRange = useMemo(
-    () => organizeScheduleDataByView(template.source_data_view, scheduleData!, scheduleRange),
-    [template.source_data_view, scheduleData, scheduleRange],
-  );
+  const [scheduleDataByRange, setScheduleDataByRange] = useState<ScheduleData>();
 
   useEffect(() => {
-    for (const range in scheduleDataByRange) {
+    const scheduleByRange = organizeScheduleDataByView(
+      template.source_data_view,
+      scheduleData!,
+      scheduleRange,
+    );
+
+    setScheduleDataByRange(scheduleByRange);
+    for (const range in scheduleByRange) {
       const date = getRangeStart(range);
       setPublishDateTimeMap((prev) => {
         const contentIdbKey = getContentIdbKey(sourceId, range, template);

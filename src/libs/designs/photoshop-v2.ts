@@ -1,6 +1,6 @@
 import { Psd } from "ag-psd";
 
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 export type LoadAssets = LoadAsset[];
 export type LoadAsset = {
@@ -87,6 +87,7 @@ export const determineDesignGenSteps = async (
       } else if (layerName.endsWith("date")) {
         defaultDateFormat = "EEE, MMM dd";
       }
+      const siteTimeZone = schedules["day#1.siteTimeZone"];
 
       if (defaultDateFormat) {
         genSteps.editTexts = [
@@ -94,8 +95,8 @@ export const determineDesignGenSteps = async (
           {
             layerName: ogLayerName,
             value: dateFormat
-              ? format(new Date(value), dateFormat.trim())
-              : format(new Date(value), defaultDateFormat),
+              ? formatInTimeZone(value, siteTimeZone, dateFormat.trim())
+              : formatInTimeZone(value, siteTimeZone, defaultDateFormat),
           },
         ];
       } else {

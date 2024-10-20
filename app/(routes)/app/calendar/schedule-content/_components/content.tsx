@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { ContentType } from "@/src/consts/content";
 import { ScheduleData } from "@/src/libs/sources";
 import { Tables } from "@/types/db";
@@ -36,6 +36,16 @@ export const Content: React.FC<ContentProps> = memo(
   }: ContentProps) {
     const { isJobPending } = useDesignGenQueue();
 
+    const handleDateTimeChange = useCallback(
+      (value: { date: Date; hasTime: boolean; error?: string }) => {
+        onPublishDateTimeChange({
+          date: value.date,
+          error: value.error,
+        });
+      },
+      [onPublishDateTimeChange],
+    );
+
     const renderContent = () => {
       switch (template.content_type) {
         case ContentType.InstagramPost:
@@ -55,7 +65,7 @@ export const Content: React.FC<ContentProps> = memo(
       }
     };
 
-    const designLoading = isJobPending(contentIdbKey); // TODO: change this to ContentItemKey
+    const designLoading = isJobPending(contentIdbKey);
     return (
       <div className="flex w-full flex-col gap-2 sm:w-fit">
         <div className="ml-1 flex items-center gap-2">
@@ -72,17 +82,12 @@ export const Content: React.FC<ContentProps> = memo(
                   date: publishDateTime.date,
                   hasTime: true,
                 }}
-                disablePastDateTime
+                onChange={handleDateTimeChange}
                 className={cn(
                   "h-[32px] w-full min-w-0 rounded-md px-3",
                   publishDateTime.error && "border-2 border-red-500",
                 )}
-                onChange={(dateTime) => {
-                  onPublishDateTimeChange({
-                    date: dateTime.date,
-                    error: dateTime.error,
-                  });
-                }}
+                disablePastDateTime
               />
             </TooltipTrigger>
             <TooltipContent>

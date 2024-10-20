@@ -47,6 +47,6 @@ export const db = new Dexie("moovn") as Dexie & {
 
 db.version(1).stores({
   contentItems:
-    "key, template_id, template_item_id, type, position, metadata, hash, created_at, updated_at, psd, jpg",
+    "key, content_idb_key, template_id, template_item_id, type, position, metadata, hash, created_at, updated_at, psd, jpg",
   templateItems: "key, template_id, type, position, metadata, created_at, updated_at, psd, jpg",
 });

@@ -45,8 +45,10 @@ export default function Calendar() {
   });
   const { data: scheduleDataFromAllSources } = useSupaQuery(getDataFromScheduleSourcesByTimeRange, {
     arg: {
-      from: sub(startOfMonth(today), { days: 7 }),
-      to: add(endOfMonth(today), { days: 7 }),
+      dateRange: {
+        from: sub(startOfMonth(today), { days: 7 }),
+        to: add(endOfMonth(today), { days: 7 }),
+      },
     },
     queryKey: ["getDataFromScheduleSourcesByTimeRange"],
     refetchOnWindowFocus: false,
@@ -100,7 +102,7 @@ export default function Calendar() {
       setIsLoadingCalendarEvents(true);
       try {
         const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
-        const scheduleDataMap = new Map();
+        const scheduleDataMap = new Map(); // sourceId -> dailyEvents
         for (const [sourceId, data] of Object.entries(scheduleDataFromAllSources || {})) {
           const dailyEvents = organizeScheduleDataByView(SourceDataView.Daily, data) || {};
           scheduleDataMap.set(sourceId, dailyEvents);

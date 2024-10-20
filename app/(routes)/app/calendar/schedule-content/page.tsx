@@ -68,7 +68,6 @@ export default async function ScheduleContent() {
     redirect(MISSING_DETAILS.connectedDestinations.link);
   }
 
-  console.log("AVAILABLE SOURCES", availableSources);
   return (
     <div>
       <Link href="/app/calendar" passHref>

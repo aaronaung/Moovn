@@ -77,7 +77,7 @@ export const getScheduleDataForSourceByTimeRange = async ({
 };
 
 export const getDataFromScheduleSourcesByTimeRange = async (
-  dateRange: { from: Date; to: Date },
+  { dateRange }: { dateRange: { from: Date; to: Date } },
   { client }: SupabaseOptions,
 ): Promise<{ [key: string]: ScheduleData }> => {
   const allSources = await throwOrData(
@@ -93,7 +93,10 @@ export const getDataFromScheduleSourcesByTimeRange = async (
         new Promise<{ sourceId: string; scheduleData: ScheduleData }>(async (resolve) => {
           resolve({
             sourceId: id,
-            scheduleData: await getScheduleDataForSourceByTimeRange({ id, dateRange }),
+            scheduleData: await getScheduleDataForSourceByTimeRange({
+              id,
+              dateRange,
+            }),
           });
         }),
     ),

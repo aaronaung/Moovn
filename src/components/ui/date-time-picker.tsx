@@ -180,6 +180,7 @@ const DateTimePicker = (props: DatePickerProps) => {
   });
 
   const dateDisplayFormat = hasTime ? "MM/dd/yyyy hh:mm a" : "MM/dd/yyyy";
+  console.log({ state });
 
   return (
     <Popover open={open} onOpenChange={setOpen} aria-label="Date Time Picker">
@@ -219,18 +220,14 @@ const DateTimePicker = (props: DatePickerProps) => {
                   aria-label="Time Picker"
                   disabled={!props.value?.date}
                   hasTime={hasTime}
-                  onHasTimeChange={(newHasTime) =>
+                  onHasTimeChange={(newHasTime) => {
                     onChangeWrapper(
                       dateToCalendarDateTime(props.value?.date ?? new Date()),
                       newHasTime,
-                    )
-                  }
-                  value={hasTime ? state.timeValue : null}
+                    );
+                  }}
+                  value={state.timeValue}
                   onChange={(value) => {
-                    if (props.disablePastDateTime) {
-                      const selectedDateTime = props.value?.date ?? new Date();
-                      selectedDateTime.setHours(value.hour, value.minute, value.second);
-                    }
                     state.setTimeValue(value);
                   }}
                 />

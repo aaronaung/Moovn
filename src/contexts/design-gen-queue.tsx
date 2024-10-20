@@ -30,7 +30,7 @@ type DesignGenQueueContextType = {
   removeJob: (idbKey: string) => void;
   activeJobs: DesignJob[];
   queuedJobs: DesignJob[];
-  isJobPending: (idbKey: string) => boolean;
+  isJobPending: (contentIdbKey: string) => boolean;
 };
 
 const MAX_JOBS_IN_PROGRESS = isMobile ? 2 : 5;
@@ -78,13 +78,14 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const isJobInProgress = (idbKey: string) => {
-    return activeJobs.some((job) => job.idbKey.startsWith(idbKey));
+  const isJobInProgress = (contentIdbKey: string) => {
+    return activeJobs.some((job) => job.contentIdbKey.startsWith(contentIdbKey));
   };
-  const isJobWaitingInQueue = (idbKey: string) => {
-    return queuedJobs.some((job) => job.idbKey.startsWith(idbKey));
+  const isJobWaitingInQueue = (contentIdbKey: string) => {
+    return queuedJobs.some((job) => job.contentIdbKey.startsWith(contentIdbKey));
   };
-  const isJobPending = (idbKey: string) => isJobInProgress(idbKey) || isJobWaitingInQueue(idbKey);
+  const isJobPending = (contentIdbKey: string) =>
+    isJobInProgress(contentIdbKey) || isJobWaitingInQueue(contentIdbKey);
 
   useEffect(() => {
     const processQueue = async () => {

@@ -125,26 +125,24 @@ export const organizeScheduleDataByView = (
         const dayNumberInKey = parseInt(keySplit[0].split("#")[1]);
         const date = scheduleData[`day#${dayNumberInKey}.date`];
 
-        const dailyKey = format(date ? new Date(date) : new Date(), "yyyy-MM-dd");
-
-        organizedSchedule[dailyKey] = {
-          ...(organizedSchedule[dailyKey] || {}),
+        organizedSchedule[date] = {
+          ...(organizedSchedule[date] || {}),
           // Replace the day number with 1
           [key.replaceAll(`day#${dayNumberInKey}.`, "day#1.")]: scheduleData[key],
         };
       }
       break;
     case SourceDataView.Weekly:
-      const weeklyRanges: { start: Date; end: Date }[] = [];
-      const start = scheduleRange?.from ?? new Date();
-      const end = scheduleRange?.to ?? new Date();
+      const weeklyRanges: { start: string; end: string }[] = [];
+      const start = format(scheduleRange?.from ?? new Date(), "yyyy-MM-dd");
+      const end = format(scheduleRange?.to ?? new Date(), "yyyy-MM-dd");
 
       let tempStart = start;
-      let tempEnd: Date;
+      let tempEnd: string;
       while (isBefore(tempStart, end)) {
-        tempEnd = min([endOfWeek(tempStart), end]);
+        tempEnd = format(min([endOfWeek(tempStart), end]), "yyyy-MM-dd");
         weeklyRanges.push({ start: tempStart, end: tempEnd });
-        tempStart = addWeeks(startOfWeek(tempStart), 1);
+        tempStart = format(addWeeks(startOfWeek(tempStart), 1), "yyyy-MM-dd");
       }
 
       if (weeklyRanges.length === 0) {
@@ -159,7 +157,7 @@ export const organizeScheduleDataByView = (
         const date = scheduleData[`day#${dayNumberInKey}.date`];
 
         let weeklyRange = weeklyRanges[weekIndex] ?? {};
-        if (isAfter(new Date(date), weeklyRange.end)) {
+        if (isAfter(date, weeklyRange.end)) {
           weekIndex++;
           lastDayNumberBeforeWeekSwitch = dayNumberInKey - 1;
         }
@@ -167,10 +165,7 @@ export const organizeScheduleDataByView = (
         if (!weeklyRange) {
           continue;
         }
-        const weeklyKey = `${format(weeklyRange.start, "yyyy-MM-dd")}_${format(
-          weeklyRanges[weekIndex].end,
-          "yyyy-MM-dd",
-        )}`;
+        const weeklyKey = `${weeklyRange.start}_${weeklyRange.end}`;
         const dailyKey = key.replaceAll(
           `day#${dayNumberInKey}.`,
           `day#${dayNumberInKey - lastDayNumberBeforeWeekSwitch}.`,
@@ -185,7 +180,10 @@ export const organizeScheduleDataByView = (
   return organizedSchedule;
 };
 
-export const extractScheduleDataWithinRange = (range: string, dailyEvents: ScheduleData) => {
+export const extractScheduleDataWithinRange = (
+  range: string,
+  dailyEvents: { [key: string]: any },
+) => {
   const [rangeStart, rangeEnd] = range.split("_");
   let result: { [key: string]: any } = {};
   if (!rangeEnd) {
@@ -194,9 +192,9 @@ export const extractScheduleDataWithinRange = (range: string, dailyEvents: Sched
     let dayCtr = 1;
     for (const day in dailyEvents) {
       if (
-        isWithinInterval(new Date(day), {
-          start: new Date(rangeStart),
-          end: new Date(rangeEnd),
+        isWithinInterval(day, {
+          start: rangeStart,
+          end: rangeEnd,
         })
       ) {
         for (const key in dailyEvents[day]) {

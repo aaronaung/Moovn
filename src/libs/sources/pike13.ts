@@ -2,7 +2,7 @@ import { env } from "@/env.mjs";
 import { ScheduleData, SourceClient } from ".";
 import { compareAsc, parseISO } from "date-fns";
 import _ from "lodash";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 
 export class Pike13Client implements SourceClient {
   private clientId: string;
@@ -40,7 +40,7 @@ export class Pike13Client implements SourceClient {
     return resp.staff_members || [];
   }
 
-  private groupEventsByDay(events: any[], timeZone: string) {
+  private groupEventsByDay(events: any[], siteTimezone: string) {
     if (events.length === 0) {
       return [];
     }
@@ -49,13 +49,12 @@ export class Pike13Client implements SourceClient {
     const formattedEvents = events.map((event) => {
       // event.start_at is in the format of "2024-07-20T00:00:00Z". It already has timezone info.
       // We can't use date-fns startOfDay, because it will use the server's timezone which can be different from the event's timezone.
-      const inTimeZone = formatInTimeZone(event.start_at, timeZone, "yyyy-MM-dd'T'HH:mm:ss");
+      const inTimeZone = formatInTimeZone(event.start_at, siteTimezone, "yyyy-MM-dd'T'HH:mm:ss");
       const date = inTimeZone.split("T")[0];
-      const startOfDay = fromZonedTime(date, timeZone);
 
       return {
         ...event,
-        date: startOfDay,
+        date,
       };
     });
 
@@ -70,16 +69,16 @@ export class Pike13Client implements SourceClient {
     const $staffMembers = this.getRawStaffMembers();
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
     const staffMembersById = _.keyBy(staffMembers, "id");
-    const groupedEvents = this.groupEventsByDay(
-      events,
-      events[0].timezone ?? "America/Los_Angeles",
-    );
 
+    const groupedEvents = this.groupEventsByDay(events, events[0].timezone);
+
+    // NOTE: ALL DATE TIMES ARE LOCAL TO THE SITE'S TIMEZONE.
     // We try to keep the keys short and singular for ease of reference when creating layers in templates.
     return {
       day: groupedEvents.map((eventsByDay) => {
         return {
           date: eventsByDay[0].date,
+          siteTimeZone: eventsByDay[0].timezone,
           event: (eventsByDay || []).map((event: any, index: number) => {
             const headshotUrl = `https://assets.moovn.co/headshots/${index + 1}.png`;
             return {
@@ -95,8 +94,12 @@ export class Pike13Client implements SourceClient {
                   };
                 }),
               name: event.name,
-              start: event.start_at,
-              end: event.end_at,
+              start: formatInTimeZone(
+                event.start_at,
+                eventsByDay[0].timezone,
+                "yyyy-MM-dd'T'HH:mm:ss",
+              ), // Site's local time
+              end: formatInTimeZone(event.end_at, eventsByDay[0].timezone, "yyyy-MM-dd'T'HH:mm:ss"), // Site's local time
             };
           }),
         };
