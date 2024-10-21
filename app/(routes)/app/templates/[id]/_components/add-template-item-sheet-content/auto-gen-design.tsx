@@ -1,7 +1,6 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import FileDropzone from "@/src/components/ui/input/file-dropzone";
-import InputSelect from "@/src/components/ui/input/select";
 import InputTextArea from "@/src/components/ui/input/textarea";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
@@ -33,16 +32,20 @@ enum TemplateCreator {
   Self = "self",
 }
 
-export default function CreateAutoGenDesignTemplateBody({
+export default function AddAutoGenDesignTemplateItem({
   user,
   parentTemplate,
   itemPosition,
-  onCreateComplete,
+  onAddComplete,
+  sourceDataView,
+  contentType,
 }: {
   user: Tables<"users">;
   parentTemplate?: Tables<"templates">; // if provided, we're adding to a carousel
   itemPosition: number;
-  onCreateComplete: (newTemplateItem: Tables<"template_items">) => void;
+  onAddComplete: (newTemplateItem: Tables<"template_items">) => void;
+  sourceDataView: SourceDataView;
+  contentType: ContentType;
 }) {
   const {
     open: openPhotopeaEditor,
@@ -51,12 +54,6 @@ export default function CreateAutoGenDesignTemplateBody({
     blankDesignTemplates,
   } = usePhotopeaEditor();
 
-  const [sourceDataView, setSourceDataView] = useState(
-    (parentTemplate?.source_data_view as SourceDataView) || SourceDataView.Daily,
-  );
-  const [contentType, setContentType] = useState(
-    (parentTemplate?.content_type as ContentType) || ContentType.InstagramPost,
-  );
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<string | undefined>(undefined);
   const [templateCreator, setTemplateCreator] = useState(TemplateCreator.Self);
   const [templateDescription, setTemplateDescription] = useState("");
@@ -152,7 +149,7 @@ export default function CreateAutoGenDesignTemplateBody({
         variant: "success",
         title: "Template saved",
       });
-      onCreateComplete(savedTemplateItem);
+      onAddComplete(savedTemplateItem);
     } catch (err) {
       console.error(err);
       toast({
@@ -164,7 +161,7 @@ export default function CreateAutoGenDesignTemplateBody({
     }
   };
 
-  const handleCreateClick = async () => {
+  const handleAddTemplateItem = async () => {
     if (templateCreator === TemplateCreator.Moovn) {
       if (!templateFile) {
         toast({
@@ -228,14 +225,6 @@ export default function CreateAutoGenDesignTemplateBody({
   return (
     <>
       <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
-        {!parentTemplate && (
-          <SelectMetadataSection
-            sourceDataView={sourceDataView}
-            setSourceDataView={setSourceDataView}
-            contentType={contentType}
-            setContentType={setContentType}
-          />
-        )}
         <SelectTemplateCreatorSection
           sourceDataView={sourceDataView}
           contentType={contentType}
@@ -253,7 +242,7 @@ export default function CreateAutoGenDesignTemplateBody({
         <Button
           className="fixed bottom-[14px] left-[14px] w-[120px]"
           size="lg"
-          onClick={handleCreateClick}
+          onClick={handleAddTemplateItem}
           disabled={isUploadingTemplate}
         >
           {templateCreator === TemplateCreator.Self ? (
@@ -266,57 +255,6 @@ export default function CreateAutoGenDesignTemplateBody({
     </>
   );
 }
-
-const SelectMetadataSection = ({
-  sourceDataView,
-  setSourceDataView,
-  contentType,
-  setContentType,
-}: {
-  sourceDataView: SourceDataView;
-  setSourceDataView: (value: SourceDataView) => void;
-  contentType: ContentType;
-  setContentType: (value: ContentType) => void;
-}) => {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">
-        Select the type of content and schedule you want to use for this template. You can then edit
-        the template in the editor.
-      </p>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
-        <InputSelect
-          value={sourceDataView}
-          className="w-[200px]"
-          options={Object.keys(SourceDataView).map((key) => ({
-            // @ts-ignore
-            label: SourceDataView[key],
-            // @ts-ignore
-            value: SourceDataView[key],
-          }))}
-          onChange={(value) => {
-            setSourceDataView(value);
-          }}
-          label="Schedule type"
-        />
-        <InputSelect
-          value={contentType}
-          className="w-[250px]"
-          options={Object.keys(ContentType).map((key) => ({
-            // @ts-ignore
-            label: ContentType[key],
-            // @ts-ignore
-            value: ContentType[key],
-          }))}
-          onChange={(value) => {
-            setContentType(value);
-          }}
-          label="Content type"
-        />
-      </div>
-    </div>
-  );
-};
 
 const SelectTemplateCreatorSection = ({
   sourceDataView,

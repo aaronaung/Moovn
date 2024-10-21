@@ -5,6 +5,8 @@ import { Pike13Client } from "./pike13";
 import { flattenSchedule } from "./utils";
 import { MindbodyClient } from "./mindbody";
 
+console.log("HEREEEEE");
+
 export interface SourceClient {
   getScheduleData(from: string, to: string): Promise<ScheduleData>;
 }
@@ -29,7 +31,6 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
         return null;
       }
       const pike13Client = new Pike13Client(sourceSettings.url);
-
       return flattenSchedule(await pike13Client.getScheduleData(from, to));
     case SourceTypes.Mindbody:
       sourceSettings = source.settings as MindbodySourceSettings;
@@ -37,7 +38,6 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
         return null;
       }
       const mindbodyClient = new MindbodyClient(sourceSettings.siteId);
-
       return flattenSchedule(await mindbodyClient.getScheduleData(from, to));
     default:
       return {};

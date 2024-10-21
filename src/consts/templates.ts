@@ -3,7 +3,8 @@ import { SourceDataView } from "./sources";
 
 export type TemplateItemMetadata = DriveTemplateItemMetadata;
 export type DriveTemplateItemMetadata = {
-  path_prefix: string;
+  drive_folder_id: string;
+  drive_file_name: string;
 };
 
 export enum TemplateCreationRequestStatus {

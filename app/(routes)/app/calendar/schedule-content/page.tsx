@@ -1,5 +1,4 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
-import ContentSchedulingFormWrapper from "./_components/content-scheduling-form-wrapper";
 import { Button } from "@/src/components/ui/button";
 import { getAllDestinations } from "@/src/data/destinations";
 import { getScheduleSources } from "@/src/data/sources";
@@ -11,6 +10,7 @@ import { Tables } from "@/types/db";
 import { supaServerComponentClient } from "@/src/data/clients/server";
 import { TemplateCreationRequestStatus } from "@/src/consts/templates";
 import { SourceTypes } from "@/src/consts/sources";
+import ContentSchedulingForm from "./_components/content-scheduling-form";
 
 const MISSING_DETAILS = {
   sources: {
@@ -75,8 +75,8 @@ export default async function ScheduleContent() {
           <ArrowLeftIcon className="h-4 w-4" />
         </Button>
       </Link>
-      <ContentSchedulingFormWrapper
-        connectedDestinations={connectedDestinations}
+      <ContentSchedulingForm
+        availableDestinations={connectedDestinations}
         availableSources={availableSources}
         availableTemplates={availableTemplates}
       />

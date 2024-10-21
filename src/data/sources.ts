@@ -4,6 +4,7 @@ import { throwOrData } from "./util";
 import { SourceDataView, SourceTypes } from "../consts/sources";
 import { ScheduleData } from "../libs/sources";
 import { endOfDay, endOfWeek, format, startOfDay, startOfWeek } from "date-fns";
+import { drive_v3 } from "googleapis";
 
 export const saveSource = async (
   source: Partial<Tables<"sources">>,
@@ -37,6 +38,10 @@ export const getScheduleSources = async ({ client }: SupabaseOptions) => {
 
 export const getSourceById = async (id: string, { client }: SupabaseOptions) => {
   return throwOrData(client.from("sources").select("*").eq("id", id).maybeSingle());
+};
+
+export const getSourcesByType = async (type: SourceTypes, { client }: SupabaseOptions) => {
+  return throwOrData(client.from("sources").select("*").eq("type", type));
 };
 
 export const getScheduleDataForSource = async ({
@@ -125,3 +130,21 @@ export async function getMindbodyActivationCodeAndLink(siteId: string) {
   }
   return response.json();
 }
+
+export const getDriveSourcesWithAccessToken = async (): Promise<
+  (Tables<"sources"> & { access_token: string })[]
+> => {
+  const response = await fetch("/api/sources/google-drive");
+  if (!response.ok) {
+    throw new Error("Failed to fetch Google Drive sources");
+  }
+  return (await response.json()).sources ?? [];
+};
+
+export const listDriveFolders = async (sourceId: string): Promise<drive_v3.Schema$File[]> => {
+  const response = await fetch(`/api/sources/${sourceId}/drive/list-folders`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch folders");
+  }
+  return (await response.json()).folders ?? [];
+};

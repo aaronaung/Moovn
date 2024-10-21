@@ -1,3 +1,5 @@
+import { Credentials } from "google-auth-library";
+
 export enum SourceTypes {
   Pike13 = "Pike13",
   Mindbody = "Mindbody",
@@ -15,9 +17,7 @@ export type MindbodySourceSettings = {
   siteId: string;
 };
 
-export type GoogleDriveSourceSettings = {
-  access_token: string;
-};
+export type GoogleDriveSourceSettings = Credentials;
 
 export type Pike13SourceSettings = {
   url: string;

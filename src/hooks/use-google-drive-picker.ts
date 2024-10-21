@@ -8,9 +8,10 @@ declare global {
   }
 }
 
-export const useGoogleDrivePicker = (accessToken: string) => {
+export const useGoogleDrivePicker = (accessToken: string, embed: boolean = false) => {
   const [pickerApiLoaded, setPickerApiLoaded] = useState(false);
   const [pickerData, setPickerData] = useState<any>(null);
+  const [pickerUri, setPickerUri] = useState<string | null>(null);
 
   useEffect(() => {
     const loadGooglePickerApi = () => {
@@ -29,18 +30,32 @@ export const useGoogleDrivePicker = (accessToken: string) => {
     loadGooglePickerApi();
   }, []);
 
+  useEffect(() => {
+    if (embed && pickerApiLoaded && accessToken) {
+      console.log("creating picker", accessToken);
+      createPicker();
+    }
+  }, [embed, pickerApiLoaded, accessToken]);
+
   const createPicker = useCallback(() => {
     if (pickerApiLoaded && window.google && window.google.picker) {
-      const picker = new window.google.picker.PickerBuilder()
+      const pickerBuilder = new window.google.picker.PickerBuilder()
         .addView(window.google.picker.ViewId.DOCS)
         .setOAuthToken(accessToken)
         .setDeveloperKey(env.NEXT_PUBLIC_GOOGLE_API_KEY)
         .setCallback(pickerCallback)
-        .setAppId(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
-        .build();
-      picker.setVisible(true);
+        .setAppId(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+
+      if (embed) {
+        const uri = pickerBuilder.toUri();
+        console.log("picker uri", uri);
+        setPickerUri(uri);
+      } else {
+        const picker = pickerBuilder.build();
+        picker.setVisible(true);
+      }
     }
-  }, [pickerApiLoaded, accessToken]);
+  }, [pickerApiLoaded, accessToken, embed]);
 
   const pickerCallback = (data: any) => {
     if (data.action === window.google.picker.Action.PICKED) {
@@ -48,5 +63,5 @@ export const useGoogleDrivePicker = (accessToken: string) => {
     }
   };
 
-  return { createPicker, pickerData };
+  return { createPicker, pickerData, pickerUri };
 };

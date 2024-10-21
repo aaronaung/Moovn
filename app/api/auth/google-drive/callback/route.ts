@@ -2,6 +2,8 @@ import { env } from "@/env.mjs";
 import { supaServerClient } from "@/src/data/clients/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+import { Json } from "@/types/db";
 
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url);
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
     const decodedState = JSON.parse(atob(state as string));
     const { sourceId } = decodedState;
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client: OAuth2Client = new google.auth.OAuth2(
       env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       env.GOOGLE_CLIENT_SECRET,
       `${requestUrl.origin}/api/auth/google-drive/callback`,
@@ -32,16 +34,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { access_token, refresh_token, expiry_date } = tokenData;
     const supabase = supaServerClient();
     const { error } = await supabase
       .from("sources")
       .update({
-        settings: {
-          access_token,
-          refresh_token,
-          expires_at: expiry_date ? new Date(expiry_date).toISOString() : null,
-        },
+        settings: tokenData as Json,
       })
       .eq("id", sourceId);
 
