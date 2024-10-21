@@ -69,12 +69,13 @@ export function AddTemplateItemSheet({
     <Sheet open={isOpen} onOpenChange={handleOnClose}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle className="mb-2">Add template item</SheetTitle>
+          <SheetTitle>Add template item</SheetTitle>
         </SheetHeader>
-        <div>
+
+        <div className="flex flex-col gap-2 px-1 sm:flex-row sm:gap-4">
           <InputSelect
             label="What is the template for?"
-            className="mb-4 w-[300px]"
+            className="w-[300px]"
             options={Object.values(ContentItemType).map((type) => ({
               label: type,
               value: type,
@@ -82,71 +83,41 @@ export function AddTemplateItemSheet({
             value={forItemType}
             onChange={(value) => setForItemType(value as ContentItemType)}
           />
-
           {!parentTemplate && (
-            <div className="mb-4">
-              <SelectMetadataSection
-                sourceDataView={sourceDataView}
-                setSourceDataView={setSourceDataView}
-                contentType={contentType}
-                setContentType={setContentType}
+            <>
+              <InputSelect
+                value={sourceDataView}
+                className="w-[200px]"
+                options={Object.keys(SourceDataView).map((key) => ({
+                  // @ts-ignore
+                  label: SourceDataView[key],
+                  // @ts-ignore
+                  value: SourceDataView[key],
+                }))}
+                onChange={(value) => {
+                  setSourceDataView(value);
+                }}
+                label="Schedule type"
               />
-            </div>
+              <InputSelect
+                value={contentType}
+                className="w-[250px]"
+                options={Object.keys(ContentType).map((key) => ({
+                  // @ts-ignore
+                  label: ContentType[key],
+                  // @ts-ignore
+                  value: ContentType[key],
+                }))}
+                onChange={(value) => {
+                  setContentType(value);
+                }}
+                label="Content type"
+              />
+            </>
           )}
-          {renderSheetBody()}
         </div>
+        {renderSheetBody()}
       </SheetContent>
     </Sheet>
   );
 }
-
-const SelectMetadataSection = ({
-  sourceDataView,
-  setSourceDataView,
-  contentType,
-  setContentType,
-}: {
-  sourceDataView: SourceDataView;
-  setSourceDataView: (value: SourceDataView) => void;
-  contentType: ContentType;
-  setContentType: (value: ContentType) => void;
-}) => {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">
-        Select the type of content and schedule you want to use for this template. You can then edit
-        the template in the editor.
-      </p>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
-        <InputSelect
-          value={sourceDataView}
-          className="w-[200px]"
-          options={Object.keys(SourceDataView).map((key) => ({
-            // @ts-ignore
-            label: SourceDataView[key],
-            // @ts-ignore
-            value: SourceDataView[key],
-          }))}
-          onChange={(value) => {
-            setSourceDataView(value);
-          }}
-          label="Schedule type"
-        />
-        <InputSelect
-          value={contentType}
-          className="w-[250px]"
-          options={Object.keys(ContentType).map((key) => ({
-            // @ts-ignore
-            label: ContentType[key],
-            // @ts-ignore
-            value: ContentType[key],
-          }))}
-          onChange={(value) => {
-            setContentType(value);
-          }}
-          label="Content type"
-        />
-      </div>
-    </div>
-  );
-};

@@ -1,20 +1,26 @@
 "use client";
 import { cn } from "@/src/utils";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Tables } from "@/types/db";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { ContentType } from "@/src/consts/content";
 import { Button } from "@/src/components/ui/button";
 import { AddTemplateItemSheet } from "./add-template-item-sheet";
-import { useSupaMutation } from "@/src/hooks/use-supabase";
-import { deleteTemplateItem, setTemplateItemOrder } from "@/src/data/templates";
+import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
+import {
+  deleteTemplateItem,
+  getTemplateItemsByTemplateId,
+  setTemplateItemOrder,
+} from "@/src/data/templates";
 import { Card, CardContent } from "@/src/components/ui/card";
 import _ from "lodash";
+import { Spinner } from "@/src/components/common/loading-spinner";
+import { ContentItemType } from "@/src/consts/content";
+import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
 
 export const TemplateDetails = ({
   user,
@@ -23,8 +29,16 @@ export const TemplateDetails = ({
   user: Tables<"users">;
   template: Tables<"templates">;
 }) => {
-  // TODO: IF TEMPLATE ITEMS ARE NOT IN IDB, FETCH THEM FROM SUPABASE
-  const [templateItems, setTemplateItems] = useState<CarouselItem[]>([]);
+  const { data: initialTemplateItems, isLoading: isLoadingInitialTemplateItems } = useSupaQuery(
+    getTemplateItemsByTemplateId,
+    {
+      arg: template.id,
+      queryKey: ["getTemplateItemsByTemplateId", template.id],
+    },
+  );
+  const [templateItems, setTemplateItems] = useState<Tables<"template_items">[]>(
+    initialTemplateItems ?? [],
+  );
   const [addItemSheetState, setAddTemplateItemSheetState] = useState<{
     isOpen: boolean;
     position: number;
@@ -43,27 +57,8 @@ export const TemplateDetails = ({
     invalidate: [["getTemplateItemsByTemplateId", template.id]],
   });
 
-  const idbTemplateItems = useLiveQuery(async () => {
-    return db.templateItems.where("template_id").equals(template.id).toArray();
-  }, [template]);
-
-  useEffect(() => {
-    if (idbTemplateItems) {
-      setTemplateItems(
-        idbTemplateItems
-          .map((t) => ({
-            id: t.key,
-            imageUrl: URL.createObjectURL(new Blob([t.jpg ?? ""], { type: "image/jpeg" })),
-            contentType: template.content_type as ContentType,
-            position: t.position,
-          }))
-          .sort((a, b) => a.position - b.position),
-      );
-    }
-  }, [idbTemplateItems, template]);
-
   const debouncedSetTemplateItemOrder = useCallback(
-    _.debounce((items: CarouselItem[]) => {
+    _.debounce((items: Tables<"template_items">[]) => {
       _setTemplateItemOrder(items.map((item, index) => ({ id: item.id, position: index })));
     }, 1000),
     [_setTemplateItemOrder],
@@ -102,6 +97,10 @@ export const TemplateDetails = ({
     [_deleteTemplateItem],
   );
 
+  if (isLoadingInitialTemplateItems) {
+    return <Spinner />;
+  }
+
   return (
     <div
       className={cn(
@@ -125,9 +124,7 @@ export const TemplateDetails = ({
             setTemplateItems((prevTemplateItems) => {
               const newTemplateItems = [...prevTemplateItems];
 
-              newTemplateItems.splice(addItemSheetState.position, 0, {
-                id: newTemplateItem.id,
-              });
+              newTemplateItems.splice(addItemSheetState.position, 0, newTemplateItem);
               _setTemplateItemOrder(
                 newTemplateItems.map((item, index) => ({ id: item.id, position: index })),
               );
@@ -161,9 +158,6 @@ export const TemplateDetails = ({
   );
 };
 
-type CarouselItem = {
-  id: string;
-};
 const DraggableTemplateItem = ({
   item,
   position,
@@ -171,7 +165,7 @@ const DraggableTemplateItem = ({
   addItem,
   removeItem,
 }: {
-  item: CarouselItem;
+  item: Tables<"template_items">;
   position: number;
   moveItem: (dragId: string, hoverId: string) => void;
   addItem: (position: number) => void;
@@ -253,6 +247,11 @@ const DraggableTemplateItem = ({
         onMouseEnter={() => setShowButtons(true)}
         onMouseLeave={() => setShowButtons(false)}
       >
+        {item.type === ContentItemType.DriveFile && (
+          <div className="absolute right-0 top-0">
+            <GoogleDriveIcon className="h-4 w-4" />
+          </div>
+        )}
         <CardContent>
           <Image
             src={idbTemplateItem?.jpgUrl ?? ""}

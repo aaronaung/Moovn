@@ -24,6 +24,7 @@ import { SourceDataView } from "@/src/consts/sources";
 import { ContentItemType, ContentType } from "@/src/consts/content";
 import { toast } from "@/src/components/ui/use-toast";
 import { DriveTemplateItemMetadata } from "@/src/consts/templates";
+import { SheetFooter } from "@/src/components/ui/sheet";
 
 export default function AddDriveTemplateItem({
   user,
@@ -121,105 +122,105 @@ export default function AddDriveTemplateItem({
   }
 
   return (
-    <div className="space-y-6">
-      {!parentTemplate && (
-        <InputText
-          label="Template name"
-          onChange={(e) => setTemplateName(e.target.value)}
-          value={templateName}
-          className="w-[300px]"
-        />
-      )}
-      <div>
-        <Header2 title="Select the root folder" />
-        <div className="mb-2">
-          {driveSources.length > 1 ? (
-            <Select
-              value={selectedSource?.id}
-              onValueChange={(value) =>
-                setSelectedSource(driveSources.find((source) => source.id === value))
-              }
-            >
-              <SelectTrigger className="w-[300px]">
-                <SelectValue placeholder="Select a Drive account" />
-              </SelectTrigger>
-              <SelectContent>
-                {driveSources.map((source) => (
-                  <SelectItem key={source.id} value={source.id}>
-                    {source.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Using Drive data source: <b>{driveSources[0]?.name}</b>
-            </p>
-          )}
-        </div>
-
-        {isFoldersLoading ? (
-          <div className="flex justify-center">
-            <Spinner />
-          </div>
-        ) : folders ? (
-          <div>
-            <ScrollArea className="h-[250px] w-full rounded-md border p-4">
-              {folders.map((folder) => (
-                <Button
-                  key={folder.id}
-                  variant={selectedFolder?.id === folder.id ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setSelectedFolder(folder)}
-                >
-                  <FolderIcon className="mr-2 h-4 w-4" />
-                  {folder.name}
-                </Button>
-              ))}
-            </ScrollArea>
-          </div>
-        ) : null}
-      </div>
-
-      <div>
-        <Header2 title="Enter the standardized file name" />
-        <p className="mb-2 text-sm text-muted-foreground">
-          We recommend using a number to ensure the correct file is selected
-        </p>
-        <InputText
-          onChange={(e) => setFileName(e.target.value)}
-          value={fileName}
-          className="w-[100px]"
-        />
-      </div>
-
-      {selectedFolder && fileName && (
+    <>
+      <div className="flex flex-1 flex-col gap-6 overflow-scroll p-1">
+        {!parentTemplate && (
+          <InputText
+            label="Template name"
+            onChange={(e) => setTemplateName(e.target.value)}
+            value={templateName}
+            className="w-[300px]"
+            inputProps={{
+              placeholder: "Studio XYZ Daily",
+            }}
+          />
+        )}
         <div>
+          <Header2 title="Select the root folder" />
+          <div className="mb-2">
+            {driveSources.length > 1 ? (
+              <Select
+                value={selectedSource?.id}
+                onValueChange={(value) =>
+                  setSelectedSource(driveSources.find((source) => source.id === value))
+                }
+              >
+                <SelectTrigger className="w-[300px]">
+                  <SelectValue placeholder="Select a Drive account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {driveSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Using Drive data source: <b>{driveSources[0]?.name}</b>
+              </p>
+            )}
+          </div>
+
+          {isFoldersLoading ? (
+            <div className="flex justify-center">
+              <Spinner />
+            </div>
+          ) : folders ? (
+            <div>
+              <ScrollArea className="h-[250px] w-full rounded-md border p-4">
+                {folders.map((folder) => (
+                  <Button
+                    key={folder.id}
+                    variant={selectedFolder?.id === folder.id ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setSelectedFolder(folder)}
+                  >
+                    <FolderIcon className="mr-2 h-4 w-4" />
+                    {folder.name}
+                  </Button>
+                ))}
+              </ScrollArea>
+            </div>
+          ) : null}
+        </div>
+
+        <div>
+          <Header2 title="Enter the standardized file name" />
           <p className="mb-2 text-sm text-muted-foreground">
-            When generating content for this template item, we will pull the file from the following
-            path:
+            We recommend using a number to ensure the correct file is selected
           </p>
-          <div className="mt-2 flex items-center">
-            <FileIcon className="mr-1 h-4 w-4" />
-            <p className="text-sm font-semibold">
-              {selectedFolder.name}/YYYY-MM-DD/{fileName}
+          <InputText
+            onChange={(e) => setFileName(e.target.value)}
+            value={fileName}
+            className="w-[100px]"
+          />
+        </div>
+
+        {selectedFolder && fileName && (
+          <div>
+            <p className="mb-2 text-sm text-muted-foreground">
+              When generating content for this template item, we will pull the file from the
+              following path:
+            </p>
+            <div className="mt-2 flex items-center">
+              <FileIcon className="mr-1 h-4 w-4" />
+              <p className="text-sm font-semibold">
+                {selectedFolder.name}/YYYY-MM-DD/{fileName}
+              </p>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              e.g. {selectedFolder.name}/2024-10-10/{fileName}
             </p>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            e.g. {selectedFolder.name}/2024-10-10/{fileName}
-          </p>
-        </div>
-      )}
-      <div className="flex justify-end">
-        <Button
-          className="fixed bottom-[14px] left-[14px]"
-          size="lg"
-          onClick={handleAddTemplateItem}
-          disabled={!selectedFolder || !fileName}
-        >
+        )}
+      </div>
+      <SheetFooter>
+        <Button size="lg" onClick={handleAddTemplateItem} disabled={!selectedFolder || !fileName}>
           Add Template Item
         </Button>
-      </div>
-    </div>
+      </SheetFooter>
+    </>
   );
 }

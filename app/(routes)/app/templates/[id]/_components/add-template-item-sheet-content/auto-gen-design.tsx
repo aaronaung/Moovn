@@ -26,6 +26,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { v4 as uuidv4 } from "uuid";
+import { SheetFooter } from "@/src/components/ui/sheet";
 
 enum TemplateCreator {
   Moovn = "moovn",
@@ -238,20 +239,15 @@ export default function AddAutoGenDesignTemplateItem({
         />
         {templateCreator === TemplateCreator.Self && <TemplateCreationGuideSection />}
       </div>
-      <div className="flex justify-end">
-        <Button
-          className="fixed bottom-[14px] left-[14px] w-[120px]"
-          size="lg"
-          onClick={handleAddTemplateItem}
-          disabled={isUploadingTemplate}
-        >
+      <SheetFooter>
+        <Button size="lg" onClick={handleAddTemplateItem} disabled={isUploadingTemplate}>
           {templateCreator === TemplateCreator.Self ? (
             "Start editor"
           ) : (
             <>{isUploadingTemplate ? <Spinner /> : "Ask Moovn"}</>
           )}
         </Button>
-      </div>
+      </SheetFooter>
     </>
   );
 }
@@ -284,7 +280,7 @@ const SelectTemplateCreatorSection = ({
 
   return (
     <div>
-      <p className="mb-4 text-sm text-muted-foreground">
+      <p className="mb-2 text-xs text-muted-foreground">
         Choose how you want to create your template. Our design team can create it for you or you
         can design it yourself.
       </p>
@@ -331,7 +327,7 @@ const SelectTemplateCreatorSection = ({
           </div>
         </TabsContent>
         <TabsContent value={TemplateCreator.Self}>
-          <h3 className="text-sm text-muted-foreground">Select a starter template</h3>
+          <h3 className="text-xs text-muted-foreground">Select a starter template</h3>
           {!isLoadingFreeDesignTemplates ? (
             <RadioGroup
               value={`item-${selectedTemplateIndex}`}
