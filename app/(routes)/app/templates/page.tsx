@@ -27,6 +27,7 @@ export default function TemplatesPage() {
   const [saveTemplateItemState, setSaveTemplateItemState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
+    templateItem?: Tables<"template_items">;
   }>({
     isOpen: false,
   });
@@ -56,7 +57,8 @@ export default function TemplatesPage() {
         isOpen={saveTemplateItemState.isOpen}
         onClose={() => setSaveTemplateItemState({ isOpen: false })}
         parentTemplate={saveTemplateItemState.template}
-        itemPosition={0}
+        itemPosition={saveTemplateItemState.templateItem?.position ?? 0}
+        templateItem={saveTemplateItemState.templateItem}
         onAddComplete={() => {
           setSaveTemplateItemState({ isOpen: false });
         }}
@@ -129,6 +131,13 @@ export default function TemplatesPage() {
                     setDeleteConfirmationDialogState({
                       isOpen: true,
                       template,
+                    });
+                  }}
+                  onEditTemplateItem={(templateItem) => {
+                    setSaveTemplateItemState({
+                      isOpen: true,
+                      template: template,
+                      templateItem,
                     });
                   }}
                 />

@@ -28,11 +28,13 @@ export const InstagramTemplate = ({
   onDeleteTemplate,
   onAddToCarousel,
   designRequest,
+  onEditTemplateItem,
 }: {
   template: Tables<"templates">;
   onDeleteTemplate: () => void;
   onAddToCarousel: (template: Tables<"templates">) => void;
   designRequest?: Tables<"template_item_design_requests">;
+  onEditTemplateItem?: (templateItem: Tables<"template_items">) => void;
 }) => {
   const { data: templateItems, isLoading: isLoadingTemplateItems } = useSupaQuery(
     getTemplateItemsByTemplateId,
@@ -80,6 +82,7 @@ export const InstagramTemplate = ({
           template={template}
           templateItem={templateItems[0]}
           hideActions={!!designRequest}
+          onEdit={onEditTemplateItem}
         />
       );
     }
@@ -97,6 +100,7 @@ export const InstagramTemplate = ({
                 template={template}
                 templateItem={item}
                 hideActions={!!designRequest}
+                onEdit={onEditTemplateItem}
               />
             </CarouselItem>
           ))}
