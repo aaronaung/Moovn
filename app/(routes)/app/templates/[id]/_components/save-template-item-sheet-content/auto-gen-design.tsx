@@ -33,7 +33,7 @@ enum TemplateCreator {
   Self = "self",
 }
 
-export default function AddAutoGenDesignTemplateItem({
+export default function SaveAutoGenDesignTemplateItem({
   user,
   parentTemplate,
   itemPosition,

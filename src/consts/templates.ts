@@ -4,6 +4,7 @@ import { SourceDataView } from "./sources";
 export type TemplateItemMetadata = DriveTemplateItemMetadata;
 export type DriveTemplateItemMetadata = {
   drive_folder_id: string;
+  drive_folder_name: string;
   drive_file_name: string;
 };
 

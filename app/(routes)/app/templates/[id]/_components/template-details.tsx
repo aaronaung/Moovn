@@ -1,26 +1,28 @@
 "use client";
 import { cn } from "@/src/utils";
 
-import { useCallback, useRef, useState } from "react";
+import { SetStateAction, Dispatch, useCallback, useEffect, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Tables } from "@/types/db";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import Image from "next/image";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/src/libs/indexeddb/indexeddb";
 import { Button } from "@/src/components/ui/button";
-import { AddTemplateItemSheet } from "./add-template-item-sheet";
+import { SaveTemplateItemSheet } from "./save-template-item-sheet";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import {
   deleteTemplateItem,
   getTemplateItemsByTemplateId,
   setTemplateItemOrder,
 } from "@/src/data/templates";
-import { Card, CardContent } from "@/src/components/ui/card";
 import _ from "lodash";
 import { Spinner } from "@/src/components/common/loading-spinner";
+import TemplateContainer from "../../_components/template-container";
 import { ContentItemType } from "@/src/consts/content";
-import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
+
+type SaveTemplateItemSheetState = {
+  isOpen: boolean;
+  position: number;
+  templateItem?: Tables<"template_items">;
+};
 
 export const TemplateDetails = ({
   user,
@@ -36,16 +38,12 @@ export const TemplateDetails = ({
       queryKey: ["getTemplateItemsByTemplateId", template.id],
     },
   );
-  const [templateItems, setTemplateItems] = useState<Tables<"template_items">[]>(
-    initialTemplateItems ?? [],
-  );
-  const [addItemSheetState, setAddTemplateItemSheetState] = useState<{
-    isOpen: boolean;
-    position: number;
-  }>({
-    isOpen: false,
-    position: 1,
-  });
+  const [templateItems, setTemplateItems] = useState<Tables<"template_items">[]>([]);
+  const [saveTemplateItemSheetState, setSaveTemplateItemSheetState] =
+    useState<SaveTemplateItemSheetState>({
+      isOpen: false,
+      position: 1,
+    });
 
   const { mutateAsync: _deleteTemplateItem, isPending: isDeletingTemplateItem } = useSupaMutation(
     deleteTemplateItem,
@@ -56,6 +54,10 @@ export const TemplateDetails = ({
   const { mutateAsync: _setTemplateItemOrder } = useSupaMutation(setTemplateItemOrder, {
     invalidate: [["getTemplateItemsByTemplateId", template.id]],
   });
+
+  useEffect(() => {
+    setTemplateItems(initialTemplateItems ?? []);
+  }, [initialTemplateItems]);
 
   const debouncedSetTemplateItemOrder = useCallback(
     _.debounce((items: Tables<"template_items">[]) => {
@@ -83,7 +85,7 @@ export const TemplateDetails = ({
   );
 
   const addItem = useCallback((position: number) => {
-    setAddTemplateItemSheetState({
+    setSaveTemplateItemSheetState({
       isOpen: true,
       position,
     });
@@ -108,30 +110,31 @@ export const TemplateDetails = ({
         templateItems.length === 0 && "flex-col items-center justify-center",
       )}
     >
-      <AddTemplateItemSheet
-        isOpen={addItemSheetState.isOpen}
-        itemPosition={addItemSheetState.position}
+      <SaveTemplateItemSheet
+        isOpen={saveTemplateItemSheetState.isOpen}
+        itemPosition={saveTemplateItemSheetState.position}
         user={user}
         parentTemplate={template}
+        templateItem={saveTemplateItemSheetState.templateItem}
         onClose={() =>
-          setAddTemplateItemSheetState((prev) => ({
+          setSaveTemplateItemSheetState((prev) => ({
             ...prev,
             isOpen: false,
           }))
         }
         onAddComplete={(newTemplateItem) => {
-          if (addItemSheetState.position !== undefined) {
+          if (saveTemplateItemSheetState.position !== undefined) {
             setTemplateItems((prevTemplateItems) => {
               const newTemplateItems = [...prevTemplateItems];
 
-              newTemplateItems.splice(addItemSheetState.position, 0, newTemplateItem);
+              newTemplateItems.splice(saveTemplateItemSheetState.position, 0, newTemplateItem);
               _setTemplateItemOrder(
                 newTemplateItems.map((item, index) => ({ id: item.id, position: index })),
               );
               return newTemplateItems;
             });
           }
-          setAddTemplateItemSheetState((prev) => ({
+          setSaveTemplateItemSheetState((prev) => ({
             ...prev,
             isOpen: false,
           }));
@@ -146,12 +149,14 @@ export const TemplateDetails = ({
       )}
       {templateItems.map((item, position) => (
         <DraggableTemplateItem
+          template={template}
           key={item.id}
           item={item}
           position={position}
           moveItem={moveItem}
           addItem={addItem}
           removeItem={removeItem}
+          setSaveTemplateItemSheetState={setSaveTemplateItemSheetState}
         />
       ))}
     </div>
@@ -159,32 +164,22 @@ export const TemplateDetails = ({
 };
 
 const DraggableTemplateItem = ({
+  template,
   item,
   position,
   moveItem,
   addItem,
   removeItem,
+  setSaveTemplateItemSheetState,
 }: {
+  template: Tables<"templates">;
   item: Tables<"template_items">;
   position: number;
   moveItem: (dragId: string, hoverId: string) => void;
   addItem: (position: number) => void;
   removeItem: (id: string) => void;
+  setSaveTemplateItemSheetState: Dispatch<SetStateAction<SaveTemplateItemSheetState>>;
 }) => {
-  const idbTemplateItem = useLiveQuery(async () => {
-    const idbTemplateItem = await db.templateItems.get(item.id);
-    if (!idbTemplateItem) {
-      return undefined;
-    }
-    return {
-      jpgUrl: URL.createObjectURL(new Blob([idbTemplateItem.jpg ?? ""], { type: "image/jpeg" })),
-      psdUrl: URL.createObjectURL(
-        new Blob([idbTemplateItem.psd ?? ""], { type: "image/vnd.adobe.photoshop" }),
-      ),
-      psd: idbTemplateItem.psd,
-    };
-  });
-
   const ref = useRef<HTMLDivElement>(null);
   const [showButtons, setShowButtons] = useState(false);
 
@@ -213,7 +208,7 @@ const DraggableTemplateItem = ({
   // This makes the template-item draggable and droppable
   drag(drop(ref));
 
-  const renderAddTemplateItemBtn = (position: number) => {
+  const renderSaveTemplateItemBtn = (position: number) => {
     return (
       <div
         onMouseEnter={() => {
@@ -235,41 +230,43 @@ const DraggableTemplateItem = ({
 
   return (
     <>
-      {position === 0 && renderAddTemplateItemBtn(position)}
-      <Card
+      {position === 0 && renderSaveTemplateItemBtn(position)}
+      <div
         ref={ref}
         style={{
           opacity: isDragging ? 0.5 : 1,
           cursor: "move",
           border: isOver ? "2px solid blue" : "2px solid white",
         }}
-        className="relative h-[350px] w-64 flex-shrink-0"
+        className="relative flex-shrink-0 rounded-md"
         onMouseEnter={() => setShowButtons(true)}
         onMouseLeave={() => setShowButtons(false)}
       >
-        {item.type === ContentItemType.DriveFile && (
-          <div className="absolute right-0 top-0">
-            <GoogleDriveIcon className="h-4 w-4" />
-          </div>
+        <TemplateContainer
+          template={template}
+          templateItem={item}
+          onEdit={
+            item.type === ContentItemType.DriveFile
+              ? () => {
+                  setSaveTemplateItemSheetState((prev) => ({
+                    ...prev,
+                    isOpen: true,
+                    templateItem: item,
+                  }));
+                }
+              : undefined
+          }
+        />
+        {showButtons && !isDragging && (
+          <Button
+            className="absolute right-2 top-2 rounded-full bg-red-500 p-3 text-white hover:bg-red-600"
+            onClick={() => removeItem(item.id)}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
         )}
-        <CardContent>
-          <Image
-            src={idbTemplateItem?.jpgUrl ?? ""}
-            alt={`carousel item ${item.id}`}
-            width={500}
-            height={300}
-          />
-          {showButtons && !isDragging && (
-            <Button
-              className="absolute right-2 top-2 rounded-full bg-red-500 p-3 text-white hover:bg-red-600"
-              onClick={() => removeItem(item.id)}
-            >
-              <TrashIcon className="h-4 w-4" />
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-      {renderAddTemplateItemBtn(position + 1)}
+      </div>
+      {renderSaveTemplateItemBtn(position + 1)}
     </>
   );
 };

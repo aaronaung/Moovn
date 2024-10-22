@@ -1,30 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ContentItemType, ContentType } from "@/src/consts/content";
 import InputSelect from "@/src/components/ui/input/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/src/components/ui/sheet";
-import AddAutoGenDesignTemplateItem from "./add-template-item-sheet-content/auto-gen-design";
+import SaveAutoGenDesignTemplateItem from "./save-template-item-sheet-content/auto-gen-design";
 import { Tables } from "@/types/db";
-import AddDriveTemplateItem from "./add-template-item-sheet-content/google-drive";
+import SaveDriveTemplateItem from "./save-template-item-sheet-content/google-drive";
 import { SourceDataView } from "@/src/consts/sources";
 
-interface AddTemplateItemSheetProps {
+interface SaveTemplateItemSheetProps {
   isOpen: boolean;
   itemPosition: number;
   user: Tables<"users">;
   parentTemplate?: Tables<"templates">;
   onClose: () => void;
   onAddComplete: (newTemplateItem: Tables<"template_items">) => void;
+  templateItem?: Tables<"template_items">; // if provided, we're editing an existing template item
 }
 
-export function AddTemplateItemSheet({
+export function SaveTemplateItemSheet({
   isOpen,
   itemPosition,
   user,
   parentTemplate,
   onClose,
   onAddComplete,
-}: AddTemplateItemSheetProps) {
-  const [forItemType, setForItemType] = useState<ContentItemType>(ContentItemType.AutoGenDesign);
+  templateItem,
+}: SaveTemplateItemSheetProps) {
+  const [forItemType, setForItemType] = useState<ContentItemType>(
+    (templateItem?.type as ContentItemType) || ContentItemType.AutoGenDesign,
+  );
   const [sourceDataView, setSourceDataView] = useState(
     (parentTemplate?.source_data_view as SourceDataView) || SourceDataView.Daily,
   );
@@ -32,8 +36,13 @@ export function AddTemplateItemSheet({
     (parentTemplate?.content_type as ContentType) || ContentType.InstagramPost,
   );
 
+  useEffect(() => {
+    if (templateItem) {
+      setForItemType((templateItem.type as ContentItemType) || ContentItemType.AutoGenDesign);
+    }
+  }, [templateItem]);
+
   function handleOnClose() {
-    setForItemType(ContentItemType.AutoGenDesign);
     onClose();
   }
 
@@ -41,7 +50,7 @@ export function AddTemplateItemSheet({
     switch (forItemType) {
       case ContentItemType.AutoGenDesign:
         return (
-          <AddAutoGenDesignTemplateItem
+          <SaveAutoGenDesignTemplateItem
             user={user}
             parentTemplate={parentTemplate}
             itemPosition={itemPosition}
@@ -53,13 +62,14 @@ export function AddTemplateItemSheet({
 
       case ContentItemType.DriveFile:
         return (
-          <AddDriveTemplateItem
+          <SaveDriveTemplateItem
             user={user}
             parentTemplate={parentTemplate}
             itemPosition={itemPosition}
             onAddComplete={onAddComplete}
             sourceDataView={sourceDataView}
             contentType={contentType}
+            templateItem={templateItem}
           />
         );
     }
@@ -69,20 +79,29 @@ export function AddTemplateItemSheet({
     <Sheet open={isOpen} onOpenChange={handleOnClose}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Add template item</SheetTitle>
+          <SheetTitle>{templateItem ? "Edit template item" : "Add template item"} </SheetTitle>
+          {templateItem && (
+            <p className="text-sm text-muted-foreground">
+              {templateItem.type} at position <b>{itemPosition}</b> of the carousel for template
+              &quot;
+              {parentTemplate?.name}&quot;.
+            </p>
+          )}
         </SheetHeader>
 
         <div className="flex flex-col gap-2 px-1 sm:flex-row sm:gap-4">
-          <InputSelect
-            label="What is the template for?"
-            className="w-[300px]"
-            options={Object.values(ContentItemType).map((type) => ({
-              label: type,
-              value: type,
-            }))}
-            value={forItemType}
-            onChange={(value) => setForItemType(value as ContentItemType)}
-          />
+          {!templateItem && (
+            <InputSelect
+              label="What is the template for?"
+              className="w-[300px]"
+              options={Object.values(ContentItemType).map((type) => ({
+                label: type,
+                value: type,
+              }))}
+              value={forItemType}
+              onChange={(value) => setForItemType(value as ContentItemType)}
+            />
+          )}
           {!parentTemplate && (
             <>
               <InputSelect

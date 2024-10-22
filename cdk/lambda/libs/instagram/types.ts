@@ -17,7 +17,7 @@ export type InstagramMedia = {
 };
 
 export type CreateMediaContainerInput = {
-  imageUrl: string;
+  imageUrl?: string;
   isCarouselItem?: boolean;
   caption?: string;
   locationId?: string;

@@ -18,11 +18,13 @@ import {
 } from "@/src/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import { Button } from "@/src/components/ui/button";
-import { DownloadCloudIcon } from "lucide-react";
+import { DownloadCloudIcon, FileIcon, PencilIcon } from "lucide-react";
 import { download } from "@/src/utils";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
 import { uploadObject } from "@/src/data/r2";
 import { ContentItemType } from "@/src/consts/content";
+import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
+import { DriveTemplateItemMetadata } from "@/src/consts/templates";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -30,10 +32,12 @@ export default function TemplateContainer({
   template,
   templateItem,
   hideActions = false,
+  onEdit,
 }: {
   template: Tables<"templates">;
   templateItem: Tables<"template_items">;
   hideActions?: boolean;
+  onEdit?: (templateItem: Tables<"template_items">) => void;
 }) {
   const { open: openPhotopeaEditor } = usePhotopeaEditor();
   const { generateTemplateJpg, isLoading: isGeneratingTemplateJpg } = useGenerateTemplateJpg();
@@ -62,10 +66,12 @@ export default function TemplateContainer({
           setIsLoadingTemplateSignedUrl(false);
           return;
         }
-        generateTemplateJpg({
-          template,
-          templateItem,
-        });
+        if (templateItem.type === ContentItemType.AutoGenDesign) {
+          generateTemplateJpg({
+            template,
+            templateItem,
+          });
+        }
       } catch (err) {
         console.error("Failed to generate template jpg:", err);
         toast({
@@ -77,7 +83,9 @@ export default function TemplateContainer({
       }
     };
 
-    generateTemplate();
+    if (templateItem.type === ContentItemType.AutoGenDesign) {
+      generateTemplate();
+    }
   }, []);
 
   const handleTemplateSave = async (
@@ -129,21 +137,50 @@ export default function TemplateContainer({
   };
 
   const renderTemplateContent = () => {
-    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg || !idbTemplateItem?.jpgUrl) {
+    if (isLoadingTemplateSignedUrl || isGeneratingTemplateJpg) {
       return (
         <div className={`flex h-[320px] w-[320px] items-center justify-center`}>
           <Spinner />
         </div>
       );
     }
-    return (
-      <img
-        src={idbTemplateItem.jpgUrl}
-        onClick={() => setIsImageViewerOpen(true)}
-        alt="Template"
-        className=" h-full w-full object-contain"
-      />
-    );
+    if (templateItem.type === ContentItemType.AutoGenDesign && !idbTemplateItem?.jpgUrl) {
+      return <p>No template image found.</p>;
+    }
+
+    switch (templateItem.type) {
+      case ContentItemType.AutoGenDesign:
+        return (
+          <img
+            src={idbTemplateItem!.jpgUrl}
+            onClick={() => setIsImageViewerOpen(true)}
+            alt="Template"
+            className=" h-full w-full object-contain"
+          />
+        );
+      case ContentItemType.DriveFile:
+        if (!templateItem.metadata) {
+          return null;
+        }
+        const metadata = templateItem.metadata as DriveTemplateItemMetadata;
+        return (
+          <div className="flex flex-col items-center justify-center">
+            <GoogleDriveIcon className="h-12 w-12" />
+            <div className="mt-2 flex items-center">
+              <FileIcon className="mr-1 h-4 w-4" />
+              <p className="text-sm font-medium">
+                {metadata.drive_folder_name}/YYYY-MM-DD/{metadata.drive_file_name}
+              </p>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              e.g. {metadata.drive_folder_name}/{new Date().toISOString().split("T")[0]}/
+              {metadata.drive_file_name}
+            </p>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -153,7 +190,7 @@ export default function TemplateContainer({
         className={`relative flex cursor-pointer items-center justify-center bg-secondary p-0`}
       >
         {renderTemplateContent()}
-        {idbTemplateItem?.jpgUrl && (
+        {templateItem.type === ContentItemType.AutoGenDesign && idbTemplateItem?.jpgUrl && (
           <ImageViewer
             visible={isImageViewerOpen}
             onMaskClick={() => setIsImageViewerOpen(false)}
@@ -164,69 +201,87 @@ export default function TemplateContainer({
       </div>
       {!hideActions && (
         <div className="flex justify-center gap-2 py-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    className="group hover:bg-secondary-foreground hover:text-secondary"
-                    variant="secondary"
-                    disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}
+          {templateItem.type === ContentItemType.AutoGenDesign && (
+            <DropdownMenu>
+              <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      className="group hover:bg-secondary-foreground hover:text-secondary"
+                      variant="secondary"
+                      disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}
+                    >
+                      <DownloadCloudIcon width={18} className="group-hover:text-secondary" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download</TooltipContent>
+                </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {idbTemplateItem?.psdUrl && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => {
+                      download(idbTemplateItem.psdUrl, `${template.name}.psd`);
+                    }}
                   >
-                    <DownloadCloudIcon width={18} className="group-hover:text-secondary" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Download</TooltipContent>
-              </Tooltip>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {idbTemplateItem?.psdUrl && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => {
-                    download(idbTemplateItem.psdUrl, `${template.name}.psd`);
-                  }}
-                >
-                  PSD
-                </DropdownMenuItem>
-              )}
-              {idbTemplateItem?.jpgUrl && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => {
-                    download(idbTemplateItem.jpgUrl, `${template.name}.jpg`);
-                  }}
-                >
-                  JPEG
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    PSD
+                  </DropdownMenuItem>
+                )}
+                {idbTemplateItem?.jpgUrl && (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => {
+                      download(idbTemplateItem.jpgUrl, `${template.name}.jpg`);
+                    }}
+                  >
+                    JPEG
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <Tooltip>
             <TooltipTrigger>
               <Button
                 variant="secondary"
                 className="group hover:bg-secondary-foreground hover:text-secondary"
-                disabled={isLoadingTemplateSignedUrl || !idbTemplateItem?.psd}
+                disabled={
+                  isLoadingTemplateSignedUrl ||
+                  (templateItem.type === ContentItemType.AutoGenDesign && !idbTemplateItem?.psd)
+                }
                 onClick={async () => {
-                  if (idbTemplateItem?.psd) {
-                    openPhotopeaEditor(
-                      {
-                        title: template.name || "Untitled",
-                        source_data_view: template.source_data_view,
-                        content_type: template.content_type,
-                      },
-                      idbTemplateItem.psd,
-                      {
-                        onSave: handleTemplateSave,
-                        isMetadataEditable: true,
-                      },
-                    );
+                  switch (templateItem.type) {
+                    case ContentItemType.AutoGenDesign:
+                      if (idbTemplateItem?.psd) {
+                        openPhotopeaEditor(
+                          {
+                            title: template.name || "Untitled",
+                            source_data_view: template.source_data_view,
+                            content_type: template.content_type,
+                          },
+                          idbTemplateItem.psd,
+                          {
+                            onSave: handleTemplateSave,
+                            isMetadataEditable: true,
+                          },
+                        );
+                      }
+                      break;
+                    case ContentItemType.DriveFile:
+                      onEdit?.(templateItem);
+                      break;
+                    default:
+                      break;
                   }
                 }}
               >
-                <PaintBrushIcon width={18} className="group-hover:text-secondary" />
+                {templateItem.type === ContentItemType.AutoGenDesign ? (
+                  <PaintBrushIcon width={18} className="group-hover:text-secondary" />
+                ) : (
+                  <PencilIcon width={18} className="group-hover:text-secondary" />
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit template</TooltipContent>

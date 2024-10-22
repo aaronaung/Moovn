@@ -143,8 +143,8 @@ export class InstagramAPIClient {
     mediaType?: "STORIES" | "REELS", // default to POST
   ): Promise<CreateMediaContainerResult> {
     const body = {
-      image_url: req.imageUrl,
       ...(mediaType ? { media_type: mediaType } : {}),
+      ...(req.imageUrl ? { image_url: req.imageUrl } : {}),
       ...(req.isCarouselItem ? { is_carousel_item: req.isCarouselItem } : {}),
       ...(req.caption ? { caption: req.caption } : {}),
       ...(req.locationId ? { location_id: req.locationId } : {}),

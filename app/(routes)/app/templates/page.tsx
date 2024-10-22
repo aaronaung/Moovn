@@ -12,7 +12,7 @@ import { useAuthUser } from "@/src/contexts/auth";
 import { deleteObject } from "@/src/data/r2";
 import EmptyState from "@/src/components/common/empty-state";
 import { useRouter } from "next/navigation";
-import { AddTemplateItemSheet } from "./[id]/_components/add-template-item-sheet";
+import { SaveTemplateItemSheet } from "./[id]/_components/save-template-item-sheet";
 
 export default function TemplatesPage() {
   const { user } = useAuthUser();
@@ -24,7 +24,7 @@ export default function TemplatesPage() {
   }>({
     isOpen: false,
   });
-  const [addTemplateItemSheetState, setAddTemplateItemSheetState] = useState<{
+  const [saveTemplateItemState, setSaveTemplateItemState] = useState<{
     isOpen: boolean;
     template?: Tables<"templates">;
   }>({
@@ -51,14 +51,14 @@ export default function TemplatesPage() {
     <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       {/** Todo: check if the template is associated with any content that's to be published */}
 
-      <AddTemplateItemSheet
+      <SaveTemplateItemSheet
         user={user}
-        isOpen={addTemplateItemSheetState.isOpen}
-        onClose={() => setAddTemplateItemSheetState({ isOpen: false })}
-        parentTemplate={addTemplateItemSheetState.template}
+        isOpen={saveTemplateItemState.isOpen}
+        onClose={() => setSaveTemplateItemState({ isOpen: false })}
+        parentTemplate={saveTemplateItemState.template}
         itemPosition={0}
         onAddComplete={() => {
-          setAddTemplateItemSheetState({ isOpen: false });
+          setSaveTemplateItemState({ isOpen: false });
         }}
       />
 
@@ -101,7 +101,7 @@ export default function TemplatesPage() {
         {hasTemplates && (
           <Button
             onClick={() => {
-              setAddTemplateItemSheetState({
+              setSaveTemplateItemState({
                 isOpen: true,
               });
             }}
@@ -142,7 +142,7 @@ export default function TemplatesPage() {
           actionButtonOverride={
             <Button
               onClick={() => {
-                setAddTemplateItemSheetState({
+                setSaveTemplateItemState({
                   isOpen: true,
                 });
               }}

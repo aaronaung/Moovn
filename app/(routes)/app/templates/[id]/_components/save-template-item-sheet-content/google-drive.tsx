@@ -26,13 +26,14 @@ import { toast } from "@/src/components/ui/use-toast";
 import { DriveTemplateItemMetadata } from "@/src/consts/templates";
 import { SheetFooter } from "@/src/components/ui/sheet";
 
-export default function AddDriveTemplateItem({
+export default function SaveDriveTemplateItem({
   user,
   parentTemplate,
   itemPosition,
   onAddComplete,
   sourceDataView,
   contentType,
+  templateItem,
 }: {
   user: Tables<"users">;
   parentTemplate?: Tables<"templates">; // if provided, we're adding to a carousel
@@ -40,13 +41,22 @@ export default function AddDriveTemplateItem({
   onAddComplete: (newTemplateItem: Tables<"template_items">) => void;
   sourceDataView: SourceDataView;
   contentType: ContentType;
+  templateItem?: Tables<"template_items">; // if provided, we're editing an existing template item
 }) {
+  const templateItemMetadata = templateItem?.metadata as DriveTemplateItemMetadata;
   const [selectedSource, setSelectedSource] = useState<
     (Tables<"sources"> & { access_token: string }) | undefined
   >(undefined);
-  const [selectedFolder, setSelectedFolder] = useState<drive_v3.Schema$File | null>(null);
-  const [fileName, setFileName] = useState<string>("1");
-  const [templateName, setTemplateName] = useState<string>("");
+  const [selectedFolder, setSelectedFolder] = useState<drive_v3.Schema$File | null>(
+    templateItemMetadata?.drive_folder_id && templateItemMetadata.drive_folder_name
+      ? {
+          id: templateItemMetadata.drive_folder_id,
+          name: templateItemMetadata.drive_folder_name,
+        }
+      : null,
+  );
+  const [fileName, setFileName] = useState<string>(templateItemMetadata?.drive_file_name ?? "1");
+  const [templateName, setTemplateName] = useState<string>(parentTemplate?.name ?? "");
 
   const { data: driveSources, isLoading: isSourcesLoading } = useSupaQuery(
     getDriveSourcesWithAccessToken,
@@ -81,23 +91,25 @@ export default function AddDriveTemplateItem({
         });
       }
       const savedTemplateItem = await _saveTemplateItem({
+        ...(templateItem ? { id: templateItem.id } : {}),
         template_id: template.id,
         position: itemPosition,
         type: ContentItemType.DriveFile,
         metadata: {
           drive_folder_id: selectedFolder.id,
+          drive_folder_name: selectedFolder.name,
           drive_file_name: fileName,
         } as DriveTemplateItemMetadata,
       });
       toast({
         variant: "success",
-        title: "Template saved",
+        title: "Template item saved",
       });
       onAddComplete(savedTemplateItem);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to save template. Please try again or contact support",
+        title: "Failed to save template item. Please try again or contact support",
       });
       console.error(error);
     }
@@ -189,7 +201,8 @@ export default function AddDriveTemplateItem({
         <div>
           <Header2 title="Enter the standardized file name" />
           <p className="mb-2 text-sm text-muted-foreground">
-            We recommend using a number to ensure the correct file is selected
+            The file name will be used to identify the file in the &quot;date subfolder&quot;. We
+            recommend using a number to keep it consistent across all date folders.
           </p>
           <InputText
             onChange={(e) => setFileName(e.target.value)}
@@ -201,7 +214,7 @@ export default function AddDriveTemplateItem({
         {selectedFolder && fileName && (
           <div>
             <p className="mb-2 text-sm text-muted-foreground">
-              When generating content for this template item, we will pull the file from the
+              When generating content for this template item, we will use the file from the
               following path:
             </p>
             <div className="mt-2 flex items-center">
@@ -211,14 +224,14 @@ export default function AddDriveTemplateItem({
               </p>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              e.g. {selectedFolder.name}/2024-10-10/{fileName}
+              e.g. {selectedFolder.name}/{new Date().toISOString().split("T")[0]}/{fileName}
             </p>
           </div>
         )}
       </div>
       <SheetFooter>
         <Button size="lg" onClick={handleAddTemplateItem} disabled={!selectedFolder || !fileName}>
-          Add Template Item
+          {templateItem ? "Update Template Item" : "Add Template Item"}
         </Button>
       </SheetFooter>
     </>
