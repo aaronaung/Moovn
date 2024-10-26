@@ -96,6 +96,7 @@ export default function SaveDriveTemplateItem({
         position: itemPosition,
         type: ContentItemType.DriveFile,
         metadata: {
+          drive_source_id: selectedSource?.id,
           drive_folder_id: selectedFolder.id,
           drive_folder_name: selectedFolder.name,
           drive_file_name: fileName,
@@ -152,7 +153,7 @@ export default function SaveDriveTemplateItem({
           <div className="mb-2">
             {driveSources.length > 1 ? (
               <Select
-                value={selectedSource?.id}
+                value={selectedSource?.id ?? templateItemMetadata.drive_source_id}
                 onValueChange={(value) =>
                   setSelectedSource(driveSources.find((source) => source.id === value))
                 }
@@ -201,8 +202,9 @@ export default function SaveDriveTemplateItem({
         <div>
           <Header2 title="Enter the standardized file name" />
           <p className="mb-2 text-sm text-muted-foreground">
-            The file name will be used to identify the file in the &quot;date subfolder&quot;. We
-            recommend using a number to keep it consistent across all date folders.
+            The file name will be used to identify the file in the date sub-folder. The file name
+            MUST be consistent across all date sub-folders. For example: Root/2024-10-25/filename,
+            Root/2024-10-26/filename, Root/2024-10-27/filename
           </p>
           <InputText
             onChange={(e) => setFileName(e.target.value)}

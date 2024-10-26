@@ -24,6 +24,7 @@ import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import _ from "lodash";
 import { memo } from "react";
+import { DriveContentItem } from "./drive-content-item";
 
 export const InstagramContent = memo(
   function InstagramContent({
@@ -172,7 +173,17 @@ const ContentItemContainer = ({
   disableImageViewer?: boolean;
 }) => {
   if (templateItem.type === ContentItemType.DriveFile) {
-    return <div>Video</div>;
+    return (
+      <DriveContentItem
+        contentIdbKey={contentIdbKey}
+        contentItemIdbKey={contentItemIdbKey}
+        template={template}
+        templateItem={templateItem}
+        schedule={schedule}
+        width={width}
+        disableImageViewer={disableImageViewer}
+      />
+    );
   }
   return (
     <DesignContentItem

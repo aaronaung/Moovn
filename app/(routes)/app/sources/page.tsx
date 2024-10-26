@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { SourceSelectItem } from "./_components/source-select-item";
 import DataView from "./_components/data-view";
 import { useSearchParams } from "next/navigation";
+import { SourceTypes } from "@/src/consts/sources";
 
 export default function SourcesPage() {
   const [sourceDialogState, setSourceDialogState] = useState<{
@@ -98,7 +99,11 @@ export default function SourcesPage() {
     <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
-        label={"Deleting this source will delete all associated scheduled contents. Are you sure?"}
+        label={
+          deleteConfirmationDialogState.source?.type === SourceTypes.GoogleDrive
+            ? "Deleting this source will delete all associated Google Drive template items. Are you sure?"
+            : "Deleting this source will delete all associated scheduled contents. Are you sure?"
+        }
         isDeleting={isDeletingTemplate}
         onClose={() => {
           setDeleteConfirmationDialogState({

@@ -16,6 +16,8 @@ export type ConfigProps = {
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
 };
 
 const app = new cdk.App();
@@ -37,6 +39,8 @@ new MoovnStack(app, "moovn-prod", {
     R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID!,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID!,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET!,
   },
 });
 
@@ -48,5 +52,7 @@ new MoovnStack(app, "moovn-dev", {
     R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID!,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID!,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET!,
   },
 });

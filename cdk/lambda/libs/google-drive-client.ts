@@ -35,31 +35,24 @@ export class GoogleDriveClient {
     }
   }
 
+  async getFile(fileId: string): Promise<drive_v3.Schema$File> {
+    const response = await this.driveService.files.get({
+      fileId: fileId,
+    });
+    return response.data;
+  }
+
   async listFiles(folderId?: string): Promise<drive_v3.Schema$File[]> {
     try {
       const response = await this.driveService.files.list({
         q: folderId ? `'${folderId}' in parents` : undefined,
-        fields: "files(id, name, mimeType, webViewLink)",
+        fields: "files(id, name, mimeType, webViewLink, parents)",
+        pageSize: 1000,
       });
 
       return response.data.files || [];
     } catch (error) {
       console.error("Error listing files:", error);
-      throw error;
-    }
-  }
-
-  async getFile(query: string, fields: string): Promise<drive_v3.Schema$File[]> {
-    try {
-      const response = await this.driveService.files.list({
-        q: query,
-        fields: `files(${fields})`,
-        pageSize: 1000, // Adjust this value based on your needs
-      });
-
-      return response.data.files || [];
-    } catch (error) {
-      console.error("Error getting file:", error);
       throw error;
     }
   }
@@ -76,6 +69,4 @@ export class GoogleDriveClient {
     );
     return response.data as Readable;
   }
-
-  // Add more methods as needed for your specific use cases
 }

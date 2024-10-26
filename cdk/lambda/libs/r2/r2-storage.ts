@@ -1,6 +1,5 @@
 import {
   S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
@@ -9,6 +8,7 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
 
 class R2Storage {
   private client: S3Client;
@@ -38,13 +38,16 @@ class R2Storage {
     key: string,
     body: Buffer | Blob | ReadableStream,
   ): Promise<void> {
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: body,
+    const upload = new Upload({
+      client: this.client,
+      params: {
+        Bucket: bucketName,
+        Key: key,
+        Body: body,
+      },
     });
 
-    await this.client.send(command);
+    await upload.done();
   }
 
   async deleteObject(bucketName: string, key: string): Promise<void> {

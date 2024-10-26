@@ -7,6 +7,7 @@ const excludedPaths = [
   "/api/auth/callback",
   "/api/auth/instagram/callback",
   "/api/auth/mindbody/callback",
+  "/api/sources/:id/drive/upload-to-r2",
 ];
 
 export async function middleware(req: NextRequest) {

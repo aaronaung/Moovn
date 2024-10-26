@@ -123,3 +123,9 @@ export const setTemplateItemOrder = async (
     }),
   );
 };
+
+export const getTemplateItemsBySourceId = async (sourceId: string, { client }: SupabaseOptions) => {
+  return throwOrData(
+    client.from("template_items").select("*").eq("metadata->>drive_source_id", sourceId),
+  );
+};
