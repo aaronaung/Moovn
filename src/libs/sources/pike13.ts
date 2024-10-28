@@ -70,6 +70,11 @@ export class Pike13Client implements SourceClient {
     const [events, staffMembers] = await Promise.all([$events, $staffMembers]);
     const staffMembersById = _.keyBy(staffMembers, "id");
 
+    if (events.length === 0) {
+      return {
+        day: [],
+      };
+    }
     const groupedEvents = this.groupEventsByDay(events, events[0].timezone);
 
     // NOTE: ALL DATE TIMES ARE LOCAL TO THE SITE'S TIMEZONE.
