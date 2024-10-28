@@ -1,8 +1,12 @@
 import * as supabase from "@supabase/supabase-js";
 import { success, error } from "../utils";
-import { InstagramAPIClient } from "../libs/instagram/ig-client";
-import R2Storage from "../libs/r2/r2-storage";
-import { getBucketName } from "../libs/r2/r2-buckets";
+// Import from shared libs instead of local libs
+import { InstagramAPIClient } from "@/src/libs/instagram/ig-client";
+import R2Storage from "@/src/libs/r2/r2-storage";
+import { getBucketName } from "@/src/libs/r2/r2-buckets";
+import { InstagramAPIToken } from "@/src/libs/instagram/types";
+import { Database } from "@/types/db";
+import { ContentItemMetadata, ContentMetadata } from "@/src/consts/content";
 
 export const handler = async (event: any) => {
   try {
@@ -25,7 +29,7 @@ export const handler = async (event: any) => {
       process.env.R2_ACCESS_KEY_ID!,
       process.env.R2_SECRET_ACCESS_KEY!,
     );
-    const sbClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const sbClient = supabase.createClient<Database>(supabaseUrl, supabaseKey);
 
     const { data: content, error: getContentErr } = await sbClient
       .from("content")
@@ -37,9 +41,9 @@ export const handler = async (event: any) => {
     }
     console.log("Content fetched", content);
 
-    switch (content.destination.type) {
+    switch (content.destination?.type) {
       case "Instagram":
-        if (!content.destination.linked_ig_user_id) {
+        if (!content.destination?.linked_ig_user_id) {
           return Response.json(
             { message: "Destination not connected: missing linked IG user ID" },
             { status: 400 },
@@ -55,16 +59,16 @@ export const handler = async (event: any) => {
         const igClient = new InstagramAPIClient(
           {
             accessToken: content.destination.long_lived_token,
-            lastRefreshedAt: content.destination.token_last_refreshed_at,
+            lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? ""),
           },
-          async (token) => {
+          async (token: InstagramAPIToken) => {
             await sbClient
               .from("destinations")
               .update({
                 long_lived_token: token.accessToken,
                 token_last_refreshed_at: token.lastRefreshedAt.toISOString(),
               })
-              .eq("id", content.destination.id);
+              .eq("id", content.destination?.id ?? "");
           },
         );
 
@@ -84,7 +88,7 @@ export const handler = async (event: any) => {
           );
           toPublish.push({
             url: signedUrl,
-            tags: item.metadata?.ig_tags ?? [],
+            tags: (item.metadata as ContentItemMetadata)?.ig_tags ?? [],
           });
         }
 
@@ -100,7 +104,7 @@ export const handler = async (event: any) => {
                   userTags: tags,
                 })),
                 {
-                  caption: content.ig_caption,
+                  caption: (content.metadata as ContentMetadata)?.ig_caption,
                 },
               );
               if (!resp.id) {
@@ -115,7 +119,7 @@ export const handler = async (event: any) => {
               const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
                 imageUrl: toPublish[0].url,
                 userTags: toPublish[0].tags,
-                caption: content.ig_caption,
+                caption: (content.metadata as ContentMetadata)?.ig_caption,
               });
               if (!resp.id) {
                 throw new Error(
@@ -152,7 +156,7 @@ export const handler = async (event: any) => {
 
             const { data, error: insertErr } = await sbClient.from("published_content").insert({
               content_id: contentId,
-              owner_id: content.destination.owner_id,
+              owner_id: content.destination?.owner_id ?? "",
               ig_media_id: id,
               ig_media_url: media.media_url,
               ig_permalink: media.permalink,
@@ -169,7 +173,7 @@ export const handler = async (event: any) => {
         console.log("Published media ids", publishedMediaIds);
         break;
       default:
-        throw new Error(`Destination type ${content.destination.type} not supported`);
+        throw new Error(`Destination type ${content.destination?.type ?? ""} not supported`);
     }
 
     return success({ message: `Content ${content.id} published successfully` });

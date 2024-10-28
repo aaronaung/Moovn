@@ -3,22 +3,19 @@ import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodeJS from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
+import { ConfigProps } from "../../bin/cdk";
 
-export interface ContentPublishingProps {
-  config: any;
+interface ContentPublishingConstructProps {
+  config: ConfigProps;
   prependStage: (str: string) => string;
+  lambdaConfig: lambda.FunctionOptions;
 }
 
 export class ContentPublishingConstruct extends Construct {
   public readonly publishContentFunction: lambda.Function;
 
-  constructor(scope: Construct, id: string, props: ContentPublishingProps) {
+  constructor(scope: Construct, id: string, props: ContentPublishingConstructProps) {
     super(scope, id);
-
-    const cloudWatchLogPolicy = new iam.PolicyStatement({
-      actions: ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-      resources: ["*"],
-    });
 
     this.publishContentFunction = new lambdaNodeJS.NodejsFunction(
       this,
@@ -36,8 +33,14 @@ export class ContentPublishingConstruct extends Construct {
         },
         functionName: props.prependStage("publish-content"),
         timeout: cdk.Duration.seconds(120),
+        ...props.lambdaConfig, // Add the shared config
       },
     );
-    this.publishContentFunction.addToRolePolicy(cloudWatchLogPolicy);
+    this.publishContentFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        resources: ["*"],
+      }),
+    );
   }
 }

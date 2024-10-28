@@ -7,10 +7,12 @@ import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { ConfigProps } from "@/cdk/bin/cdk";
 
-export interface DriveSyncProps {
-  config: any;
+interface DriveSyncProps {
+  config: ConfigProps;
   prependStage: (str: string) => string;
+  lambdaConfig: lambda.FunctionOptions;
 }
 
 export class DriveSyncConstruct extends Construct {
@@ -19,8 +21,10 @@ export class DriveSyncConstruct extends Construct {
   constructor(scope: Construct, id: string, props: DriveSyncProps) {
     super(scope, id);
 
+    // Create SQS Queue with visibility timeout matching the Lambda timeout
     const driveSyncQueue = new sqs.Queue(this, props.prependStage("drive-sync-queue"), {
       queueName: props.prependStage("drive-sync-queue"),
+      visibilityTimeout: cdk.Duration.minutes(15), // Match the Lambda timeout
     });
 
     this.initiatorFunction = new lambdaNodeJS.NodejsFunction(
@@ -40,9 +44,13 @@ export class DriveSyncConstruct extends Construct {
 
     driveSyncQueue.grantSendMessages(this.initiatorFunction);
 
+    // Schedule the initiator function to run at the start of every hour
     const rule = new events.Rule(this, props.prependStage("drive-sync-rule"), {
-      schedule: events.Schedule.rate(cdk.Duration.hours(1)),
+      schedule: events.Schedule.cron({ minute: "*/5" }), // Run every 5 minutes
     });
+    // const rule = new events.Rule(this, props.prependStage("drive-sync-rule"), {
+    //   schedule: events.Schedule.cron({ minute: "0", hour: "12,15,18,21,0,3,6,9" }), // Run every 3 hours
+    // });
 
     rule.addTarget(new targets.LambdaFunction(this.initiatorFunction));
 

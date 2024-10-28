@@ -1,8 +1,13 @@
+import { SourceTypes } from "@/src/consts/sources";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/db";
 
 const sqs = new SQSClient({});
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient<Database>(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
 const BATCH_SIZE = 10;
 
@@ -17,7 +22,7 @@ async function* getIntegrationsBatches(sourceIds?: string[]) {
       const query = supabase
         .from("sources")
         .select("id")
-        .eq("type", "google_drive")
+        .eq("type", SourceTypes.GoogleDrive)
         .order("id")
         .limit(BATCH_SIZE);
 
@@ -59,6 +64,7 @@ export const handler = async (event: any) => {
 
     for await (const batch of getIntegrationsBatches(sourceIds)) {
       await sendIntegrationBatchToSQS(batch);
+      console.log(`Sent batch of ${batch.length} integrations to SQS for drive sync`);
     }
 
     return {

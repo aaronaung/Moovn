@@ -12,11 +12,12 @@ export type InstagramBusinessAccount = {
 export type InstagramMedia = {
   id: string;
   permalink: string;
+  media_url: string;
   // more here: https://developers.facebook.com/docs/instagram-api/reference/ig-media/
 };
 
 export type CreateMediaContainerInput = {
-  imageUrl: string;
+  imageUrl?: string;
   isCarouselItem?: boolean;
   caption?: string;
   locationId?: string;

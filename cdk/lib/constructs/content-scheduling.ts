@@ -7,6 +7,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 export interface ContentSchedulingProps {
   publishContentFunction: lambda.Function;
   prependStage: (str: string) => string;
+  lambdaConfig: lambda.FunctionOptions;
 }
 
 export class ContentSchedulingConstruct extends Construct {
@@ -21,8 +22,8 @@ export class ContentSchedulingConstruct extends Construct {
       resources: ["*"],
     });
 
-    const schedulerRole = new iam.Role(this, props.prependStage("scheduler-role"), {
-      roleName: props.prependStage("scheduler-role"),
+    const schedulerRole = new iam.Role(this, props.prependStage("content-scheduler-role"), {
+      roleName: props.prependStage("content-scheduler-role"),
       assumedBy: new iam.ServicePrincipal("scheduler.amazonaws.com"),
     });
 
@@ -51,6 +52,7 @@ export class ContentSchedulingConstruct extends Construct {
         },
         functionName: props.prependStage("schedule-content"),
         timeout: cdk.Duration.seconds(60),
+        ...props.lambdaConfig,
       },
     );
 

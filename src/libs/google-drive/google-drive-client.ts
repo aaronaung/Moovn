@@ -64,6 +64,14 @@ export class GoogleDriveClient {
     }
   }
 
+  async getFileById(fileId: string, fields?: string): Promise<drive_v3.Schema$File> {
+    const response = await this.driveService.files.get({
+      fileId: fileId,
+      ...(fields ? { fields } : {}),
+    });
+    return response.data;
+  }
+
   async getFileStream(fileId: string): Promise<Readable> {
     const response = await this.driveService.files.get(
       {

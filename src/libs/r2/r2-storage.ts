@@ -6,6 +6,7 @@ import {
   _Object,
   CopyObjectCommand,
   HeadObjectCommand,
+  HeadObjectCommandOutput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -42,6 +43,7 @@ class R2Storage {
     bucketName: string,
     key: string,
     body: Buffer | Blob | ReadableStream,
+    metadata?: Record<string, string>,
   ): Promise<void> {
     const upload = new Upload({
       client: this.client,
@@ -49,6 +51,7 @@ class R2Storage {
         Bucket: bucketName,
         Key: key,
         Body: body,
+        ...(metadata ? { Metadata: metadata } : {}),
       },
     });
     await upload.done();
@@ -111,6 +114,14 @@ class R2Storage {
       }
       throw error;
     }
+  }
+
+  async getObjectMetadata(bucketName: string, key: string): Promise<HeadObjectCommandOutput> {
+    const command = new HeadObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+    return await this.client.send(command);
   }
 
   async copyObject(

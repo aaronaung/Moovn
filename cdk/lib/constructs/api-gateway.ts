@@ -1,4 +1,3 @@
-import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -84,7 +83,9 @@ exports.handler = function(event) {
     deleteScheduleResource.addMethod("POST", deleteScheduleLambdaInt, apiConfig);
 
     // Define the '/initiate-drive-sync' route
-    const driveSyncInitiatorLambdaInt = new apigateway.LambdaIntegration(props.driveSyncInitiatorFunction);
+    const driveSyncInitiatorLambdaInt = new apigateway.LambdaIntegration(
+      props.driveSyncInitiatorFunction,
+    );
     const initiateDriveSyncResource = contentSchedulingApi.root.addResource("initiate-drive-sync");
     initiateDriveSyncResource.addMethod("POST", driveSyncInitiatorLambdaInt, apiConfig);
   }

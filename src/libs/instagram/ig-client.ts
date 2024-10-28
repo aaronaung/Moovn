@@ -94,25 +94,47 @@ export class InstagramAPIClient {
       url.search = options.searchParams.toString();
     }
 
-    const resp = await (
-      await fetch(url.toString(), {
+    const maxRetries = 3;
+    let retries = 0;
+    while (retries < maxRetries) {
+      const resp = await fetch(url.toString(), {
         method: options.method,
         headers: {
           Authorization: `Bearer ${this.token.accessToken}`,
           ...(options.body ? { "Content-Type": "application/json" } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-      })
-    ).text();
+      });
 
-    try {
-      const result = JSON.parse(resp);
-      console.log(result);
-      return result;
-    } catch (err) {
-      console.error("Failed to parse json response", resp);
-      throw err;
+      try {
+        const result = JSON.parse(await resp.text());
+        console.log({
+          url: url.toString(),
+          method: options.method,
+          body: options.body,
+          status: resp.status,
+          statusText: resp.statusText,
+          result,
+        });
+
+        if (result && result.code === 4) {
+          // Application limit reach error code
+          retries++;
+          if (retries < maxRetries) {
+            console.log(`Retrying request (attempt ${retries + 1}/${maxRetries})...`);
+            await new Promise((resolve) => setTimeout(resolve, 1000 * retries)); // Exponential backoff
+            continue;
+          }
+        }
+
+        return result;
+      } catch (err) {
+        console.error("Failed to parse json response", err);
+        throw err;
+      }
     }
+
+    throw new Error(`Request failed after ${maxRetries} retries`);
   }
 
   private async createMediaContainer(
@@ -121,8 +143,8 @@ export class InstagramAPIClient {
     mediaType?: "STORIES" | "REELS", // default to POST
   ): Promise<CreateMediaContainerResult> {
     const body = {
-      image_url: req.imageUrl,
       ...(mediaType ? { media_type: mediaType } : {}),
+      ...(req.imageUrl ? { image_url: req.imageUrl } : {}),
       ...(req.isCarouselItem ? { is_carousel_item: req.isCarouselItem } : {}),
       ...(req.caption ? { caption: req.caption } : {}),
       ...(req.locationId ? { location_id: req.locationId } : {}),
@@ -185,7 +207,7 @@ export class InstagramAPIClient {
     return this.request({
       method: "GET",
       path: `/${mediaId}`,
-      searchParams: new URLSearchParams("fields=id,permalink"),
+      searchParams: new URLSearchParams("fields=id,permalink,media_url"),
     });
   }
 
@@ -193,8 +215,6 @@ export class InstagramAPIClient {
     accountId: string,
     input: Omit<CreateMediaContainerInput, "isCarouselItem" | "userTags" | "caption">,
   ) {
-    await this.refreshTokenIfNeeded();
-
     const mediaContainer = await this.createMediaContainer(accountId, input, "STORIES");
     return this.publishMediaContainer(accountId, mediaContainer.id);
   }
@@ -216,10 +236,15 @@ export class InstagramAPIClient {
   ): Promise<{ id: string }> {
     await this.refreshTokenIfNeeded();
 
-    const $createMediaContainers: Promise<{ id: string }>[] = mediaInput.map((input) =>
-      this.createMediaContainer(accountId, { ...input, isCarouselItem: true }),
-    );
-    const mediaContainers = await Promise.all($createMediaContainers);
+    const mediaContainers: { id: string }[] = [];
+    for (const input of mediaInput) {
+      const container = await this.createMediaContainer(accountId, {
+        ...input,
+        isCarouselItem: true,
+      });
+      mediaContainers.push(container);
+      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay to avoid rate limit/spam detection.
+    }
     const carouselContainer = await this.createCarouselContainer(accountId, {
       ...carouselInput,
       children: mediaContainers.map((result) => result.id),
