@@ -7,11 +7,15 @@ import { getBucketName } from "@/src/libs/r2/r2-buckets";
 import { InstagramAPIToken } from "@/src/libs/instagram/types";
 import { Database } from "@/types/db";
 import { ContentItemMetadata, ContentMetadata } from "@/src/consts/content";
+import * as logger from "lambda-log";
 
 export const handler = async (event: any) => {
   try {
     const { contentId, contentPath } = event;
-    console.log("Publishing content", { contentId, contentPath });
+    logger.info("Publishing content", {
+      contentId,
+      contentPath,
+    });
 
     if (!contentId) {
       return error(`contentId missing in body`, 400);
@@ -39,21 +43,17 @@ export const handler = async (event: any) => {
     if (getContentErr) {
       throw new Error(getContentErr.message);
     }
-    console.log("Content fetched", content);
+    logger.info("Content fetched", {
+      content,
+    });
 
     switch (content.destination?.type) {
       case "Instagram":
         if (!content.destination?.linked_ig_user_id) {
-          return Response.json(
-            { message: "Destination not connected: missing linked IG user ID" },
-            { status: 400 },
-          );
+          return error("Destination not connected: missing linked IG user ID", 400);
         }
         if (!content.destination.long_lived_token) {
-          return Response.json(
-            { message: "Destination not connected: missing access token" },
-            { status: 400 },
-          );
+          return error("Destination not connected: missing access token", 400);
         }
 
         const igClient = new InstagramAPIClient(
@@ -74,8 +74,8 @@ export const handler = async (event: any) => {
 
         const toPublish = [];
         if (content.content_items.length === 0) {
-          console.log(`No content to publish for content id: ${contentId}`);
-          return success({ message: "No content to publish" });
+          logger.info(`No content to publish for content id: ${contentId}`);
+          return success("No content to publish");
         }
 
         const sortedContentItems = content.content_items.sort(
@@ -92,7 +92,9 @@ export const handler = async (event: any) => {
           });
         }
 
-        console.log("Content to publish", toPublish);
+        logger.info("Content to publish", {
+          toPublish,
+        });
         let publishedMediaIds = [];
         switch (content.type) {
           case "Instagram Post":
@@ -170,15 +172,19 @@ export const handler = async (event: any) => {
             return data;
           }),
         );
-        console.log("Published media ids", publishedMediaIds);
+        logger.info("Published media ids", {
+          publishedMediaIds,
+        });
         break;
       default:
         throw new Error(`Destination type ${content.destination?.type ?? ""} not supported`);
     }
 
-    return success({ message: `Content ${content.id} published successfully` });
+    return success(`Content ${content.id} published successfully`);
   } catch (err: any) {
-    console.log(err);
+    logger.error("Error publishing content", {
+      error: err,
+    });
     return error(err.message, 500);
   }
 };

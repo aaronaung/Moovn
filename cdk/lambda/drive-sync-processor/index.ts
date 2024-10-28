@@ -2,10 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import { GoogleDriveClient } from "@/src/libs/google-drive/google-drive-client";
 import R2Storage from "@/src/libs/r2/r2-storage";
 import { getBucketName } from "@/src/libs/r2/r2-buckets";
-import { format, isAfter, isSameDay, isValid, parse, subDays } from "date-fns";
+import { format, isAfter, isBefore, isValid, parse, subDays } from "date-fns";
 import { Database } from "@/types/db";
 import { TemplateItemMetadata } from "@/src/consts/templates";
 import { GoogleDriveSourceSettings } from "@/src/consts/sources";
+import * as logger from "lambda-log";
+import { error, success } from "../utils";
 
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
@@ -17,19 +19,21 @@ const r2 = new R2Storage(
   process.env.R2_SECRET_ACCESS_KEY!,
 );
 
-async function processIntegration(integrationId: string) {
+async function syncSource(sourceId: string) {
   try {
-    // Fetch integration details from Supabase
-    const { data: integration, error } = await supabase
+    logger.info(`Starting sync for source ${sourceId}`);
+
+    // Fetch source details from Supabase
+    const { data: source, error } = await supabase
       .from("sources")
       .select("*")
-      .eq("id", integrationId)
+      .eq("id", sourceId)
       .single();
     if (error) throw error;
 
-    const settings = integration.settings as GoogleDriveSourceSettings;
+    const settings = source.settings as GoogleDriveSourceSettings;
     if (!settings.refresh_token) {
-      throw new Error(`Integration ${integrationId} has no refresh token`);
+      throw new Error(`Source ${sourceId} has no refresh token`);
     }
 
     const driveClient = new GoogleDriveClient(
@@ -41,107 +45,119 @@ async function processIntegration(integrationId: string) {
     const { data: templateItems, error: templateItemsError } = await supabase
       .from("template_items")
       .select("*")
-      .eq("metadata->>drive_source_id", integrationId);
+      .eq("metadata->>drive_source_id", sourceId);
 
     if (templateItemsError) throw templateItemsError;
+    logger.options.meta.sourceId = sourceId;
+    logger.options.meta.ownerId = source.owner_id;
+    logger.options.meta.templateItems = templateItems;
 
-    const uniqueFolderIds = [
+    const uniqueRootFolderIds = [
       ...new Set(
         templateItems.map((item) => (item.metadata as TemplateItemMetadata).drive_folder_id),
       ),
     ];
-    for (const folderId of uniqueFolderIds) {
-      const files = await driveClient.listFiles(folderId);
 
-      for (const file of files) {
-        if (!file.id) {
-          console.error(`File ${file.name} has no id`);
+    for (const rootFolderId of uniqueRootFolderIds) {
+      logger.info(`Syncing root folder ${rootFolderId}`);
+      const subFolders = await driveClient.listFiles(rootFolderId);
+
+      for (const subFolder of subFolders) {
+        // Look for sub date folders.
+        if (
+          !subFolder.id ||
+          !subFolder.name ||
+          subFolder.mimeType !== "application/vnd.google-apps.folder"
+        ) {
           continue;
         }
-        if (!file.modifiedTime) {
-          console.error(`File ${file.name} has no modified time`);
+        const folderName = subFolder.name;
+        const parsedDate = parse(folderName, "yyyy-MM-dd", new Date());
+        const isDateFolder = isValid(parsedDate);
+
+        // We don't want to process files from 2 days ago or older.
+        const twoDaysAgo = subDays(new Date(), 2);
+        if (!isDateFolder || isBefore(parsedDate, twoDaysAgo)) {
           continue;
         }
+        logger.info(`${rootFolderId}: Found valid date subfolder`, { folderName });
 
-        if (file.mimeType?.startsWith("image/") || file.mimeType?.startsWith("video/")) {
-          const stream = await driveClient.getFileStream(file.id!);
-
-          const parentFolderId = file.parents?.[0];
-          if (!parentFolderId) {
-            console.error(`File ${file.name} has no parent folder`);
-            continue;
-          }
-
-          const parentFolder = await driveClient.getFileById(parentFolderId);
-          if (parentFolder.mimeType !== "application/vnd.google-apps.folder") {
-            console.error(`Parent id ${parentFolderId} is not a folder`);
-            continue;
-          }
-
-          const parentFolderName = parentFolder.name ?? "";
-          const parsedDate = parse(parentFolderName, "yyyy-MM-dd", new Date());
-          const isDateFolder = isValid(parsedDate);
-
-          // Check if date is 2 days in the past. We don't want to process files from 2 days ago or older.
-          const twoDaysAgo = subDays(new Date(), 2);
-          if (!isDateFolder || !isSameDay(parsedDate, twoDaysAgo)) {
+        // Sync image and video files in the sub date folder.
+        const files = await driveClient.listFiles(subFolder.id);
+        logger.info(`${rootFolderId}: Found files in date subfolder`, { count: files.length });
+        for (const file of files) {
+          if (
+            !file.id ||
+            !file.modifiedTime ||
+            (!file.mimeType?.startsWith("image/") && !file.mimeType?.startsWith("video/"))
+          ) {
             continue;
           }
 
           const formattedDate = format(parsedDate, "yyyy-MM-dd");
-          const r2Key = `${folderId}/${formattedDate}/${file.name}`;
+          const r2Key = `${source.owner_id}/${rootFolderId}/${formattedDate}/${file.name}`;
           const bucketName = getBucketName("drive-sync");
-
           const objectMetadata = await r2.getObjectMetadata(bucketName, r2Key);
-          const r2LastModified = objectMetadata.Metadata?.["last-modified"];
+          const r2LastModified = objectMetadata?.Metadata?.["lastModified"];
 
           // Skip if the drive file hasn't been modified since last upload
-          if (r2LastModified && isAfter(file.modifiedTime, r2LastModified)) {
-            console.log(`Drive file at ${r2Key} has not changed since last upload`);
+          if (r2LastModified && !isAfter(new Date(file.modifiedTime), new Date(r2LastModified))) {
+            logger.info(
+              `${rootFolderId}/${folderName}: Drive file has not changed since last upload`,
+              {
+                driveFile: file,
+                r2ObjectMetadata: objectMetadata,
+              },
+            );
             continue;
           }
 
           // Upload to R2
-          await r2.uploadObject(bucketName, r2Key, stream as unknown as ReadableStream, {
-            "drive-source-id": integrationId,
-            "drive-file-id": file.id,
-            "last-modified": file.modifiedTime,
+          logger.info(`${rootFolderId}/${folderName}: Syncing Drive file to R2`, {
+            driveFilePath: `${rootFolderId}/${folderName}/${file.name}`,
+            r2Key,
           });
-          console.log(`Uploaded ${r2Key} to R2 for drive source ${integrationId}`);
+          const stream = await driveClient.getFileStream(file.id);
+          await r2.uploadObject(bucketName, r2Key, stream as unknown as ReadableStream, {
+            driveSourceId: sourceId,
+            driveFileId: file.id,
+            lastModified: file.modifiedTime,
+          });
+          logger.info(`${rootFolderId}/${folderName}: Synced Drive file to R2`, {
+            driveFilePath: `${rootFolderId}/${folderName}/${file.name}`,
+            r2Key,
+          });
         }
       }
     }
 
-    return { integrationId, status: "success" };
-  } catch (error) {
-    console.error(`Error processing integration ${integrationId}:`, error);
-    return { integrationId, status: "error", error };
+    logger.info(`Completed sync for source ${sourceId}`);
+    return success(`Source ${sourceId} synced successfully`);
+  } catch (err: any) {
+    logger.error(`Error syncing source ${sourceId}:`, {
+      err,
+    });
+    return error(err.message, 500);
+  } finally {
+    logger.options.meta = {};
   }
 }
 
 export const handler = async (event: any) => {
-  // SQS will invoke this lambda with a single message containing multiple integrations
+  // SQS will invoke this lambda with a single message containing multiple sources
   const message = event.Records[0];
-  const { integrationIds } = JSON.parse(message.body);
+  const { sourceIds } = JSON.parse(message.body);
 
-  const results = await Promise.all(integrationIds.map(processIntegration));
+  const results = await Promise.all(sourceIds.map(syncSource));
 
-  const successfulIntegrations = results.filter((result) => result.status === "success");
-  const failedIntegrations = results.filter((result) => result.status === "error");
+  const successfulSources = results.filter((result) => result.status === "success");
+  const failedSources = results.filter((result) => result.status === "error");
 
-  console.log(`Successfully processed ${successfulIntegrations.length} integrations`);
-  console.log(`Failed to process ${failedIntegrations.length} integrations`);
+  logger.info(`Successfully synced ${successfulSources.length} drive sources`);
+  logger.info(`Failed to synced ${failedSources.length} drive sources`);
 
-  if (failedIntegrations.length > 0) {
-    console.error("Failed integrations:", failedIntegrations);
+  if (failedSources.length > 0) {
+    logger.error("Failed sources:", failedSources);
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: "Processing completed",
-      successCount: successfulIntegrations.length,
-      failureCount: failedIntegrations.length,
-    }),
-  };
+  return success(`Sync completed`);
 };

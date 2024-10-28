@@ -2,6 +2,8 @@ import { SourceTypes } from "@/src/consts/sources";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/db";
+import * as logger from "lambda-log";
+import { error, success } from "../utils";
 
 const sqs = new SQSClient({});
 const supabase = createClient<Database>(
@@ -11,7 +13,7 @@ const supabase = createClient<Database>(
 
 const BATCH_SIZE = 10;
 
-async function* getIntegrationsBatches(sourceIds?: string[]) {
+async function* getSourceBatches(sourceIds?: string[]) {
   if (sourceIds && sourceIds.length > 0) {
     for (let i = 0; i < sourceIds.length; i += BATCH_SIZE) {
       yield sourceIds.slice(i, i + BATCH_SIZE).map((id) => ({ id }));
@@ -30,26 +32,15 @@ async function* getIntegrationsBatches(sourceIds?: string[]) {
         query.gt("id", lastId);
       }
 
-      const { data: integrations, error } = await query;
+      const { data: source, error } = await query;
 
       if (error) throw error;
-      if (integrations.length === 0) break;
+      if (source.length === 0) break;
 
-      yield integrations;
-      lastId = integrations[integrations.length - 1].id;
+      yield source;
+      lastId = source[source.length - 1].id;
     }
   }
-}
-
-async function sendIntegrationBatchToSQS(batch: { id: string }[]) {
-  const integrationIds = batch.map((integration) => integration.id);
-
-  await sqs.send(
-    new SendMessageCommand({
-      QueueUrl: process.env.DRIVE_SYNC_QUEUE_URL,
-      MessageBody: JSON.stringify({ integrationIds }),
-    }),
-  );
 }
 
 export const handler = async (event: any) => {
@@ -62,20 +53,24 @@ export const handler = async (event: any) => {
       sourceIds = body.sourceIds;
     }
 
-    for await (const batch of getIntegrationsBatches(sourceIds)) {
-      await sendIntegrationBatchToSQS(batch);
-      console.log(`Sent batch of ${batch.length} integrations to SQS for drive sync`);
+    for await (const batch of getSourceBatches(sourceIds)) {
+      const sourceIds = batch.map((source) => source.id);
+      await sqs.send(
+        new SendMessageCommand({
+          QueueUrl: process.env.DRIVE_SYNC_QUEUE_URL,
+          MessageBody: JSON.stringify({ sourceIds }),
+        }),
+      );
+      logger.info(`Sent batch of ${batch.length} sources to SQS for drive sync`, {
+        sourceIds,
+      });
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Drive sync initiated successfully" }),
-    };
-  } catch (error) {
-    console.error("Error in initiator function:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Error during drive sync initiation" }),
-    };
+    return success("Drive sync initiated successfully");
+  } catch (err: any) {
+    logger.error("Error in initiator function:", {
+      err,
+    });
+    return error("Error during drive sync initiation", 500);
   }
 };
