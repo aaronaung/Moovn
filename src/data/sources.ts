@@ -151,38 +151,3 @@ export const listDriveFolders = async (sourceId: string): Promise<drive_v3.Schem
   }
   return (await response.json()).folders ?? [];
 };
-
-export const getDriveFileDownloadLink = async (
-  sourceId: string,
-  filePath: string,
-): Promise<{ downloadLink: string | null; metadata: drive_v3.Schema$File | null }> => {
-  const response = await fetch(
-    `/api/sources/${sourceId}/drive/get-download-link?filePath=${filePath}`,
-  );
-  if (!response.ok) {
-    throw new Error("Failed to fetch file download link");
-  }
-  const data = await response.json();
-  return { downloadLink: data.downloadLink ?? null, metadata: data.metadata ?? null };
-};
-
-export const uploadDriveFileToR2 = async (
-  sourceId: string,
-  filePath: string,
-  r2Key: string,
-): Promise<{ signedUrl: string; metadata: drive_v3.Schema$File | null }> => {
-  const response = await fetch(`/api/sources/${sourceId}/drive/upload-to-r2`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ filePath, r2Key }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to upload file to R2");
-  }
-
-  const data = await response.json();
-  return { signedUrl: data.signedUrl, metadata: data.metadata };
-};

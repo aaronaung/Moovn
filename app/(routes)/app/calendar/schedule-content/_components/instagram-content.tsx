@@ -176,12 +176,9 @@ const ContentItemContainer = ({
     return (
       <DriveContentItem
         contentIdbKey={contentIdbKey}
-        contentItemIdbKey={contentItemIdbKey}
         template={template}
         templateItem={templateItem}
-        schedule={schedule}
         width={width}
-        disableImageViewer={disableImageViewer}
       />
     );
   }

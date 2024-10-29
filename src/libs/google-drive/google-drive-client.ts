@@ -35,11 +35,11 @@ export class GoogleDriveClient {
     }
   }
 
-  async listFiles(folderId?: string): Promise<drive_v3.Schema$File[]> {
+  async listFiles(folderId?: string, fields?: string): Promise<drive_v3.Schema$File[]> {
     try {
       const response = await this.driveService.files.list({
         q: folderId ? `'${folderId}' in parents` : undefined,
-        fields: "files(id, name, mimeType, webViewLink)",
+        fields: fields || "files(id, name, mimeType, webViewLink, modifiedTime)",
       });
 
       return response.data.files || [];

@@ -276,27 +276,33 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          last_synced: string | null
           name: string
           owner_id: string
           settings: Json
+          sync_error: string | null
           type: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          last_synced?: string | null
           name: string
           owner_id: string
           settings: Json
+          sync_error?: string | null
           type: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          last_synced?: string | null
           name?: string
           owner_id?: string
           settings?: Json
+          sync_error?: string | null
           type?: string
           updated_at?: string | null
         }

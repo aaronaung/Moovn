@@ -1,74 +1,74 @@
 import React, { useState, useEffect } from "react";
 import { Tables } from "@/types/db";
-import { ScheduleData } from "@/src/libs/sources";
-import { uploadDriveFileToR2 } from "@/src/data/sources";
+
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
-import { DownloadCloudIcon, RefreshCwIcon } from "lucide-react";
+import { DownloadCloudIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import Image from "next/image";
 import { cn } from "@/src/utils";
-import { DriveTemplateItemMetadata } from "@/src/consts/templates";
+import { signUrl } from "@/src/data/r2";
+import { useSupaQuery } from "@/src/hooks/use-supabase";
+import { getSourcesByType } from "@/src/data/sources";
+import { SourceTypes } from "@/src/consts/sources";
+import { driveSyncFilePath } from "@/src/libs/storage";
 import { deconstructContentIdbKey } from "@/src/libs/content";
+import { TemplateItemMetadata } from "@/src/consts/templates";
 
 export const DESIGN_WIDTH = 220;
 
 export const DriveContentItem = React.memo(function DriveContentItem({
   contentIdbKey,
-  contentItemIdbKey,
   template,
   templateItem,
-  schedule,
   width = DESIGN_WIDTH,
-  disableImageViewer = false,
 }: {
   contentIdbKey: string;
-  contentItemIdbKey: string;
   template: Tables<"templates">;
   templateItem: Tables<"template_items">;
-  schedule: ScheduleData;
   width?: number;
-  disableImageViewer?: boolean;
 }) {
-  const [fileData, setFileData] = useState<{
-    downloadLink: string | null;
-    webViewLink: string | null;
-    metadata: any | null;
-  }>({ downloadLink: null, webViewLink: null, metadata: null });
-  const [isLoading, setIsLoading] = useState(true);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const templateItemMetadata = templateItem.metadata as DriveTemplateItemMetadata;
-  const { sourceId, range } = deconstructContentIdbKey(contentIdbKey);
+  const { range } = deconstructContentIdbKey(contentIdbKey);
+  const templateItemMetadata = templateItem.metadata as TemplateItemMetadata;
 
-  const fetchFileData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const r2Key = `${sourceId}/${templateItemMetadata.drive_folder_name}/${range}/${templateItemMetadata.drive_file_name}`;
-      const { signedUrl, metadata } = await uploadDriveFileToR2(
-        sourceId,
-        `${templateItemMetadata.drive_folder_name}/${range}/${templateItemMetadata.drive_file_name}`,
-        r2Key
-      );
-      setFileData({
-        downloadLink: signedUrl,
-        webViewLink: metadata?.webViewLink || null,
-        metadata,
-      });
-    } catch (err) {
-      setError("Failed to fetch file data");
-      console.error(err);
-    }
-    setIsLoading(false);
-  };
+  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getSourcesByType, {
+    arg: SourceTypes.GoogleDrive,
+    queryKey: ["getSourcesByType", SourceTypes.GoogleDrive],
+  });
 
   useEffect(() => {
-    fetchFileData();
-  }, [contentItemIdbKey]);
+    const fetchSignedUrl = async (sourceId: string) => {
+      try {
+        setIsLoading(true);
+        const signedUrl = await signUrl(
+          "drive-sync",
+          driveSyncFilePath(
+            template.owner_id,
+            sourceId,
+            range,
+            templateItemMetadata.drive_file_name,
+          ),
+        );
+        setSignedUrl(signedUrl);
+      } catch (error: any) {
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    // For now we only allow one google drive source per user.
+    const sourceId = sources?.[0]?.id;
+    if (sourceId) {
+      fetchSignedUrl(sourceId);
+    }
+  }, [sources]);
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || isLoadingSources) {
       return <Spinner />;
     }
 
@@ -76,52 +76,23 @@ export const DriveContentItem = React.memo(function DriveContentItem({
       return <p className="text-sm text-red-500">{error}</p>;
     }
 
-    if (!fileData.metadata) {
+    if (!templateItemMetadata || !signedUrl) {
       return <p className="text-sm text-muted-foreground">No content available</p>;
     }
 
-    return (
-      <div
-        style={{
-          width: width,
-          height: width,
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
-        <iframe
-          src={`https://drive.google.com/file/d/${fileData.metadata.id}/preview`}
-          width="100%"
-          height="100%"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-    );
-
-    if (fileData.metadata.mimeType.startsWith("image/")) {
+    if (templateItemMetadata.mime_type?.startsWith("image/")) {
       return (
         <Image
-          src={fileData.webViewLink + ""}
-          alt={fileData.metadata.name}
+          src={signedUrl!}
+          alt={templateItemMetadata.drive_file_name}
           width={width}
           height={width}
           className="rounded-md object-cover"
         />
       );
-    } else if (fileData.metadata.mimeType.startsWith("video/")) {
+    } else if (templateItemMetadata.mime_type?.startsWith("video/")) {
       return (
-        <video
-          src={fileData.downloadLink!}
-          controls
-          width={width}
-          height={width}
-          className="rounded-md"
-        >
+        <video src={signedUrl!} controls width={width} height={width} className="rounded-md">
           Your browser does not support the video tag.
         </video>
       );
@@ -145,25 +116,13 @@ export const DriveContentItem = React.memo(function DriveContentItem({
               type="button"
               className="group hover:bg-secondary-foreground hover:text-secondary"
               variant="secondary"
-              disabled={!fileData.downloadLink}
-              onClick={() => window.open(fileData.downloadLink!, "_blank")}
+              disabled={!signedUrl}
+              onClick={() => window.open(signedUrl!, "_blank")}
             >
               <DownloadCloudIcon width={18} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Download</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger type="button">
-            <Button
-              variant="secondary"
-              className="group hover:bg-secondary-foreground hover:text-secondary"
-              onClick={fetchFileData}
-            >
-              <RefreshCwIcon width={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Refresh</TooltipContent>
         </Tooltip>
       </div>
     </div>

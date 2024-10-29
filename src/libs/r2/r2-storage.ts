@@ -116,12 +116,22 @@ class R2Storage {
     }
   }
 
-  async getObjectMetadata(bucketName: string, key: string): Promise<HeadObjectCommandOutput> {
-    const command = new HeadObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-    return await this.client.send(command);
+  async getObjectMetadata(
+    bucketName: string,
+    key: string,
+  ): Promise<HeadObjectCommandOutput | undefined> {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      });
+      return await this.client.send(command);
+    } catch (error) {
+      if ((error as any).name === "NotFound") {
+        return undefined;
+      }
+      throw error;
+    }
   }
 
   async copyObject(

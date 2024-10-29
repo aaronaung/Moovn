@@ -6,8 +6,6 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Button } from "@/src/components/ui/button";
-import { useGoogleDrivePicker } from "@/src/hooks/use-google-drive-picker";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -28,9 +26,6 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     refetchOnWindowFocus: false,
   });
 
-  const accessToken = (selectedSource?.settings as any)?.access_token || "";
-  const { createPicker, pickerData } = useGoogleDrivePicker(accessToken);
-
   const handleTabSelect = (tab: SourceDataView) => {
     setSelectedView(tab);
   };
@@ -45,22 +40,17 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     switch (selectedSource.type) {
       case SourceTypes.GoogleDrive:
         return (
-          <div className="flex flex-col gap-4 overflow-scroll">
-            <Button onClick={createPicker}>Open Google Drive Picker</Button>
-            {pickerData && (
-              <div className="flex-1 overflow-scroll">
-                <ReactJson
-                  src={pickerData}
-                  displayDataTypes={false}
-                  name={false}
-                  theme={"chalk"}
-                  style={{
-                    padding: 16,
-                    borderRadius: 8,
-                  }}
-                />
-              </div>
-            )}
+          <div className="flex-1 overflow-scroll">
+            <ReactJson
+              src={selectedSource}
+              displayDataTypes={false}
+              name={false}
+              theme={"chalk"}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+              }}
+            />
           </div>
         );
       default:
