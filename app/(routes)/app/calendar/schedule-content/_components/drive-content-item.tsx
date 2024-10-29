@@ -8,9 +8,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 import Image from "next/image";
 import { cn } from "@/src/utils";
 import { signUrl } from "@/src/data/r2";
-import { useSupaQuery } from "@/src/hooks/use-supabase";
-import { getSourcesByType } from "@/src/data/sources";
-import { SourceTypes } from "@/src/consts/sources";
 import { driveSyncFilePath } from "@/src/libs/storage";
 import { deconstructContentIdbKey } from "@/src/libs/content";
 import { TemplateItemMetadata } from "@/src/consts/templates";
@@ -35,20 +32,15 @@ export const DriveContentItem = React.memo(function DriveContentItem({
   const { range } = deconstructContentIdbKey(contentIdbKey);
   const templateItemMetadata = templateItem.metadata as TemplateItemMetadata;
 
-  const { data: sources, isLoading: isLoadingSources } = useSupaQuery(getSourcesByType, {
-    arg: SourceTypes.GoogleDrive,
-    queryKey: ["getSourcesByType", SourceTypes.GoogleDrive],
-  });
-
   useEffect(() => {
-    const fetchSignedUrl = async (sourceId: string) => {
+    const fetchSignedUrl = async () => {
       try {
         setIsLoading(true);
         const signedUrl = await signUrl(
           "drive-sync",
           driveSyncFilePath(
             template.owner_id,
-            sourceId,
+            templateItemMetadata.drive_folder_id,
             range,
             templateItemMetadata.drive_file_name,
           ),
@@ -60,15 +52,12 @@ export const DriveContentItem = React.memo(function DriveContentItem({
         setIsLoading(false);
       }
     };
-    // For now we only allow one google drive source per user.
-    const sourceId = sources?.[0]?.id;
-    if (sourceId) {
-      fetchSignedUrl(sourceId);
-    }
-  }, [sources]);
+
+    fetchSignedUrl();
+  }, []);
 
   const renderContent = () => {
-    if (isLoading || isLoadingSources) {
+    if (isLoading) {
       return <Spinner />;
     }
 

@@ -10,7 +10,7 @@ const BUCKET_NAMES = [
 export type BucketName = (typeof BUCKET_NAMES)[number];
 
 // Determine the environment
-const isDev = process.env.ENVIRONMENT === "dev";
+const isDev = process.env.ENVIRONMENT === "dev" || process.env.NODE_ENV === "development";
 
 // Create the R2Buckets object
 const R2Buckets = BUCKET_NAMES.reduce(
