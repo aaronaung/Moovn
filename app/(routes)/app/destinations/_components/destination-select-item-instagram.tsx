@@ -77,7 +77,7 @@ export default function InstagramDestinationItem({
           width={28}
           height={28}
           className="h-7 w-7 rounded-full"
-          src={igAccount.profilePictureUrl}
+          src={igAccount.profile_picture_url}
         />
         <p className="line-clamp-1 text-sm">{igAccount.username}</p>
       </div>

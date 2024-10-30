@@ -8,7 +8,7 @@ import { TemplateItemMetadata } from "@/src/consts/templates";
 import { GoogleDriveSourceSettings } from "@/src/consts/sources";
 import * as logger from "lambda-log";
 import { error, success } from "../utils";
-import { driveSyncFilePath } from "@/src/libs/storage";
+import { driveSyncR2Path } from "@/src/libs/storage";
 
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
@@ -122,7 +122,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
           let fileSyncError: string | undefined;
 
           const formattedDate = format(parsedDate, "yyyy-MM-dd");
-          const r2Key = driveSyncFilePath(source.owner_id, rootFolderId, formattedDate, file.name);
+          const r2Key = driveSyncR2Path(source.owner_id, rootFolderId, formattedDate, file.name);
           const bucketName = getBucketName("drive-sync");
           const objectMetadata = await r2.getObjectMetadata(bucketName, r2Key);
           const r2LastModified = objectMetadata?.Metadata?.["drive_last_modified"];

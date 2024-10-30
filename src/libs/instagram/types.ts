@@ -1,12 +1,12 @@
 export type InstagramAPIToken = {
-  accessToken: string;
-  lastRefreshedAt: Date;
+  access_token: string;
+  last_refreshed_at: Date;
 };
 
 export type InstagramBusinessAccount = {
   id: string;
   username: string;
-  profilePictureUrl: string;
+  profile_picture_url: string;
 };
 
 export type InstagramMedia = {
@@ -17,16 +17,18 @@ export type InstagramMedia = {
 };
 
 export type CreateMediaContainerInput = {
-  imageUrl?: string;
-  isCarouselItem?: boolean;
+  media_type?: "STORIES" | "REELS";
+  image_url?: string;
+  is_carousel_item?: boolean;
   caption?: string;
-  locationId?: string;
-  userTags?: {
+  location_id?: string;
+  user_tags?: {
     username: string;
     x: number;
     y: number;
   }[];
 };
+
 export type CreateMediaContainerResult = {
   id: string;
   uri: string;
@@ -34,11 +36,12 @@ export type CreateMediaContainerResult = {
 
 export type CreateCarouselContainerInput = {
   caption?: string;
-  shareToFeed?: boolean;
+  share_to_feed?: boolean;
   collaborators?: string[];
-  locationId?: string;
+  location_id?: string;
   children: string[]; // media container ids
 };
+
 export type CreateCarouselContainerResult = {
   id: string;
   uri: string;

@@ -20,9 +20,9 @@ export enum ContentItemType {
 }
 
 // Metadata at the individual content item level
-export type ContentItemMetadata = IgContentItemMetadata;
-export type IgContentItemMetadata = {
-  ig_tags: InstagramTag[];
+export type ContentItemMetadata = {
+  ig_tags?: InstagramTag[];
+  mime_type?: string;
 };
 
 export const CONTENT_TYPES_BY_DESTINATION_TYPE: { [key: string]: string[] } = {

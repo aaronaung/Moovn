@@ -17,7 +17,9 @@ import {
 import { useSupaMutation } from "@/src/hooks/use-supabase";
 import { ScheduleContentRequest } from "@/app/api/content/schedule/route";
 import { copyObject, objectExists, uploadObject } from "../data/r2";
-import { IgContentItemMetadata, IgContentMetadata } from "../consts/content";
+import { ContentItemType, IgContentMetadata } from "../consts/content";
+import { contentItemR2Path, driveSyncR2Path } from "../libs/storage";
+import { TemplateItemMetadata } from "../consts/templates";
 
 const SCHEDULING_BATCH_SIZE = 5;
 
@@ -58,6 +60,19 @@ export function useScheduleContent({
       });
       return null;
     }
+    for (const item of contentItems) {
+      if (item.type === ContentItemType.DriveFile) {
+        const templateItem = await db.templateItems.get(item.template_item_id);
+        if (!templateItem) {
+          console.error(`No template item for content item ${item.key} in idb`);
+          toast({
+            variant: "destructive",
+            title: `Template item not found for content item. Please contact support.`,
+          });
+          return null;
+        }
+      }
+    }
 
     const template = availableTemplates.find((t) => t.id === templateId);
     if (!template) {
@@ -88,32 +103,50 @@ export function useScheduleContent({
       const savedItem = await _saveContentItem({
         content_id: content.id,
         hash: item.hash,
-        metadata: {
-          ig_tags: item.metadata?.ig_tags ?? [],
-        } as IgContentItemMetadata,
+        metadata: item.metadata,
         position: item.position,
         template_item_id: item.template_item_id,
         type: item.type,
       });
 
-      const overwriteExists = await objectExists("design-overwrites", `${ownerId}/${item.key}.jpg`);
-      if (overwriteExists) {
+      if (item.type === ContentItemType.DriveFile) {
+        const templateItem = await db.templateItems.get(item.template_item_id);
+        // We check for null above right after fetching the content items from indexedDB.
+        const templateItemMetadata = templateItem!.metadata as TemplateItemMetadata;
         await copyObject(
-          "design-overwrites",
-          `${ownerId}/${item.key}.jpg`,
+          "drive-sync",
+          driveSyncR2Path(
+            ownerId,
+            templateItemMetadata.drive_folder_id,
+            range,
+            templateItemMetadata.drive_file_name,
+          ),
           "scheduled-content",
-          `${ownerId}/${content.id}/${savedItem.id}`,
+          contentItemR2Path(ownerId, content.id, savedItem.id),
         );
       } else {
-        if (!item.jpg) {
-          console.error(`No jpg for content item ${item.key} in idb`);
-          continue;
-        }
-        await uploadObject(
-          "scheduled-content",
-          `${ownerId}/${content.id}/${savedItem.id}`,
-          new Blob([item.jpg]),
+        const overwriteExists = await objectExists(
+          "design-overwrites",
+          `${ownerId}/${item.key}.jpg`,
         );
+        if (overwriteExists) {
+          await copyObject(
+            "design-overwrites",
+            `${ownerId}/${item.key}.jpg`,
+            "scheduled-content",
+            contentItemR2Path(ownerId, content.id, savedItem.id),
+          );
+        } else {
+          if (!item.jpg) {
+            console.error(`No jpg for content item ${item.key} in idb`);
+            continue;
+          }
+          await uploadObject(
+            "scheduled-content",
+            contentItemR2Path(ownerId, content.id, savedItem.id),
+            new Blob([item.jpg]),
+          );
+        }
       }
     }
 

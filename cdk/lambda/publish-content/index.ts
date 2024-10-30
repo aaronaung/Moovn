@@ -58,15 +58,15 @@ export const handler = async (event: any) => {
 
         const igClient = new InstagramAPIClient(
           {
-            accessToken: content.destination.long_lived_token,
-            lastRefreshedAt: new Date(content.destination.token_last_refreshed_at ?? ""),
+            access_token: content.destination.long_lived_token,
+            last_refreshed_at: new Date(content.destination.token_last_refreshed_at ?? ""),
           },
           async (token: InstagramAPIToken) => {
             await sbClient
               .from("destinations")
               .update({
-                long_lived_token: token.accessToken,
-                token_last_refreshed_at: token.lastRefreshedAt.toISOString(),
+                long_lived_token: token.access_token,
+                token_last_refreshed_at: token.last_refreshed_at.toISOString(),
               })
               .eq("id", content.destination?.id ?? "");
           },
@@ -82,13 +82,15 @@ export const handler = async (event: any) => {
           (a: any, b: any) => a.position - b.position,
         );
         for (const item of sortedContentItems) {
+          const itemMetadata = item.metadata as ContentItemMetadata;
           const signedUrl = await r2.signUrl(
             getBucketName("scheduled-content"),
             `${contentPath}/${item.id}`,
           );
           toPublish.push({
             url: signedUrl,
-            tags: (item.metadata as ContentItemMetadata)?.ig_tags ?? [],
+            mimeType: itemMetadata.mime_type,
+            tags: itemMetadata.ig_tags ?? [],
           });
         }
 
@@ -101,9 +103,10 @@ export const handler = async (event: any) => {
             if (toPublish.length > 1) {
               const resp = await igClient.publishCarouselPost(
                 content.destination.linked_ig_user_id,
-                toPublish.map(({ url, tags }) => ({
-                  imageUrl: url,
-                  userTags: tags,
+                toPublish.map(({ url, tags, mimeType }) => ({
+                  image_url: url,
+                  user_tags: tags,
+                  mime_type: mimeType,
                 })),
                 {
                   caption: (content.metadata as ContentMetadata)?.ig_caption,
@@ -119,8 +122,8 @@ export const handler = async (event: any) => {
               publishedMediaIds.push(resp.id);
             } else {
               const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
-                imageUrl: toPublish[0].url,
-                userTags: toPublish[0].tags,
+                image_url: toPublish[0].url,
+                user_tags: toPublish[0].tags,
                 caption: (content.metadata as ContentMetadata)?.ig_caption,
               });
               if (!resp.id) {
@@ -136,7 +139,7 @@ export const handler = async (event: any) => {
           case "Instagram Story":
             for (const media of toPublish) {
               const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
-                imageUrl: media.url,
+                image_url: media.url,
               });
               if (!resp.id) {
                 throw new Error(

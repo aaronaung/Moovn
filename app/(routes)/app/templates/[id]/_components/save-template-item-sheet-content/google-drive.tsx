@@ -25,6 +25,7 @@ import { ContentItemType, ContentType } from "@/src/consts/content";
 import { toast } from "@/src/components/ui/use-toast";
 import { DriveTemplateItemMetadata } from "@/src/consts/templates";
 import { SheetFooter } from "@/src/components/ui/sheet";
+import { db } from "@/src/libs/indexeddb/indexeddb";
 
 export default function SaveDriveTemplateItem({
   user,
@@ -90,22 +91,33 @@ export default function SaveDriveTemplateItem({
           owner_id: user.id,
         });
       }
+      const metadata = {
+        drive_source_id: selectedSource?.id,
+        drive_folder_id: selectedFolder.id,
+        drive_folder_name: selectedFolder.name,
+        drive_file_name: fileName,
+      } as DriveTemplateItemMetadata;
+
       const savedTemplateItem = await _saveTemplateItem({
         ...(templateItem ? { id: templateItem.id } : {}),
         template_id: template.id,
         position: itemPosition,
         type: ContentItemType.DriveFile,
-        metadata: {
-          drive_source_id: selectedSource?.id,
-          drive_folder_id: selectedFolder.id,
-          drive_folder_name: selectedFolder.name,
-          drive_file_name: fileName,
-        } as DriveTemplateItemMetadata,
+        metadata,
       });
-      toast({
-        variant: "success",
-        title: "Template item saved",
-      });
+      await db.templateItems.put({
+        key: savedTemplateItem.id,
+        type: ContentItemType.AutoGenDesign,
+        position: itemPosition,
+        template_id: template.id,
+        metadata,
+        updated_at: new Date(),
+        created_at: new Date(),
+      }),
+        toast({
+          variant: "success",
+          title: "Template item saved",
+        });
       onAddComplete(savedTemplateItem);
     } catch (error) {
       toast({

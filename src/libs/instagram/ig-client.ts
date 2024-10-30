@@ -14,10 +14,18 @@ export class InstagramAPIClient {
   static GRAPH_API_BASE_URL = "https://graph.instagram.com";
   static GRAPH_API_VERSION = "v20.0";
 
+  private accessToken: string;
+  private lastRefreshedAt: Date;
+  private onTokenRefresh?: (token: InstagramAPIToken) => Promise<void>;
+
   constructor(
-    private token: InstagramAPIToken,
-    private onTokenRefresh?: (token: InstagramAPIToken) => void,
-  ) {}
+    token: InstagramAPIToken,
+    onTokenRefresh?: (token: InstagramAPIToken) => Promise<void>,
+  ) {
+    this.accessToken = token.access_token;
+    this.lastRefreshedAt = token.last_refreshed_at;
+    this.onTokenRefresh = onTokenRefresh;
+  }
 
   static async exchangeCodeForAccessToken(
     clientId: string,
@@ -59,7 +67,7 @@ export class InstagramAPIClient {
 
   private async refreshTokenIfNeeded() {
     const now = new Date();
-    const shouldRefresh = isAfter(now, addDays(this.token.lastRefreshedAt ?? new Date(), 10));
+    const shouldRefresh = isAfter(now, addDays(this.lastRefreshedAt, 10));
     if (!shouldRefresh) {
       return;
     }
@@ -67,15 +75,18 @@ export class InstagramAPIClient {
     const url = new URL(InstagramAPIClient.GRAPH_API_BASE_URL);
     url.pathname = "/refresh_access_token";
     url.searchParams.set("grant_type", "ig_exchange_token");
-    url.searchParams.set("access_token", this.token.accessToken);
+    url.searchParams.set("access_token", this.accessToken);
 
     const refreshedToken = await (await fetch(url.toString())).json();
     if (refreshedToken?.access_token) {
-      this.token = {
-        accessToken: refreshedToken.access_token,
-        lastRefreshedAt: now,
-      };
-      this.onTokenRefresh?.(this.token);
+      this.accessToken = refreshedToken.access_token;
+      this.lastRefreshedAt = now;
+      if (this.onTokenRefresh) {
+        await this.onTokenRefresh({
+          access_token: this.accessToken,
+          last_refreshed_at: this.lastRefreshedAt,
+        });
+      }
     }
   }
 
@@ -90,7 +101,7 @@ export class InstagramAPIClient {
     url.pathname = `/${InstagramAPIClient.GRAPH_API_VERSION}${options.path}`;
 
     if (options.searchParams) {
-      options.searchParams.append("access_token", this.token.accessToken);
+      options.searchParams.append("access_token", this.accessToken);
       url.search = options.searchParams.toString();
     }
 
@@ -100,7 +111,7 @@ export class InstagramAPIClient {
       const resp = await fetch(url.toString(), {
         method: options.method,
         headers: {
-          Authorization: `Bearer ${this.token.accessToken}`,
+          Authorization: `Bearer ${this.accessToken}`,
           ...(options.body ? { "Content-Type": "application/json" } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
@@ -140,16 +151,8 @@ export class InstagramAPIClient {
   private async createMediaContainer(
     accountId: string,
     req: CreateMediaContainerInput,
-    mediaType?: "STORIES" | "REELS", // default to POST
   ): Promise<CreateMediaContainerResult> {
-    const body = {
-      ...(mediaType ? { media_type: mediaType } : {}),
-      ...(req.imageUrl ? { image_url: req.imageUrl } : {}),
-      ...(req.isCarouselItem ? { is_carousel_item: req.isCarouselItem } : {}),
-      ...(req.caption ? { caption: req.caption } : {}),
-      ...(req.locationId ? { location_id: req.locationId } : {}),
-      ...(req.userTags ? { user_tags: req.userTags } : {}),
-    };
+    const body = req;
     const resp = await this.request({ method: "POST", path: `/${accountId}/media`, body });
     console.log("createMediaContainer resp", resp);
     return resp;
@@ -165,14 +168,14 @@ export class InstagramAPIClient {
     if (req.caption) {
       searchParams.set("caption", req.caption);
     }
-    if (req.shareToFeed) {
-      searchParams.set("share_to_feed", req.shareToFeed.toString());
+    if (req.share_to_feed) {
+      searchParams.set("share_to_feed", req.share_to_feed.toString());
     }
     if (req.collaborators) {
       searchParams.set("collaborators", JSON.stringify(req.collaborators));
     }
-    if (req.locationId) {
-      searchParams.set("location_id", req.locationId);
+    if (req.location_id) {
+      searchParams.set("location_id", req.location_id);
     }
     const resp = await this.request({ method: "POST", path: `/${accountId}/media`, searchParams });
     console.log("createCarouselContainer resp", resp);
@@ -197,7 +200,7 @@ export class InstagramAPIClient {
     return {
       id: result.user_id,
       username: result.username,
-      profilePictureUrl: result.profile_picture_url,
+      profile_picture_url: result.profile_picture_url,
     };
   }
 
@@ -212,43 +215,47 @@ export class InstagramAPIClient {
   }
 
   async publishStory(
-    accountId: string,
-    input: Omit<CreateMediaContainerInput, "isCarouselItem" | "userTags" | "caption">,
-  ) {
-    const mediaContainer = await this.createMediaContainer(accountId, input, "STORIES");
-    return this.publishMediaContainer(accountId, mediaContainer.id);
+    igUserId: string,
+    { image_url }: CreateMediaContainerInput,
+  ): Promise<CreateMediaContainerResult> {
+    const mediaContainer = await this.createMediaContainer(igUserId, {
+      image_url,
+      media_type: "STORIES",
+    });
+    return this.publishMediaContainer(igUserId, mediaContainer.id);
   }
 
   async publishPost(
-    accountId: string,
-    input: Omit<CreateMediaContainerInput, "isCarouselItem">,
-  ): Promise<{ id: string }> {
+    igUserId: string,
+    { image_url, caption, user_tags }: CreateMediaContainerInput,
+  ): Promise<CreateMediaContainerResult> {
     await this.refreshTokenIfNeeded();
 
-    const mediaContainer = await this.createMediaContainer(accountId, input);
-    return this.publishMediaContainer(accountId, mediaContainer.id);
+    const mediaContainer = await this.createMediaContainer(igUserId, {
+      image_url,
+      caption,
+      user_tags,
+    });
+    return this.publishMediaContainer(igUserId, mediaContainer.id);
   }
 
   async publishCarouselPost(
-    accountId: string,
-    mediaInput: Omit<CreateMediaContainerInput, "isCarouselItem" | "caption">[],
-    carouselInput: Omit<CreateCarouselContainerInput, "children">,
-  ): Promise<{ id: string }> {
+    igUserId: string,
+    media: CreateMediaContainerInput[],
+    { caption }: { caption?: string },
+  ): Promise<CreateMediaContainerResult> {
     await this.refreshTokenIfNeeded();
 
     const mediaContainers: { id: string }[] = [];
-    for (const input of mediaInput) {
-      const container = await this.createMediaContainer(accountId, {
-        ...input,
-        isCarouselItem: true,
-      });
+    for (const input of media) {
+      const container = await this.createMediaContainer(igUserId, input);
       mediaContainers.push(container);
       await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay to avoid rate limit/spam detection.
     }
-    const carouselContainer = await this.createCarouselContainer(accountId, {
-      ...carouselInput,
+    const carouselContainer = await this.createCarouselContainer(igUserId, {
       children: mediaContainers.map((result) => result.id),
+      ...(caption ? { caption } : {}),
     });
-    return this.publishMediaContainer(accountId, carouselContainer.id);
+    return this.publishMediaContainer(igUserId, carouselContainer.id);
   }
 }

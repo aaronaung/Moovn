@@ -8,9 +8,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/too
 import Image from "next/image";
 import { cn } from "@/src/utils";
 import { signUrl } from "@/src/data/r2";
-import { driveSyncFilePath } from "@/src/libs/storage";
+import { driveSyncR2Path } from "@/src/libs/storage";
 import { deconstructContentIdbKey } from "@/src/libs/content";
 import { TemplateItemMetadata } from "@/src/consts/templates";
+import { db } from "@/src/libs/indexeddb/indexeddb";
+import { ContentItemType } from "@/src/consts/content";
 
 export const DESIGN_WIDTH = 220;
 
@@ -38,13 +40,25 @@ export const DriveContentItem = React.memo(function DriveContentItem({
         setIsLoading(true);
         const signedUrl = await signUrl(
           "drive-sync",
-          driveSyncFilePath(
+          driveSyncR2Path(
             template.owner_id,
             templateItemMetadata.drive_folder_id,
             range,
             templateItemMetadata.drive_file_name,
           ),
         );
+        await db.contentItems.put({
+          content_idb_key: contentIdbKey,
+          template_id: template.id,
+          template_item_id: templateItem.id,
+          type: ContentItemType.DriveFile,
+          position: templateItem.position,
+          metadata: {
+            mime_type: templateItemMetadata.mime_type,
+          },
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
         setSignedUrl(signedUrl);
       } catch (error: any) {
         setError(error.message);

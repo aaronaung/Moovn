@@ -39,7 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/src/components/ui/sheet";
-import { IgContentItemMetadata, IgContentMetadata } from "@/src/consts/content";
+import { ContentItemMetadata, IgContentMetadata } from "@/src/consts/content";
 
 export default function EventDialog({
   isOpen,
@@ -235,7 +235,7 @@ export default function EventDialog({
           <DesignImageWithIGTags
             width={width}
             url={previewUrls.get(contentItems[0].id)}
-            instagramTags={(contentItems[0].metadata as IgContentItemMetadata).ig_tags ?? []}
+            instagramTags={(contentItems[0].metadata as ContentItemMetadata).ig_tags ?? []}
           />
         </div>
       );
@@ -248,7 +248,7 @@ export default function EventDialog({
                 <DesignImageWithIGTags
                   width={width}
                   url={previewUrls.get(item.id)}
-                  instagramTags={(item.metadata as IgContentItemMetadata).ig_tags ?? []}
+                  instagramTags={(item.metadata as ContentItemMetadata).ig_tags ?? []}
                 />
               </CarouselItem>
             ))}

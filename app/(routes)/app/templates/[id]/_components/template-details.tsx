@@ -17,6 +17,8 @@ import _ from "lodash";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import TemplateContainer from "../../_components/template-container";
 import { ContentItemType } from "@/src/consts/content";
+import { db } from "@/src/libs/indexeddb/indexeddb";
+import { TemplateItemMetadata } from "@/src/consts/templates";
 
 type SaveTemplateItemSheetState = {
   isOpen: boolean;
@@ -56,7 +58,24 @@ export const TemplateDetails = ({
   });
 
   useEffect(() => {
+    const loadTemplateItemsIdb = async () => {
+      for (const item of initialTemplateItems ?? []) {
+        const inIdb = await db.templateItems.get(item.id);
+        if (!inIdb) {
+          await db.templateItems.put({
+            key: item.id,
+            position: item.position,
+            template_id: item.template_id,
+            type: item.type as ContentItemType,
+            metadata: item.metadata as TemplateItemMetadata,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        }
+      }
+    };
     setTemplateItems(initialTemplateItems ?? []);
+    loadTemplateItemsIdb();
   }, [initialTemplateItems]);
 
   const debouncedSetTemplateItemOrder = useCallback(
