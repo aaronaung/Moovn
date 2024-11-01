@@ -1,12 +1,15 @@
 import * as _ from "lodash";
-import * as AWS from "aws-sdk";
+import {
+  SchedulerClient,
+  UpdateScheduleCommand,
+  CreateScheduleCommand,
+  GetScheduleCommand,
+  UpdateScheduleCommandInput,
+} from "@aws-sdk/client-scheduler";
 import { success, error } from "../utils";
-import { UpdateScheduleInput } from "aws-sdk/clients/scheduler";
 
-// IMPORTANT NOTE: Changing this lambda may require you to recreate all upcoming schedules in EventBridge.
-// Especially if you change the structure of the request body sent to the publish-content lambda
-// or the way schedules are created/updated. The already created schedules will NOT be updated automatically.
-const scheduler = new AWS.Scheduler();
+const scheduler = new SchedulerClient({});
+
 export const handler = async (event: any) => {
   try {
     const schedules = JSON.parse(event.body);
@@ -42,7 +45,7 @@ export const handler = async (event: any) => {
           scheduleExpressionTimezone,
         }) =>
           new Promise(async (resolve, reject) => {
-            const payload: UpdateScheduleInput = {
+            const scheduleInput: UpdateScheduleCommandInput = {
               Name: scheduleName,
               ScheduleExpressionTimezone: scheduleExpressionTimezone || "UTC",
               ScheduleExpression: scheduleExpression,
@@ -56,24 +59,26 @@ export const handler = async (event: any) => {
                 Input: JSON.stringify({ contentId, contentPath }),
               },
             };
-            try {
-              // Check if schedule exists, this will throw an error if it doesn't exist.
-              await scheduler.getSchedule({ Name: scheduleName }).promise();
 
-              // If it exists, update it.
-              await scheduler.updateSchedule(payload).promise();
+            try {
+              // Check if schedule exists
+              await scheduler.send(new GetScheduleCommand({ Name: scheduleName }));
+
+              // If it exists, update it
+              await scheduler.send(new UpdateScheduleCommand(scheduleInput));
               resolve(true);
             } catch (err: any) {
-              if (err.code === "ResourceNotFoundException") {
+              if (err.name === "ResourceNotFoundException") {
                 try {
-                  // If it doesn't exist, create it.
-                  await scheduler.createSchedule(payload).promise();
+                  // If it doesn't exist, create it
+                  await scheduler.send(new CreateScheduleCommand(scheduleInput));
                   resolve(true);
-                } catch (err) {
-                  reject(err);
+                } catch (createErr) {
+                  reject(createErr);
                 }
+              } else {
+                reject(err);
               }
-              reject(err);
             }
           }),
       ),
