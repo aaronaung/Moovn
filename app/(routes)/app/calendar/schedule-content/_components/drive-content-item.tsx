@@ -18,11 +18,13 @@ export const DESIGN_WIDTH = 220;
 
 export const DriveContentItem = React.memo(function DriveContentItem({
   contentIdbKey,
+  contentItemIdbKey,
   template,
   templateItem,
   width = DESIGN_WIDTH,
 }: {
   contentIdbKey: string;
+  contentItemIdbKey: string;
   template: Tables<"templates">;
   templateItem: Tables<"template_items">;
   width?: number;
@@ -47,19 +49,24 @@ export const DriveContentItem = React.memo(function DriveContentItem({
             templateItemMetadata.drive_file_name,
           ),
         );
-        await db.contentItems.put({
-          content_idb_key: contentIdbKey,
-          template_id: template.id,
-          template_item_id: templateItem.id,
-          type: ContentItemType.DriveFile,
-          position: templateItem.position,
-          metadata: {
-            mime_type: templateItemMetadata.mime_type,
-          },
-          created_at: new Date(),
-          updated_at: new Date(),
-        });
         setSignedUrl(signedUrl);
+        if (signedUrl) {
+          await db.contentItems.put({
+            key: contentItemIdbKey,
+            content_idb_key: contentIdbKey,
+            template_id: template.id,
+            template_item_id: templateItem.id,
+            type: ContentItemType.DriveFile,
+            position: templateItem.position,
+            metadata: {
+              mime_type: templateItemMetadata.mime_type,
+            },
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        } else {
+          await db.contentItems.delete(contentItemIdbKey);
+        }
       } catch (error: any) {
         setError(error.message);
       } finally {

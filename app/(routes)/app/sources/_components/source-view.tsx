@@ -6,10 +6,11 @@ import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import SourceViewDrive from "./source-view-drive";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
-export default function DataView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
+export default function SourceView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.Daily);
 
   const {
@@ -30,7 +31,7 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
     setSelectedView(tab);
   };
 
-  const renderDataView = () => {
+  const renderSourceView = () => {
     if (!selectedSource) {
       return <p className="text-sm text-muted-foreground">Please select a source first.</p>;
     }
@@ -41,16 +42,7 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
       case SourceTypes.GoogleDrive:
         return (
           <div className="flex-1 overflow-scroll">
-            <ReactJson
-              src={selectedSource}
-              displayDataTypes={false}
-              name={false}
-              theme={"chalk"}
-              style={{
-                padding: 16,
-                borderRadius: 8,
-              }}
-            />
+            <SourceViewDrive source={selectedSource} />
           </div>
         );
       default:
@@ -90,7 +82,7 @@ export default function DataView({ selectedSource }: { selectedSource: Tables<"s
           })}
         </div>
       )}
-      {renderDataView()}
+      {renderSourceView()}
     </>
   );
 }

@@ -19,6 +19,7 @@ export type InstagramMedia = {
 export type CreateMediaContainerInput = {
   media_type?: "STORIES" | "REELS";
   image_url?: string;
+  video_url?: string;
   is_carousel_item?: boolean;
   caption?: string;
   location_id?: string;

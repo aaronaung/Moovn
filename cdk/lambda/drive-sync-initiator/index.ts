@@ -4,12 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/db";
 import * as logger from "lambda-log";
 import { error, success } from "../utils";
+import { subDays } from "date-fns";
 
 const sqs = new SQSClient({});
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
 export const handler = async (event: any) => {
   try {
     let sourceIds: string[] | undefined;
@@ -47,6 +49,19 @@ export const handler = async (event: any) => {
         batchNumber: Math.floor(i / 10) + 1,
         totalBatches: Math.ceil(sources.length / 10),
       });
+    }
+
+    // Delete expired source syncs
+    logger.info("Deleting source syncs older than 7 days");
+    const sevenDaysAgo = subDays(new Date(), 7);
+    const { error } = await supabase
+      .from("source_syncs")
+      .delete()
+      .lt("created_at", sevenDaysAgo.toISOString());
+    if (error) {
+      logger.error("Failed to clean up old source syncs", { error });
+    } else {
+      logger.info("Successfully cleaned up old source syncs");
     }
 
     return success("Drive sync initiated successfully");

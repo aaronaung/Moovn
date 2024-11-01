@@ -11,7 +11,7 @@ import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { useEffect, useState } from "react";
 import { SourceSelectItem } from "./_components/source-select-item";
-import DataView from "./_components/data-view";
+import SourceView from "./_components/source-view";
 import { useSearchParams } from "next/navigation";
 import { SourceTypes } from "@/src/consts/sources";
 
@@ -61,7 +61,7 @@ export default function SourcesPage() {
     },
   );
 
-  const renderSourceDetails = () => {
+  const renderSourceView = () => {
     if (!selectedSource) {
       return (
         <p className="text-sm text-muted-foreground">
@@ -69,7 +69,7 @@ export default function SourcesPage() {
         </p>
       );
     }
-    return <DataView selectedSource={selectedSource} />;
+    return <SourceView selectedSource={selectedSource} />;
   };
 
   const searchParams = useSearchParams();
@@ -166,7 +166,7 @@ export default function SourcesPage() {
             ))}
           </div>
           <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-            {renderSourceDetails()}
+            {renderSourceView()}
           </div>
         </>
       ) : (

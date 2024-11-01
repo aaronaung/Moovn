@@ -5,7 +5,7 @@ import { getBucketName } from "@/src/libs/r2/r2-buckets";
 import { format, isAfter, isBefore, isValid, parse, subDays } from "date-fns";
 import { Database, Tables } from "@/types/db";
 import { TemplateItemMetadata } from "@/src/consts/templates";
-import { GoogleDriveSourceSettings } from "@/src/consts/sources";
+import { GoogleDriveSourceSettings, SourceSyncStatus } from "@/src/consts/sources";
 import * as logger from "lambda-log";
 import { error, success } from "../utils";
 import { driveSyncR2Path } from "@/src/libs/storage";
@@ -21,7 +21,19 @@ const r2 = new R2Storage(
 );
 
 async function syncSource(sourceId: string, forceSync: boolean) {
-  let lastSyncError: string | null = null;
+  const syncErrors = [];
+  const startTime = Date.now();
+  const { data: sourceSync, error: sourceSyncError } = await supabase
+    .from("source_syncs")
+    .insert({
+      source_id: sourceId,
+      status: SourceSyncStatus.InProgress,
+    })
+    .select("id")
+    .single();
+  if (sourceSyncError) throw sourceSyncError;
+  const sourceSyncId = sourceSync.id;
+
   try {
     // Fetch source details from Supabase
     const { data: source, error } = await supabase
@@ -68,6 +80,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
       uniqueRootFolderIds,
       templateItemMap,
     });
+
     for (const rootFolderId of uniqueRootFolderIds) {
       logger.info(`Syncing root folder ${rootFolderId}`);
       logger.options.meta.rootFolderId = rootFolderId;
@@ -86,8 +99,8 @@ async function syncSource(sourceId: string, forceSync: boolean) {
         const parsedDate = parse(dateSubFolderName, "yyyy-MM-dd", new Date());
         const isDateFolder = isValid(parsedDate);
 
-        // We don't want to process files from 2 days ago or older.
-        const twoDaysAgo = subDays(new Date(), 2);
+        // We don't want to process files from 3 days ago or older.
+        const twoDaysAgo = subDays(new Date(), 3);
         if (!isDateFolder || isBefore(parsedDate, twoDaysAgo)) {
           continue;
         }
@@ -119,8 +132,6 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             continue;
           }
 
-          let fileSyncError: string | undefined;
-
           const formattedDate = format(parsedDate, "yyyy-MM-dd");
           const r2Key = driveSyncR2Path(source.owner_id, rootFolderId, formattedDate, file.name);
           const bucketName = getBucketName("drive-sync");
@@ -147,7 +158,9 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             bucketName,
             r2Key,
           };
+
           logger.info(`Syncing Drive file to R2`);
+          let fileSyncError: string | undefined;
           try {
             const stream = await driveClient.getFileStream(file.id);
             await r2.uploadObject(bucketName, r2Key, stream as unknown as ReadableStream, {
@@ -164,14 +177,21 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             });
             fileSyncError = err.message;
           } finally {
+            if (fileSyncError) {
+              syncErrors.push({
+                template_item_id: templateItem.id,
+                drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+                r2_path: r2Key,
+                error: fileSyncError,
+              });
+            }
             await supabase
               .from("template_items")
               .update({
                 metadata: {
                   ...(templateItem.metadata as TemplateItemMetadata),
                   mime_type: file.mimeType,
-                  last_synced: new Date().toISOString(),
-                  sync_error: fileSyncError,
+                  last_source_sync_id: sourceSyncId,
                 },
               })
               .eq("id", templateItem.id);
@@ -179,24 +199,33 @@ async function syncSource(sourceId: string, forceSync: boolean) {
         }
       }
     }
+    const hasErrors = syncErrors.length > 0;
+    const durationMs = Date.now() - startTime;
+    await supabase
+      .from("source_syncs")
+      .update({
+        errors: hasErrors ? syncErrors : null,
+        status: hasErrors ? SourceSyncStatus.Failed : SourceSyncStatus.Success,
+        duration_ms: durationMs,
+      })
+      .eq("id", sourceSyncId);
 
     logger.info(`Completed sync for source ${sourceId}`);
     return success(`Source ${sourceId} synced successfully`);
   } catch (err: any) {
-    lastSyncError = err.message;
+    const durationMs = Date.now() - startTime;
+    await supabase
+      .from("source_syncs")
+      .update({
+        errors: [{ error: err.message }],
+        status: SourceSyncStatus.Failed,
+        duration_ms: durationMs,
+      })
+      .eq("id", sourceSyncId);
     logger.error(`Error syncing source ${sourceId}:`, {
       err,
     });
     return error(err.message, 500);
-  } finally {
-    await supabase
-      .from("sources")
-      .update({
-        last_synced: new Date().toISOString(),
-        sync_error: lastSyncError,
-      })
-      .eq("id", sourceId);
-    logger.options.meta = {};
   }
 }
 

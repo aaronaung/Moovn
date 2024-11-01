@@ -151,3 +151,42 @@ export const listDriveFolders = async (sourceId: string): Promise<drive_v3.Schem
   }
   return (await response.json()).folders ?? [];
 };
+
+export const syncDriveSource = async ({
+  sourceId,
+  forceSync = true,
+}: {
+  sourceId: string;
+  forceSync?: boolean;
+}) => {
+  const response = await fetch(`/api/sources/${sourceId}/drive/sync`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force_sync: forceSync }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to initiate drive sync");
+  }
+
+  return response.json();
+};
+
+export const saveSourceSync = async (
+  sourceSync: Partial<Tables<"source_syncs">>,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("source_syncs")
+      .upsert(sourceSync as Tables<"source_syncs">)
+      .select("id")
+      .single(),
+  );
+};
+
+export const getSourceSyncsBySourceId = async (sourceId: string, { client }: SupabaseOptions) => {
+  return throwOrData(client.from("source_syncs").select("*").eq("source_id", sourceId));
+};

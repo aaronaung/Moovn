@@ -27,3 +27,9 @@ export type SourceSettings =
   | Pike13SourceSettings
   | MindbodySourceSettings
   | GoogleDriveSourceSettings;
+
+export enum SourceSyncStatus {
+  InProgress = "in_progress",
+  Success = "success",
+  Failed = "failed",
+}

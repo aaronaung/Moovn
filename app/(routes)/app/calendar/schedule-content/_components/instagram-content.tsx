@@ -176,6 +176,7 @@ const ContentItemContainer = ({
     return (
       <DriveContentItem
         contentIdbKey={contentIdbKey}
+        contentItemIdbKey={contentItemIdbKey}
         template={template}
         templateItem={templateItem}
         width={width}

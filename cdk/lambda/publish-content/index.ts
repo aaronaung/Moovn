@@ -4,7 +4,7 @@ import { success, error } from "../utils";
 import { InstagramAPIClient } from "@/src/libs/instagram/ig-client";
 import R2Storage from "@/src/libs/r2/r2-storage";
 import { getBucketName } from "@/src/libs/r2/r2-buckets";
-import { InstagramAPIToken } from "@/src/libs/instagram/types";
+import { CreateMediaContainerInput, InstagramAPIToken } from "@/src/libs/instagram/types";
 import { Database } from "@/types/db";
 import { ContentItemMetadata, ContentMetadata } from "@/src/consts/content";
 import * as logger from "lambda-log";
@@ -87,11 +87,16 @@ export const handler = async (event: any) => {
             getBucketName("scheduled-content"),
             `${contentPath}/${item.id}`,
           );
-          toPublish.push({
-            url: signedUrl,
-            mimeType: itemMetadata.mime_type,
-            tags: itemMetadata.ig_tags ?? [],
-          });
+          if (
+            itemMetadata.mime_type?.startsWith("image") ||
+            itemMetadata.mime_type?.startsWith("video")
+          ) {
+            toPublish.push({
+              url: signedUrl,
+              mimeType: itemMetadata.mime_type,
+              tags: itemMetadata.ig_tags ?? [],
+            });
+          }
         }
 
         logger.info("Content to publish", {
@@ -103,11 +108,13 @@ export const handler = async (event: any) => {
             if (toPublish.length > 1) {
               const resp = await igClient.publishCarouselPost(
                 content.destination.linked_ig_user_id,
-                toPublish.map(({ url, tags, mimeType }) => ({
-                  image_url: url,
-                  user_tags: tags,
-                  mime_type: mimeType,
-                })),
+                toPublish.map(
+                  ({ url, tags, mimeType }) =>
+                    ({
+                      user_tags: tags,
+                      ...(mimeType?.startsWith("image") ? { image_url: url } : { video_url: url }),
+                    }) as CreateMediaContainerInput,
+                ),
                 {
                   caption: (content.metadata as ContentMetadata)?.ig_caption,
                 },
@@ -122,7 +129,9 @@ export const handler = async (event: any) => {
               publishedMediaIds.push(resp.id);
             } else {
               const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
-                image_url: toPublish[0].url,
+                ...(toPublish[0].mimeType?.startsWith("image")
+                  ? { image_url: toPublish[0].url }
+                  : { video_url: toPublish[0].url }),
                 user_tags: toPublish[0].tags,
                 caption: (content.metadata as ContentMetadata)?.ig_caption,
               });
@@ -139,7 +148,10 @@ export const handler = async (event: any) => {
           case "Instagram Story":
             for (const media of toPublish) {
               const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
-                image_url: media.url,
+                ...(media.mimeType?.startsWith("image")
+                  ? { image_url: media.url }
+                  : { video_url: media.url }),
+                user_tags: media.tags,
               });
               if (!resp.id) {
                 throw new Error(
