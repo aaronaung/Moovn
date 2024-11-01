@@ -1,3 +1,5 @@
+"use client";
+
 import { syncDriveSource, getSourceSyncsBySourceId } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";

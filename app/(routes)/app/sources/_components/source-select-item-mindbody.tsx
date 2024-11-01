@@ -1,3 +1,5 @@
+"use client";
+
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import { MindbodyLogo } from "@/src/components/ui/icons/mindbody";

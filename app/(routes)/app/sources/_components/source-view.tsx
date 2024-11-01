@@ -1,3 +1,5 @@
+"use client";
+
 import { Spinner } from "@/src/components/common/loading-spinner";
 import Tab from "@/src/components/ui/tab";
 import { SourceDataView, SourceTypes } from "@/src/consts/sources";

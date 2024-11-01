@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
     );
 
     const igAccount = await new InstagramAPIClient({
-      accessToken: result.access_token,
-      lastRefreshedAt: new Date(),
+      access_token: result.access_token,
+      last_refreshed_at: new Date(),
     }).getMe();
 
     let updatePayload: Partial<Tables<"destinations">> = {
