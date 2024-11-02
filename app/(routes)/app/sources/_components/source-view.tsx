@@ -42,11 +42,7 @@ export default function SourceView({ selectedSource }: { selectedSource: Tables<
     }
     switch (selectedSource.type) {
       case SourceTypes.GoogleDrive:
-        return (
-          <div className="flex-1 overflow-scroll">
-            <SourceViewDrive source={selectedSource} />
-          </div>
-        );
+        return <SourceViewDrive source={selectedSource} />;
       default:
         return (
           <div className="flex-1 overflow-scroll">

@@ -50,3 +50,24 @@ export const igTokenUpdater = (destinationId: string, { client }: SupabaseOption
       .eq("id", destinationId);
   };
 };
+
+export const getContentSchedulesForDestination = async (
+  destinationId: string,
+  { client }: SupabaseOptions,
+) => {
+  return throwOrData(
+    client
+      .from("content_schedules")
+      .select(
+        `
+        *,
+        content!inner(
+          *,
+          destination:destinations!inner(*)
+        )
+      `,
+      )
+      .eq("content.destination_id", destinationId)
+      .order("created_at", { ascending: false }),
+  );
+};

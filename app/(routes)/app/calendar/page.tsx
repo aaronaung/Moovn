@@ -2,7 +2,7 @@
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Button } from "@/src/components/ui/button";
 import FullCalendar, { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
-import { getAllContents, getContentSchedules } from "@/src/data/content";
+import { getContentSchedules } from "@/src/data/content";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { deconstructScheduleName, fromAtScheduleExpressionToDate } from "@/src/libs/content";
 import { useRouter } from "next/navigation";
@@ -37,9 +37,6 @@ export default function Calendar() {
     isOpen: false,
   });
 
-  const { data: contents } = useSupaQuery(getAllContents, {
-    queryKey: ["getAllContents"],
-  });
   const { data: contentSchedules } = useSupaQuery(getContentSchedules, {
     queryKey: ["getContentSchedules"],
   });
@@ -61,14 +58,14 @@ export default function Calendar() {
           contentItemId: string;
           url: string;
         }>[] = [];
-        for (const content of contents || []) {
-          const contentItems = content.content_items;
-          for (const item of contentItems) {
+        for (const contentSchedule of contentSchedules || []) {
+          const contentItems = contentSchedule.content?.content_items;
+          for (const item of contentItems || []) {
             contentItemPreviewUrlPromises.push(
               new Promise(async (resolve) => {
                 const signedUrl = await signUrl(
                   "scheduled-content",
-                  `${content.owner_id}/${content.id}/${item.id}`,
+                  `${contentSchedule.content?.owner_id}/${contentSchedule.content?.id}/${item.id}`,
                 );
                 resolve({
                   contentItemId: item.id,
@@ -91,15 +88,15 @@ export default function Calendar() {
       }
     };
 
-    if (contents && contents.length > 0) {
+    if (contentSchedules && contentSchedules.length > 0) {
       loadPreviewUrls();
     }
-  }, [contents]);
+  }, [contentSchedules]);
 
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
-        const contentMap = new Map(contents?.map((c) => [c.id, c]) || []);
+        const contentMap = new Map(contentSchedules?.map((c) => [c.content_id, c.content]) || []);
         const scheduleDataMap = new Map(); // sourceId -> dailyEvents
         for (const [sourceId, data] of Object.entries(scheduleDataFromAllSources || {})) {
           const dailyEvents = organizeScheduleDataByView(SourceDataView.Daily, data) || {};
@@ -125,26 +122,25 @@ export default function Calendar() {
           );
 
           return {
-            content,
-            scheduleName: schedule.name,
+            contentSchedule: schedule,
             data: dataForEvent,
             hasDataChanged,
             title: content.template?.name ?? "Untitled",
             start: scheduledDate,
-          };
+          } as CalendarEvent;
         });
 
-        setCalendarEvents(calendarEvents.filter((event) => event !== null) as CalendarEvent[]);
+        setCalendarEvents(calendarEvents.filter((event) => event !== null));
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoadingCalendarEvents(false);
       }
     };
-    if (contents && contentSchedules && scheduleDataFromAllSources) {
+    if (contentSchedules && scheduleDataFromAllSources) {
       loadCalendarEvents();
     }
-  }, [contents, contentSchedules, scheduleDataFromAllSources]);
+  }, [contentSchedules, scheduleDataFromAllSources]);
 
   if (isLoadingCalendarEvents || isLoadingPreviewUrls) {
     return <Spinner className="mt-8" />;

@@ -52,7 +52,8 @@ export default function EventDialog({
   event: CalendarEvent;
   previewUrls: Map<string, string>;
 }) {
-  const { content } = event;
+  const { contentSchedule } = event;
+  const { content } = contentSchedule;
   const contentMetadata = content.metadata as IgContentMetadata;
   const contentItems = content.content_items;
 
@@ -75,7 +76,7 @@ export default function EventDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
 
-  const { range } = deconstructScheduleName(event.scheduleName);
+  const { range } = deconstructScheduleName(contentSchedule.name);
   const idbKey = content.template
     ? getContentIdbKey(content.source_id, range, content.template)
     : "";
@@ -116,7 +117,7 @@ export default function EventDialog({
       await _deleteContentSchedule({
         ownerId: content.owner_id,
         contentId: content.id,
-        scheduleName: event.scheduleName,
+        scheduleName: contentSchedule.name,
       });
       toast({
         title: "Content schedule deleted.",
@@ -196,7 +197,7 @@ export default function EventDialog({
         await _deleteContentSchedule({
           ownerId: content.owner_id,
           contentId: content.id,
-          scheduleName: event.scheduleName,
+          scheduleName: contentSchedule.name,
         });
       }
 

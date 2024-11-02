@@ -19,8 +19,11 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 import Image from "next/image";
+import { IgPublishResult, PublishStatus } from "@/src/consts/destinations";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../dialog";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 function getCalendarDays(date = new Date()) {
   const monthStart = startOfMonth(date);
@@ -257,73 +260,84 @@ const EventPill = ({
     hour: "numeric",
     minute: "2-digit",
   });
-  const hasPublishedContent = event.content.published_content.length > 0;
+
+  const [showError, setShowError] = useState(false);
+  const publishResult = (event.contentSchedule.result as IgPublishResult) ?? {};
+  const hasFailed = event.contentSchedule.status === PublishStatus.Failed;
 
   return (
-    <Tooltip>
-      <TooltipTrigger className="w-full">
-        <li
-          className="group/event-li w-full"
-          onClick={() => {
-            if (hasPublishedContent && event.content.published_content[0].ig_permalink) {
-              window.open(event.content.published_content[0].ig_permalink, "_blank");
-            } else {
-              onEventClick?.(event);
-            }
-          }}
-        >
-          <div
+    <>
+      <PublishErrorDialog event={event} showError={showError} setShowError={setShowError} />
+      <Tooltip>
+        <TooltipTrigger className="w-full">
+          <li
+            className="group/event-li w-full"
+            onClick={() => {
+              if (hasFailed) {
+                setShowError(true);
+              } else if (publishResult.ig_permalink) {
+                window.open(publishResult.ig_permalink, "_blank");
+              } else {
+                onEventClick?.(event);
+              }
+            }}
+          >
+            <div
+              className={cn(
+                `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-600`,
+                event.hasDataChanged && "bg-orange-500 dark:bg-orange-600",
+                publishResult.ig_permalink && "bg-green-600 dark:bg-green-700",
+                hasFailed && "bg-red-600 dark:bg-red-700",
+              )}
+            >
+              <p
+                className={cn(
+                  "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
+                  (event.hasDataChanged || publishResult.ig_permalink || hasFailed) &&
+                    "text-white group-hover/event-li:text-white",
+                )}
+              >
+                {event.title}
+              </p>
+              <time
+                dateTime={event.start.toISOString()}
+                className={cn(
+                  "ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block",
+                  (event.hasDataChanged || publishResult.ig_permalink || hasFailed) &&
+                    "text-white group-hover/event-li:text-white",
+                )}
+              >
+                {time}
+              </time>
+            </div>
+          </li>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="w-full cursor-pointer">
+          <p
             className={cn(
-              `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-600`,
-              event.hasDataChanged && "bg-orange-500 dark:bg-orange-600",
-              hasPublishedContent && "bg-green-600 dark:bg-green-700",
+              "mb-1 font-semibold text-secondary-foreground",
+              !publishResult.ig_permalink && event.hasDataChanged && "text-orange-500",
+              hasFailed && "text-red-500",
             )}
           >
-            <p
-              className={cn(
-                "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
-
-                (event.hasDataChanged || hasPublishedContent) &&
-                  "text-white group-hover/event-li:text-white",
-              )}
-            >
-              {event.title}
-            </p>
-            <time
-              dateTime={event.start.toISOString()}
-              className={cn(
-                "ml-3 hidden flex-none text-secondary-foreground group-hover/event-li:text-indigo-600 xl:block",
-                (event.hasDataChanged || hasPublishedContent) &&
-                  "text-white group-hover/event-li:text-white",
-              )}
-            >
-              {time}
-            </time>
+            {event.title} - {time}
+          </p>
+          <div className="flex items-center justify-between gap-1 text-xs text-secondary-foreground">
+            {hasFailed ? (
+              <p className="text-red-500">Failed to publish content. Click to see error details.</p>
+            ) : publishResult.ig_permalink ? (
+              <p>Content has been published. Click to view.</p>
+            ) : event.hasDataChanged ? (
+              <p className="text-orange-500">
+                The schedule data has changed. Review the content before it gets published.
+              </p>
+            ) : (
+              "Content has not been published yet."
+            )}
           </div>
-        </li>
-      </TooltipTrigger>
-      <TooltipContent side="right" className="w-full cursor-pointer">
-        <p
-          className={cn(
-            "mb-1 font-semibold text-secondary-foreground",
-            !hasPublishedContent && event.hasDataChanged && "text-orange-500",
-          )}
-        >
-          {event.title} - {time}
-        </p>
-        <div className="flex items-center justify-between gap-1 text-xs text-secondary-foreground">
-          {hasPublishedContent && event.content.published_content[0].ig_permalink ? (
-            <p>Content has been published. Click to view.</p>
-          ) : event.hasDataChanged ? (
-            <p className="text-orange-500 ">
-              The schedule data has changed. Review the content before it gets published.
-            </p>
-          ) : (
-            "Content has not been published yet."
-          )}
-        </div>
-      </TooltipContent>
-    </Tooltip>
+        </TooltipContent>
+      </Tooltip>
+    </>
   );
 };
 
@@ -336,51 +350,98 @@ const EventLineItem = ({
   previewUrls: Map<string, string>;
   onEventClick?: (event: CalendarEvent) => void;
 }) => {
-  const hasPublishedContent = event.content.published_content.length > 0;
-  const colorTheme = hasPublishedContent
+  const [showError, setShowError] = useState(false);
+  const publishResult = (event.contentSchedule.result as IgPublishResult) ?? {};
+  const hasPublishedContent = publishResult.ig_permalink;
+  const hasFailed = event.contentSchedule.status === PublishStatus.Failed;
+  const colorTheme = hasFailed
+    ? "text-red-600"
+    : hasPublishedContent
     ? "text-green-600"
     : event.hasDataChanged && "text-orange-500";
 
   return (
-    <li
-      onClick={() => {
-        if (hasPublishedContent && event.content.published_content[0].ig_permalink) {
-          window.open(event.content.published_content[0].ig_permalink, "_blank");
-        } else {
-          onEventClick?.(event);
-        }
-      }}
-      className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
-    >
-      <div className="flex-auto">
-        <div className="flex items-center gap-1">
-          <p className={cn("line-clamp-2 font-semibold text-secondary-foreground", colorTheme)}>
-            {event.title}
-          </p>
-        </div>
-        <time
-          dateTime={event.start.toISOString()}
-          className={cn("mt-2 flex items-center text-secondary-foreground", colorTheme)}
-        >
-          <ClockIcon className={cn("mr-2 h-5 w-5 text-gray-400", colorTheme)} aria-hidden="true" />
-          {event.start.toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </time>
-      </div>
-      <div>
-        {event.content.content_items.length > 0 &&
-          previewUrls.has(event.content.content_items[0].id) && (
-            <Image
-              className="h-[50px] w-[50px] rounded-sm object-contain"
-              src={previewUrls.get(event.content.content_items[0].id) || ""}
-              alt={"preview"}
-              width={50}
-              height={50}
+    <>
+      <PublishErrorDialog event={event} showError={showError} setShowError={setShowError} />
+      <li
+        onClick={() => {
+          if (hasFailed) {
+            setShowError(true);
+          } else if (hasPublishedContent && publishResult.ig_permalink) {
+            window.open(publishResult.ig_permalink, "_blank");
+          } else {
+            onEventClick?.(event);
+          }
+        }}
+        className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
+      >
+        <div className="flex-auto">
+          <div className="flex items-center gap-1">
+            <p className={cn("line-clamp-2 font-semibold text-secondary-foreground", colorTheme)}>
+              {event.title}
+            </p>
+          </div>
+          <time
+            dateTime={event.start.toISOString()}
+            className={cn("mt-2 flex items-center text-secondary-foreground", colorTheme)}
+          >
+            <ClockIcon
+              className={cn("mr-2 h-5 w-5 text-gray-400", colorTheme)}
+              aria-hidden="true"
             />
-          )}
-      </div>
-    </li>
+            {event.start.toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </time>
+        </div>
+        <div>
+          {event.contentSchedule.content.content_items.length > 0 &&
+            previewUrls.has(event.contentSchedule.content.content_items[0].id) && (
+              <Image
+                className="h-[50px] w-[50px] rounded-sm object-contain"
+                src={previewUrls.get(event.contentSchedule.content.content_items[0].id) || ""}
+                alt={"preview"}
+                width={50}
+                height={50}
+              />
+            )}
+        </div>
+      </li>
+    </>
+  );
+};
+
+const PublishErrorDialog = ({
+  event,
+  showError,
+  setShowError,
+}: {
+  event: CalendarEvent;
+  showError: boolean;
+  setShowError: (show: boolean) => void;
+}) => {
+  return (
+    <Dialog open={showError} onOpenChange={setShowError}>
+      <DialogContent>
+        <DialogHeader className="mb-2">
+          <DialogTitle>Publish Error</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            We failed to publish the content. See error details below. Please contact support if the
+            issue persists.
+          </p>
+        </DialogHeader>
+        <ReactJson
+          src={(event.contentSchedule.result as object) || {}}
+          displayDataTypes={false}
+          name={false}
+          theme={"chalk"}
+          style={{
+            padding: 16,
+            borderRadius: 8,
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };

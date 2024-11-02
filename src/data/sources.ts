@@ -188,5 +188,11 @@ export const saveSourceSync = async (
 };
 
 export const getSourceSyncsBySourceId = async (sourceId: string, { client }: SupabaseOptions) => {
-  return throwOrData(client.from("source_syncs").select("*").eq("source_id", sourceId));
+  return throwOrData(
+    client
+      .from("source_syncs")
+      .select("*")
+      .eq("source_id", sourceId)
+      .order("created_at", { ascending: false }),
+  );
 };

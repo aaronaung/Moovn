@@ -51,9 +51,14 @@ export default function SourceViewDrive({ source }: { source: Tables<"sources"> 
   };
 
   return (
-    <div className="flex flex-col space-y-3">
+    <div className="flex h-full flex-col space-y-3">
       <div className="flex items-center justify-between">
-        <Header2 className="flex-1" title="Sync History" />
+        <div className="flex flex-col gap-1">
+          <Header2 className="flex-1" title="Sync History" />
+          <p className="text-sm text-muted-foreground">
+            Syncs are performed every 3 hours and can be triggered manually.
+          </p>
+        </div>
         <div className="flex justify-end">
           <Button
             onClick={handleSync}
@@ -65,7 +70,13 @@ export default function SourceViewDrive({ source }: { source: Tables<"sources"> 
           </Button>
         </div>
       </div>
-      {isLoadingSourceSync ? <Spinner /> : <SourceSyncsTable data={sourceSyncs ?? []} />}
+      {isLoadingSourceSync ? (
+        <Spinner />
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <SourceSyncsTable data={sourceSyncs ?? []} />
+        </div>
+      )}
     </div>
   );
 }

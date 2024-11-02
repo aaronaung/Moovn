@@ -8,8 +8,20 @@ import { CreateMediaContainerInput, InstagramAPIToken } from "@/src/libs/instagr
 import { Database } from "@/types/db";
 import { ContentItemMetadata, ContentMetadata } from "@/src/consts/content";
 import * as logger from "lambda-log";
+import { InstagramTag } from "@/src/libs/designs/photopea/utils";
+import { IgPublishResult, PublishStatus } from "@/src/consts/destinations";
+
+type PublishableIgMedia = {
+  url: string;
+  mimeType: string;
+  tags: InstagramTag[];
+};
 
 export const handler = async (event: any) => {
+  const supabaseUrl = process.env.SUPABASE_URL!;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const sbClient = supabase.createClient<Database>(supabaseUrl, supabaseKey);
+
   try {
     const { contentId, contentPath } = event;
     logger.info("Publishing content", {
@@ -25,15 +37,11 @@ export const handler = async (event: any) => {
       return error(`contentPath missing in body`, 400);
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
     const r2 = new R2Storage(
       process.env.R2_ACCOUNT_ID!,
       process.env.R2_ACCESS_KEY_ID!,
       process.env.R2_SECRET_ACCESS_KEY!,
     );
-    const sbClient = supabase.createClient<Database>(supabaseUrl, supabaseKey);
 
     const { data: content, error: getContentErr } = await sbClient
       .from("content")
@@ -50,10 +58,10 @@ export const handler = async (event: any) => {
     switch (content.destination?.type) {
       case "Instagram":
         if (!content.destination?.linked_ig_user_id) {
-          return error("Destination not connected: missing linked IG user ID", 400);
+          throw new Error("Instagram account not connected - missing user ID");
         }
         if (!content.destination.long_lived_token) {
-          return error("Destination not connected: missing access token", 400);
+          throw new Error("Instagram account not connected - missing access token");
         }
 
         const igClient = new InstagramAPIClient(
@@ -74,10 +82,8 @@ export const handler = async (event: any) => {
 
         const toPublish = [];
         if (content.content_items.length === 0) {
-          logger.info(`No content to publish for content id: ${contentId}`);
-          return success("No content to publish");
+          throw new Error("No content items found to publish");
         }
-
         const sortedContentItems = content.content_items.sort(
           (a: any, b: any) => a.position - b.position,
         );
@@ -103,63 +109,33 @@ export const handler = async (event: any) => {
           toPublish,
         });
         let publishedMediaIds = [];
+        const caption = (content.metadata as ContentMetadata)?.ig_caption;
+        const igUserId = content.destination.linked_ig_user_id;
         switch (content.type) {
           case "Instagram Post":
             if (toPublish.length > 1) {
               const resp = await igClient.publishCarouselPost(
-                content.destination.linked_ig_user_id,
-                toPublish.map(
-                  ({ url, tags, mimeType }) =>
-                    ({
-                      user_tags: tags,
-                      ...(mimeType?.startsWith("image") ? { image_url: url } : { video_url: url }),
-                    }) as CreateMediaContainerInput,
-                ),
+                igUserId,
+                toPublish.map(toCreateMediaContainerInput),
                 {
-                  caption: (content.metadata as ContentMetadata)?.ig_caption,
+                  caption,
                 },
               );
-              if (!resp.id) {
-                throw new Error(
-                  `Failed to publish carousel post for content ${contentId} - no ID returned: ${JSON.stringify(
-                    resp,
-                  )}`,
-                );
-              }
               publishedMediaIds.push(resp.id);
             } else {
-              const resp = await igClient.publishPost(content.destination.linked_ig_user_id, {
-                ...(toPublish[0].mimeType?.startsWith("image")
-                  ? { image_url: toPublish[0].url }
-                  : { video_url: toPublish[0].url }),
-                user_tags: toPublish[0].tags,
-                caption: (content.metadata as ContentMetadata)?.ig_caption,
+              const resp = await igClient.publishPost(igUserId, {
+                ...toCreateMediaContainerInput(toPublish[0]),
+                caption,
               });
-              if (!resp.id) {
-                throw new Error(
-                  `Failed to publish post for content ${contentId} - no ID returned: ${JSON.stringify(
-                    resp,
-                  )}`,
-                );
-              }
               publishedMediaIds.push(resp.id);
             }
             break;
           case "Instagram Story":
             for (const media of toPublish) {
-              const resp = await igClient.publishStory(content.destination.linked_ig_user_id, {
-                ...(media.mimeType?.startsWith("image")
-                  ? { image_url: media.url }
-                  : { video_url: media.url }),
-                user_tags: media.tags,
-              });
-              if (!resp.id) {
-                throw new Error(
-                  `Failed to publish story for content ${contentId} - no ID returned: ${JSON.stringify(
-                    resp,
-                  )}`,
-                );
-              }
+              const resp = await igClient.publishStory(
+                igUserId,
+                toCreateMediaContainerInput(media),
+              );
               publishedMediaIds.push(resp.id);
             }
             break;
@@ -170,18 +146,22 @@ export const handler = async (event: any) => {
         await Promise.all(
           publishedMediaIds.map(async (id) => {
             const media = await igClient.getInstagramMedia(id);
-
-            const { data, error: insertErr } = await sbClient.from("published_content").insert({
-              content_id: contentId,
-              owner_id: content.destination?.owner_id ?? "",
+            const publishResult: IgPublishResult = {
               ig_media_id: id,
               ig_media_url: media.media_url,
               ig_permalink: media.permalink,
-              published_at: new Date().toISOString(),
-            });
+            };
+            const { data, error: insertErr } = await sbClient
+              .from("content_schedules")
+              .update({
+                status: PublishStatus.Published,
+                published_at: new Date().toISOString(),
+                result: JSON.stringify(publishResult),
+              })
+              .eq("content_id", content.id);
             if (insertErr) {
               throw new Error(
-                `Failed to insert published content for content ${contentId}: ${insertErr.message}`,
+                `Failed to update content schedule after publishing: ${insertErr.message}`,
               );
             }
             return data;
@@ -200,6 +180,36 @@ export const handler = async (event: any) => {
     logger.error("Error publishing content", {
       error: err,
     });
+
+    // Update content schedule with failure status and error details
+    const errorResult = {
+      error: {
+        message: err.message,
+        details: err.toString(),
+      },
+    };
+
+    try {
+      await sbClient
+        .from("content_schedules")
+        .update({
+          status: PublishStatus.Failed,
+          result: JSON.stringify(errorResult),
+        })
+        .eq("content_id", event.contentId);
+    } catch (updateErr: any) {
+      logger.error("Failed to update content schedule with error status", {
+        error: updateErr,
+      });
+    }
+
     return error(err.message, 500);
   }
+};
+
+const toCreateMediaContainerInput = (media: PublishableIgMedia): CreateMediaContainerInput => {
+  if (media.mimeType.startsWith("image")) {
+    return { image_url: media.url, user_tags: media.tags };
+  }
+  return { video_url: media.url, user_tags: media.tags };
 };

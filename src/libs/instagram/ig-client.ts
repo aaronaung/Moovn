@@ -222,7 +222,13 @@ export class InstagramAPIClient {
       image_url,
       media_type: "STORIES",
     });
-    return this.publishMediaContainer(igUserId, mediaContainer.id);
+    const resp = await this.publishMediaContainer(igUserId, mediaContainer.id);
+    if (!resp.id) {
+      throw new Error(
+        `Failed to publish story for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
+      );
+    }
+    return resp;
   }
 
   async publishPost(
@@ -236,7 +242,13 @@ export class InstagramAPIClient {
       caption,
       user_tags,
     });
-    return this.publishMediaContainer(igUserId, mediaContainer.id);
+    const resp = await this.publishMediaContainer(igUserId, mediaContainer.id);
+    if (!resp.id) {
+      throw new Error(
+        `Failed to publish post for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
+      );
+    }
+    return resp;
   }
 
   async publishCarouselPost(
@@ -256,6 +268,12 @@ export class InstagramAPIClient {
       children: mediaContainers.map((result) => result.id),
       ...(caption ? { caption } : {}),
     });
-    return this.publishMediaContainer(igUserId, carouselContainer.id);
+    const resp = await this.publishMediaContainer(igUserId, carouselContainer.id);
+    if (!resp.id) {
+      throw new Error(
+        `Failed to publish carousel post for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
+      );
+    }
+    return resp;
   }
 }

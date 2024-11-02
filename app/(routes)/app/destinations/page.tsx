@@ -14,6 +14,7 @@ import { SaveDestinationDialog } from "@/src/components/dialogs/save-destination
 import { DestinationTypes } from "@/src/consts/destinations";
 import InstagramDestinationView from "./_components/destination-view-instagram";
 import EmailDestinationView from "./_components/destination-view-email";
+import DestinationView from "./_components/destination-view";
 
 export default function DestinationsPage() {
   const [destinationDialogState, setDestinationDialogState] = useState<{
@@ -83,7 +84,7 @@ export default function DestinationsPage() {
   };
 
   return (
-    <div className="mt-2 flex flex-col">
+    <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
@@ -152,8 +153,14 @@ export default function DestinationsPage() {
               />
             ))}
           </div>
-          <div className="mt-4 flex flex-1 flex-col gap-2 overflow-hidden">
-            {renderDestinationView()}
+          <div className="mt-4 flex-1 overflow-auto">
+            {selectedDestination ? (
+              <DestinationView destination={selectedDestination} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Select a destination to see its schedules.
+              </p>
+            )}
           </div>
         </>
       ) : (

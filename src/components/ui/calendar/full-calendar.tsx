@@ -17,12 +17,12 @@ enum CalendarView {
 }
 
 export type CalendarEvent = {
-  content: Tables<"content"> & {
-    content_items: Tables<"content_items">[];
-    published_content: Tables<"published_content">[];
-    template: Tables<"templates"> | null;
+  contentSchedule: Tables<"content_schedules"> & {
+    content: Tables<"content"> & {
+      content_items: Tables<"content_items">[];
+      template: Tables<"templates"> | null;
+    };
   };
-  scheduleName: string;
   title: string;
   start: Date;
   end?: Date;

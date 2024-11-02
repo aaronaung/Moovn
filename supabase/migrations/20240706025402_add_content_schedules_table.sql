@@ -1,7 +1,7 @@
 create table "public"."content_schedules" (
   "id" uuid primary key default gen_random_uuid(),
   "owner_id" uuid not null references "public"."users" ("id") on delete cascade,
-  "content_id" uuid not null references "public"."content" ("id") on delete set null,
+  "content_id" uuid not null references "public"."content" ("id") on delete set null, -- 1 to 1 relationship with content
   "name"  text not null unique,
   "schedule_expression" text not null,
   "created_at" timestamp with time zone default now(),

@@ -12,7 +12,7 @@ export const saveContent = async (
   return throwOrData(
     client
       .from("content")
-      .upsert(_.omit(content, "destination", "template", "published_content") as Tables<"content">)
+      .upsert(_.omit(content, "destination", "template") as Tables<"content">)
       .select("id")
       .limit(1)
       .single(),
@@ -28,7 +28,7 @@ export const getAllContents = async ({ client }: SupabaseOptions) => {
     client
       .from("content")
       .select(
-        "*, destination:destinations(*), template:templates(*), published_content:published_content(*), content_items:content_items(*)",
+        "*, destination:destinations(*), template:templates(*), content_items:content_items(*)",
       )
       .order("created_at", { ascending: false })
       .order("position", { ascending: true, referencedTable: "content_items" }),
@@ -84,7 +84,11 @@ export const scheduleContent = async (req: ScheduleContentRequest) => {
 };
 
 export const getContentSchedules = async ({ client }: SupabaseOptions) => {
-  return throwOrData(client.from("content_schedules").select("*, content:content(*)"));
+  return throwOrData(
+    client
+      .from("content_schedules")
+      .select("*, content(*, template:templates(*), content_items:content_items(*))"),
+  );
 };
 
 export const deleteContentSchedule = async (
