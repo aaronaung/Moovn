@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSourcesByType } from "@/src/data/sources";
 import { SourceTypes } from "@/src/consts/sources";
-import { DriveClient } from "@/src/libs/sources/drive";
+import { DriveSourceClient } from "@/src/libs/sources/drive";
 import { supaServerClient } from "@/src/data/clients/server";
 
 export async function GET() {
@@ -17,7 +17,8 @@ export async function GET() {
 
     const driveSourcesWithAccessToken = await Promise.all(
       driveSources.map(async (source) => {
-        const client = new DriveClient(supabase, source);
+        const client = new DriveSourceClient(supabase, source);
+
         await client.refreshTokenIfExpired();
         const { access_token } = source.settings as { access_token: string };
         return { ...source, access_token };

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DriveClient } from "@/src/libs/sources/drive";
+import { DriveSourceClient } from "@/src/libs/sources/drive";
 import { supaServerClient } from "@/src/data/clients/server";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -16,10 +16,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (error) throw new Error(`Failed to fetch source: ${error.message}`);
     if (!source) throw new Error("Source not found");
 
-    const driveClient = new DriveClient(supabase, source);
+    const driveClient = new DriveSourceClient(supabase, source);
     const folders = await driveClient.listFolders();
 
-    const files = await driveClient.listFiles("19Kcg8GkkEZ_n1ul2laN7wSZ1YoG_UmKo");
+    const files = await driveClient.getFileById("1IjaLJCUieLJythIzDyPP7dco_NxxJNft");
 
     console.log(files);
 

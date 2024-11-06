@@ -20,6 +20,10 @@ const r2 = new R2Storage(
   process.env.R2_SECRET_ACCESS_KEY!,
 );
 
+const ALLOWED_FILE_EXTENSIONS = ["jpg", "jpeg", "png", "mp4", "mov"];
+const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
+const MAX_VIDEO_DURATION_MILLI = 15 * 60 * 1000; // 15 minutes
+
 async function syncSource(sourceId: string, forceSync: boolean) {
   const syncErrors = [];
   const startTime = Date.now();
@@ -110,17 +114,28 @@ async function syncSource(sourceId: string, forceSync: boolean) {
         const files = await driveClient.listFiles(subFolder.id);
         logger.info(`Found files in date subfolder`, { fileNames: files.map((file) => file.name) });
         for (const file of files) {
+          const {
+            id,
+            name,
+            modifiedTime,
+            trashed,
+            mimeType,
+            fileExtension,
+            size,
+            videoMediaMetadata,
+            imageMediaMetadata,
+          } = file;
+
           if (
-            !file.id ||
-            !file.name ||
-            !file.modifiedTime ||
-            file.trashed ||
-            (!file.mimeType?.startsWith("image/") && !file.mimeType?.startsWith("video/"))
+            !id ||
+            !name ||
+            !modifiedTime ||
+            trashed ||
+            (!mimeType?.startsWith("image/") && !mimeType?.startsWith("video/"))
           ) {
             continue;
           }
-
-          const key = templateItemKey(rootFolderId, file.name);
+          const key = templateItemKey(rootFolderId, name);
           const templateItem = templateItemMap.get(key);
           if (!templateItem) {
             logger.warn(`Matching template item not found for drive file`, {
@@ -133,8 +148,67 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             continue;
           }
 
+          if (!ALLOWED_FILE_EXTENSIONS.includes(fileExtension ?? "")) {
+            syncErrors.push({
+              template_item_id: templateItem?.id,
+              drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+              error: `File extension ${fileExtension} not allowed. Must be one of the following:${ALLOWED_FILE_EXTENSIONS.join(
+                ", ",
+              )}`,
+            });
+          }
+          if (parseInt(size ?? "0") > MAX_FILE_SIZE_BYTES) {
+            syncErrors.push({
+              template_item_id: templateItem?.id,
+              drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+              error: `File size ${size} bytes is greater than the maximum allowed size of ${MAX_FILE_SIZE_BYTES} bytes`,
+            });
+          }
+          if (
+            mimeType?.startsWith("video/") &&
+            parseInt(videoMediaMetadata?.durationMillis ?? "0") > MAX_VIDEO_DURATION_MILLI
+          ) {
+            syncErrors.push({
+              template_item_id: templateItem?.id,
+              drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+              error: `Video duration ${videoMediaMetadata?.durationMillis} seconds is greater than the maximum allowed duration of ${MAX_VIDEO_DURATION_MILLI} seconds`,
+            });
+          }
+          if (
+            mimeType?.startsWith("video/") &&
+            videoMediaMetadata?.width &&
+            videoMediaMetadata?.height
+          ) {
+            const aspectRatio = videoMediaMetadata.width / videoMediaMetadata.height;
+            if (aspectRatio < 0.01 || aspectRatio > 10) {
+              syncErrors.push({
+                template_item_id: templateItem?.id,
+                drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+                error: `Video aspect ratio ${aspectRatio.toFixed(
+                  2,
+                )} is outside allowed range of 0.01:1 to 10:1`,
+              });
+            }
+          }
+          if (
+            mimeType?.startsWith("image/") &&
+            imageMediaMetadata?.width &&
+            imageMediaMetadata?.height
+          ) {
+            const aspectRatio = imageMediaMetadata.width / imageMediaMetadata.height;
+            if (aspectRatio < 0.8 || aspectRatio > 1.91) {
+              syncErrors.push({
+                template_item_id: templateItem?.id,
+                drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
+                error: `Image aspect ratio ${aspectRatio.toFixed(
+                  2,
+                )} is outside allowed range of 4:5 (0.8:1) to 1.91:1`,
+              });
+            }
+          }
+
           const formattedDate = format(parsedDate, "yyyy-MM-dd");
-          const r2Key = driveSyncR2Path(source.owner_id, rootFolderId, formattedDate, file.name);
+          const r2Key = driveSyncR2Path(source.owner_id, rootFolderId, formattedDate, name);
           const bucketName = getBucketName("drive-sync");
           const objectMetadata = await r2.getObjectMetadata(bucketName, r2Key);
           const r2LastModified = objectMetadata?.Metadata?.["drive_last_modified"];
@@ -142,7 +216,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
           // Skip if the drive file hasn't been modified since last upload; unless forceSync is true.
           if (
             r2LastModified &&
-            !isAfter(new Date(file.modifiedTime), new Date(r2LastModified)) &&
+            !isAfter(new Date(modifiedTime), new Date(r2LastModified)) &&
             !forceSync
           ) {
             logger.info(`Drive file has not changed since last upload`, {
@@ -163,13 +237,13 @@ async function syncSource(sourceId: string, forceSync: boolean) {
           logger.info(`Syncing Drive file to R2`);
           let fileSyncError: string | undefined;
           try {
-            const stream = await driveClient.getFileStream(file.id);
+            const stream = await driveClient.getFileStream(id);
             await r2.uploadObject(bucketName, r2Key, stream as unknown as ReadableStream, {
               source_id: sourceId,
               template_item_id: templateItem.id,
-              drive_file_id: file.id,
-              drive_last_modified: file.modifiedTime,
-              drive_mime_type: file.mimeType,
+              drive_file_id: id,
+              drive_last_modified: modifiedTime,
+              drive_mime_type: mimeType,
             });
             logger.info(`Synced Drive file to R2`);
           } catch (err: any) {
@@ -183,7 +257,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
                 template_item_id: templateItem.id,
                 drive_file_path: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
                 r2_path: r2Key,
-                error: fileSyncError,
+                error: `Error syncing Drive file to R2: ${fileSyncError}`,
               });
             }
             await supabase

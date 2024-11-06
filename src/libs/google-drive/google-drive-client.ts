@@ -49,25 +49,10 @@ export class GoogleDriveClient {
     }
   }
 
-  async getFile(query: string, fields: string): Promise<drive_v3.Schema$File[]> {
-    try {
-      const response = await this.driveService.files.list({
-        q: query,
-        fields: `files(${fields})`,
-        pageSize: 1000, // Adjust this value based on your needs
-      });
-
-      return response.data.files || [];
-    } catch (error) {
-      console.error("Error getting file:", error);
-      throw error;
-    }
-  }
-
   async getFileById(fileId: string, fields?: string): Promise<drive_v3.Schema$File> {
     const response = await this.driveService.files.get({
       fileId: fileId,
-      ...(fields ? { fields } : {}),
+      fields: fields || "*",
     });
     return response.data;
   }

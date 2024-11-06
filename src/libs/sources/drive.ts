@@ -4,9 +4,8 @@ import { SupabaseOptions } from "@/src/data/clients/types";
 import { GoogleDriveClient } from "@/src/libs/google-drive/google-drive-client";
 import { Json, Tables } from "@/types/db";
 import { drive_v3 } from "googleapis";
-import { Readable } from "stream";
 
-export class DriveClient {
+export class DriveSourceClient {
   private googleDriveClient: GoogleDriveClient;
   private source: Tables<"sources">;
   private supabase: SupabaseOptions["client"];
@@ -74,96 +73,8 @@ export class DriveClient {
     return files.filter((file) => file.mimeType === "application/vnd.google-apps.folder");
   }
 
-  async getFileDownloadLink(
-    filePath: string,
-  ): Promise<{ downloadLink: string | null; metadata: drive_v3.Schema$File | null }> {
-    try {
-      await this.refreshTokenIfExpired();
-
-      const pathParts = filePath.split("/");
-      const fileName = pathParts.pop(); // Get the file name
-      let currentFolderId = "root"; // Start from the root folder
-
-      // Traverse the folder structure
-      for (const folderName of pathParts) {
-        const folder = await this.findFolder(currentFolderId, folderName);
-        if (!folder) {
-          console.error(`Folder not found: ${folderName}`);
-          return { downloadLink: null, metadata: null };
-        }
-        currentFolderId = folder.id!;
-      }
-
-      // Define the MIME types for images and videos
-      const imageMimeTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/gif",
-        "image/bmp",
-        "image/webp",
-        "image/svg+xml",
-      ];
-      const videoMimeTypes = [
-        "video/mp4",
-        "video/mpeg",
-        "video/ogg",
-        "video/webm",
-        "video/quicktime",
-      ];
-      const allowedMimeTypes = [...imageMimeTypes, ...videoMimeTypes];
-
-      // Construct the query
-      const query = `name = '${fileName}' and '${currentFolderId}' in parents and trashed = false and (${allowedMimeTypes
-        .map((mime) => `mimeType = '${mime}'`)
-        .join(" or ")})`;
-
-      // Use the getFile method to search in the specific folder
-      const files = await this.googleDriveClient.getFile(
-        query,
-        "id, name, webContentLink, webViewLink, mimeType",
-      );
-
-      if (files && files.length > 0) {
-        return {
-          downloadLink: files[0].webContentLink || null,
-          metadata: files[0],
-        };
-      } else {
-        return { downloadLink: null, metadata: null };
-      }
-    } catch (error) {
-      console.error("Error getting file download link:", error);
-      throw error;
-    }
-  }
-
-  private async findFolder(
-    parentId: string,
-    folderName: string,
-  ): Promise<drive_v3.Schema$File | null> {
-    const query = `name = '${folderName}' and '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-    const folders = await this.googleDriveClient.getFile(query, "id, name");
-    return folders.length > 0 ? folders[0] : null;
-  }
-
-  async getFileStream(
-    filePath: string,
-  ): Promise<{ stream: Readable; metadata: drive_v3.Schema$File | null }> {
-    try {
-      await this.refreshTokenIfExpired();
-
-      const { metadata } = await this.getFileDownloadLink(filePath);
-
-      if (!metadata || !metadata.id) {
-        throw new Error("File not found");
-      }
-
-      const stream = await this.googleDriveClient.getFileStream(metadata.id);
-
-      return { stream, metadata };
-    } catch (error) {
-      console.error("Error getting file stream:", error);
-      throw error;
-    }
+  async getFileById(fileId: string): Promise<drive_v3.Schema$File> {
+    await this.refreshTokenIfExpired();
+    return this.googleDriveClient.getFileById(fileId);
   }
 }
