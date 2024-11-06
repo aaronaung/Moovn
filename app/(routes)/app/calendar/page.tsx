@@ -136,7 +136,7 @@ export default function Calendar() {
           } as CalendarEvent;
         });
 
-        setCalendarEvents(calendarEvents.filter((event) => event !== null));
+        setCalendarEvents(calendarEvents.filter((event) => event !== null) as CalendarEvent[]);
       } catch (err) {
         console.error(err);
       } finally {

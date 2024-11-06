@@ -94,7 +94,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
           <GoogleDriveIcon className="mb-2 h-6 w-6" />
           <p className="text-center text-sm text-muted-foreground">
             {`${templateItemMetadata.drive_folder_name}/${range}/${templateItemMetadata.drive_file_name}`}{" "}
-            doesn't exist
+            doesn&apos;t exist
           </p>
           <p className="mt-4 text-center text-xs text-muted-foreground">
             If you think this is a mistake, try{" "}
