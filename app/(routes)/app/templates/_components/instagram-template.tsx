@@ -165,9 +165,7 @@ export const InstagramTemplate = ({
                   className="h-9 w-9 cursor-pointer rounded-full p-2 text-primary hover:bg-secondary"
                 />
               </TooltipTrigger>
-              <TooltipContent>
-                {(templateItems || []).length > 1 ? "Add to carousel" : "Convert to carousel"}
-              </TooltipContent>
+              <TooltipContent>Manage carousel</TooltipContent>
             </Tooltip>
           </div>
         </div>

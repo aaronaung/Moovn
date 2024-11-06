@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { match } from "path-to-regexp";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { env } from "./env.mjs";
 
 const excludedPaths = [
   "/api/stripe/webhook",
   "/api/auth/callback",
   "/api/auth/instagram/callback",
   "/api/auth/mindbody/callback",
-  "/api/sources/:id/drive/upload-to-r2",
 ];
+
+const internalApis = ["/api/destinations/:id/instagram/media/publish"];
 
 export async function middleware(req: NextRequest) {
   try {
@@ -18,6 +20,18 @@ export async function middleware(req: NextRequest) {
 
       if (urlMatch(pathname)) {
         return NextResponse.next();
+      }
+    }
+    for (const route of internalApis) {
+      const urlMatch = match(route, { decode: decodeURIComponent });
+      const pathname = req.nextUrl.pathname;
+
+      if (urlMatch(pathname)) {
+        if (req.headers.get("x-internal-api-key") !== env.INTERNAL_API_KEY) {
+          return new Response("Unauthorized", { status: 401 });
+        } else {
+          return NextResponse.next();
+        }
       }
     }
     return await updateSession(req);

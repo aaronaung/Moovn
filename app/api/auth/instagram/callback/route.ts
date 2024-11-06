@@ -42,12 +42,13 @@ export async function GET(request: NextRequest) {
     );
 
     const igAccount = await new InstagramAPIClient({
-      access_token: result.access_token,
+      long_lived_access_token: result.access_token,
       last_refreshed_at: new Date(),
     }).getMe();
 
     let updatePayload: Partial<Tables<"destinations">> = {
       long_lived_token: result.access_token,
+      token_last_refreshed_at: new Date().toISOString(),
     };
     if (igAccount) {
       updatePayload = {

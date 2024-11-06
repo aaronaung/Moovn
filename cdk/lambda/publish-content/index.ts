@@ -6,10 +6,10 @@ import R2Storage from "@/src/libs/r2/r2-storage";
 import { getBucketName } from "@/src/libs/r2/r2-buckets";
 import { CreateMediaContainerInput, InstagramAPIToken } from "@/src/libs/instagram/types";
 import { Database } from "@/types/db";
-import { ContentItemMetadata, ContentMetadata } from "@/src/consts/content";
+import { ContentItemMetadata, ContentItemType, ContentMetadata } from "@/src/consts/content";
 import * as logger from "lambda-log";
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
-import { IgPublishResult, PublishStatus } from "@/src/consts/destinations";
+import { IgPublishResult, ContentPublishStatus } from "@/src/consts/destinations";
 
 type PublishableIgMedia = {
   url: string;
@@ -66,14 +66,14 @@ export const handler = async (event: any) => {
 
         const igClient = new InstagramAPIClient(
           {
-            access_token: content.destination.long_lived_token,
+            long_lived_access_token: content.destination.long_lived_token,
             last_refreshed_at: new Date(content.destination.token_last_refreshed_at ?? ""),
           },
           async (token: InstagramAPIToken) => {
             await sbClient
               .from("destinations")
               .update({
-                long_lived_token: token.access_token,
+                long_lived_token: token.long_lived_access_token,
                 token_last_refreshed_at: token.last_refreshed_at.toISOString(),
               })
               .eq("id", content.destination?.id ?? "");
@@ -94,15 +94,17 @@ export const handler = async (event: any) => {
             `${contentPath}/${item.id}`,
           );
           if (
-            itemMetadata.mime_type?.startsWith("image") ||
-            itemMetadata.mime_type?.startsWith("video")
+            item.type === ContentItemType.DriveFile &&
+            !itemMetadata.mime_type?.startsWith("image") &&
+            !itemMetadata.mime_type?.startsWith("video")
           ) {
-            toPublish.push({
-              url: signedUrl,
-              mimeType: itemMetadata.mime_type,
-              tags: itemMetadata.ig_tags ?? [],
-            });
+            continue;
           }
+          toPublish.push({
+            url: signedUrl,
+            mimeType: itemMetadata.mime_type ?? "image/jpeg", // Default to jpeg if mime type is not set
+            tags: itemMetadata.ig_tags ?? [],
+          });
         }
 
         logger.info("Content to publish", {
@@ -116,7 +118,10 @@ export const handler = async (event: any) => {
             if (toPublish.length > 1) {
               const resp = await igClient.publishCarouselPost(
                 igUserId,
-                toPublish.map(toCreateMediaContainerInput),
+                toPublish.map((media) => ({
+                  ...toCreateMediaContainerInput(media),
+                  is_carousel_item: true,
+                })),
                 {
                   caption,
                 },
@@ -154,9 +159,9 @@ export const handler = async (event: any) => {
             const { data, error: insertErr } = await sbClient
               .from("content_schedules")
               .update({
-                status: PublishStatus.Published,
+                status: ContentPublishStatus.Published,
                 published_at: new Date().toISOString(),
-                result: JSON.stringify(publishResult),
+                result: publishResult,
               })
               .eq("content_id", content.id);
             if (insertErr) {
@@ -185,7 +190,6 @@ export const handler = async (event: any) => {
     const errorResult = {
       error: {
         message: err.message,
-        details: err.toString(),
       },
     };
 
@@ -193,8 +197,8 @@ export const handler = async (event: any) => {
       await sbClient
         .from("content_schedules")
         .update({
-          status: PublishStatus.Failed,
-          result: JSON.stringify(errorResult),
+          status: ContentPublishStatus.Failed,
+          result: errorResult,
         })
         .eq("content_id", event.contentId);
     } catch (updateErr: any) {
@@ -211,5 +215,5 @@ const toCreateMediaContainerInput = (media: PublishableIgMedia): CreateMediaCont
   if (media.mimeType.startsWith("image")) {
     return { image_url: media.url, user_tags: media.tags };
   }
-  return { video_url: media.url, user_tags: media.tags };
+  return { video_url: media.url, user_tags: media.tags, media_type: "REELS" };
 };

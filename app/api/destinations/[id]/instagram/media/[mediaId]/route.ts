@@ -17,7 +17,7 @@ export async function GET(
 
   const igClient = new InstagramAPIClient(
     {
-      access_token: destination.long_lived_token,
+      long_lived_access_token: destination.long_lived_token,
       last_refreshed_at: new Date(destination.token_last_refreshed_at ?? 0),
     },
     igTokenUpdater(destination.id, { client: supaServerClient() }),

@@ -22,6 +22,8 @@ export const env = createEnv({
     R2_ACCOUNT_ID: z.string().min(1),
     R2_ACCESS_KEY_ID: z.string().min(1),
     R2_SECRET_ACCESS_KEY: z.string().min(1),
+
+    INTERNAL_API_KEY: z.string().min(1).optional(),
   },
   /*
    * Environment variables available on the client (and server).
@@ -75,5 +77,7 @@ export const env = createEnv({
     R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+
+    INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
   },
 });

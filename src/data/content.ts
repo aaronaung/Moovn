@@ -12,7 +12,7 @@ export const saveContent = async (
   return throwOrData(
     client
       .from("content")
-      .upsert(_.omit(content, "destination", "template") as Tables<"content">)
+      .upsert(_.omit(content, "destination", "template", "content_items") as Tables<"content">)
       .select("id")
       .limit(1)
       .single(),
@@ -87,7 +87,8 @@ export const getContentSchedules = async ({ client }: SupabaseOptions) => {
   return throwOrData(
     client
       .from("content_schedules")
-      .select("*, content(*, template:templates(*), content_items:content_items(*))"),
+      .select("*, content(*, template:templates(*), content_items:content_items(*))")
+      .order("position", { referencedTable: "content.content_items" }),
   );
 };
 

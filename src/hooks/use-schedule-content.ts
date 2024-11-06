@@ -20,6 +20,7 @@ import { copyObject, objectExists, uploadObject } from "../data/r2";
 import { ContentItemType, IgContentMetadata } from "../consts/content";
 import { contentItemR2Path, driveSyncR2Path } from "../libs/storage";
 import { TemplateItemMetadata } from "../consts/templates";
+import { ContentPublishStatus } from "../consts/destinations";
 
 const SCHEDULING_BATCH_SIZE = 5;
 
@@ -157,6 +158,7 @@ export function useScheduleContent({
       owner_id: ownerId,
       schedule_expression: scheduleExpression,
       updated_at: new Date().toISOString(),
+      status: ContentPublishStatus.Pending,
     });
 
     return {

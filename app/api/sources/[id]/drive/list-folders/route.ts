@@ -19,6 +19,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const driveClient = new DriveClient(supabase, source);
     const folders = await driveClient.listFolders();
 
+    const files = await driveClient.listFiles("19Kcg8GkkEZ_n1ul2laN7wSZ1YoG_UmKo");
+
+    console.log(files);
+
     return NextResponse.json({ folders });
   } catch (error) {
     console.error("Error listing Google Drive folders:", error);

@@ -14,7 +14,7 @@ export class InstagramAPIClient {
   static GRAPH_API_BASE_URL = "https://graph.instagram.com";
   static GRAPH_API_VERSION = "v20.0";
 
-  private accessToken: string;
+  private longLivedAccessToken: string;
   private lastRefreshedAt: Date;
   private onTokenRefresh?: (token: InstagramAPIToken) => Promise<void>;
 
@@ -22,7 +22,7 @@ export class InstagramAPIClient {
     token: InstagramAPIToken,
     onTokenRefresh?: (token: InstagramAPIToken) => Promise<void>,
   ) {
-    this.accessToken = token.access_token;
+    this.longLivedAccessToken = token.long_lived_access_token;
     this.lastRefreshedAt = token.last_refreshed_at;
     this.onTokenRefresh = onTokenRefresh;
   }
@@ -74,16 +74,16 @@ export class InstagramAPIClient {
 
     const url = new URL(InstagramAPIClient.GRAPH_API_BASE_URL);
     url.pathname = "/refresh_access_token";
-    url.searchParams.set("grant_type", "ig_exchange_token");
-    url.searchParams.set("access_token", this.accessToken);
+    url.searchParams.set("grant_type", "ig_refresh_token");
+    url.searchParams.set("access_token", this.longLivedAccessToken);
 
     const refreshedToken = await (await fetch(url.toString())).json();
     if (refreshedToken?.access_token) {
-      this.accessToken = refreshedToken.access_token;
+      this.longLivedAccessToken = refreshedToken.access_token;
       this.lastRefreshedAt = now;
       if (this.onTokenRefresh) {
         await this.onTokenRefresh({
-          access_token: this.accessToken,
+          long_lived_access_token: this.longLivedAccessToken,
           last_refreshed_at: this.lastRefreshedAt,
         });
       }
@@ -101,7 +101,7 @@ export class InstagramAPIClient {
     url.pathname = `/${InstagramAPIClient.GRAPH_API_VERSION}${options.path}`;
 
     if (options.searchParams) {
-      options.searchParams.append("access_token", this.accessToken);
+      options.searchParams.append("access_token", this.longLivedAccessToken);
       url.search = options.searchParams.toString();
     }
 
@@ -111,7 +111,7 @@ export class InstagramAPIClient {
       const resp = await fetch(url.toString(), {
         method: options.method,
         headers: {
-          Authorization: `Bearer ${this.accessToken}`,
+          Authorization: `Bearer ${this.longLivedAccessToken}`,
           ...(options.body ? { "Content-Type": "application/json" } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
@@ -119,15 +119,6 @@ export class InstagramAPIClient {
 
       try {
         const result = JSON.parse(await resp.text());
-        console.log({
-          url: url.toString(),
-          method: options.method,
-          body: options.body,
-          status: resp.status,
-          statusText: resp.statusText,
-          result,
-        });
-
         if (result && result.code === 4) {
           // Application limit reach error code
           retries++;
@@ -148,13 +139,59 @@ export class InstagramAPIClient {
     throw new Error(`Request failed after ${maxRetries} retries`);
   }
 
+  private async checkMediaContainerStatus(
+    containerId: string,
+    maxAttempts: number = 60, // 1 min max wait time, check every 2 second
+  ): Promise<boolean> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const result = await this.request({
+        method: "GET",
+        path: `/${containerId}`,
+        searchParams: new URLSearchParams("fields=status_code,status"),
+      });
+
+      console.log("Media container status check:", {
+        containerId,
+        attempt: attempt + 1,
+        result,
+      });
+      if (result.copyright_check_status?.matches_found) {
+        throw new Error(
+          `Media container creation failed: Copyright violation detected for ${containerId}`,
+        );
+      }
+      if (result.status_code === "ERROR") {
+        throw new Error(`Media container creation failed: ${result.status}`);
+      }
+      if (result.status_code === "FINISHED") {
+        return true;
+      }
+
+      // Wait before next attempt (with exponential backoff)
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    throw new Error(`Media container not ready after ${maxAttempts} attempts`);
+  }
+
   private async createMediaContainer(
     accountId: string,
     req: CreateMediaContainerInput,
   ): Promise<CreateMediaContainerResult> {
     const body = req;
     const resp = await this.request({ method: "POST", path: `/${accountId}/media`, body });
-    console.log("createMediaContainer resp", resp);
+    console.log("createMediaContainer resp", { req, resp });
+
+    if (!resp.id) {
+      throw new Error(
+        `Failed to create media container for ig user ${accountId} - no ID returned: ${JSON.stringify(
+          { resp },
+        )}`,
+      );
+    }
+
+    // Wait for the container to be ready
+    await this.checkMediaContainerStatus(resp.id);
     return resp;
   }
 
@@ -178,7 +215,16 @@ export class InstagramAPIClient {
       searchParams.set("location_id", req.location_id);
     }
     const resp = await this.request({ method: "POST", path: `/${accountId}/media`, searchParams });
-    console.log("createCarouselContainer resp", resp);
+    console.log("createCarouselContainer resp", { req, resp });
+
+    if (!resp.id) {
+      throw new Error(
+        `Failed to create carousel container for ig user ${accountId} - no ID returned: ${JSON.stringify(
+          resp,
+        )}`,
+      );
+    }
+    await this.checkMediaContainerStatus(resp.id);
     return resp;
   }
 
@@ -186,7 +232,16 @@ export class InstagramAPIClient {
     const body = {
       creation_id: mediaContainerId,
     };
-    return this.request({ method: "POST", path: `/${accountId}/media_publish`, body });
+    const resp = await this.request({ method: "POST", path: `/${accountId}/media_publish`, body });
+    console.log("publishMediaContainer resp", { mediaContainerId, resp });
+    if (!resp.id) {
+      throw new Error(
+        `Failed to publish media container for ig user ${accountId} - no ID returned: ${JSON.stringify(
+          resp,
+        )}`,
+      );
+    }
+    return resp;
   }
 
   async getMe(): Promise<InstagramBusinessAccount> {
@@ -216,39 +271,25 @@ export class InstagramAPIClient {
 
   async publishStory(
     igUserId: string,
-    { image_url }: CreateMediaContainerInput,
-  ): Promise<CreateMediaContainerResult> {
-    const mediaContainer = await this.createMediaContainer(igUserId, {
-      image_url,
-      media_type: "STORIES",
-    });
-    const resp = await this.publishMediaContainer(igUserId, mediaContainer.id);
-    if (!resp.id) {
-      throw new Error(
-        `Failed to publish story for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
-      );
-    }
-    return resp;
-  }
-
-  async publishPost(
-    igUserId: string,
-    { image_url, caption, user_tags }: CreateMediaContainerInput,
+    input: CreateMediaContainerInput,
   ): Promise<CreateMediaContainerResult> {
     await this.refreshTokenIfNeeded();
 
     const mediaContainer = await this.createMediaContainer(igUserId, {
-      image_url,
-      caption,
-      user_tags,
+      ...input,
+      media_type: "STORIES",
     });
-    const resp = await this.publishMediaContainer(igUserId, mediaContainer.id);
-    if (!resp.id) {
-      throw new Error(
-        `Failed to publish post for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
-      );
-    }
-    return resp;
+    return this.publishMediaContainer(igUserId, mediaContainer.id);
+  }
+
+  async publishPost(
+    igUserId: string,
+    input: CreateMediaContainerInput,
+  ): Promise<CreateMediaContainerResult> {
+    await this.refreshTokenIfNeeded();
+
+    const mediaContainer = await this.createMediaContainer(igUserId, input);
+    return this.publishMediaContainer(igUserId, mediaContainer.id);
   }
 
   async publishCarouselPost(
@@ -260,7 +301,10 @@ export class InstagramAPIClient {
 
     const mediaContainers: { id: string }[] = [];
     for (const input of media) {
-      const container = await this.createMediaContainer(igUserId, input);
+      const container = await this.createMediaContainer(igUserId, {
+        ...input,
+        is_carousel_item: true,
+      });
       mediaContainers.push(container);
       await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay to avoid rate limit/spam detection.
     }
@@ -268,12 +312,7 @@ export class InstagramAPIClient {
       children: mediaContainers.map((result) => result.id),
       ...(caption ? { caption } : {}),
     });
-    const resp = await this.publishMediaContainer(igUserId, carouselContainer.id);
-    if (!resp.id) {
-      throw new Error(
-        `Failed to publish carousel post for ${igUserId} - no ID returned: ${JSON.stringify(resp)}`,
-      );
-    }
-    return resp;
+
+    return this.publishMediaContainer(igUserId, carouselContainer.id);
   }
 }

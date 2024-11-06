@@ -37,19 +37,23 @@ export default function Calendar() {
     isOpen: false,
   });
 
-  const { data: contentSchedules } = useSupaQuery(getContentSchedules, {
-    queryKey: ["getContentSchedules"],
-  });
-  const { data: scheduleDataFromAllSources } = useSupaQuery(getDataFromScheduleSourcesByTimeRange, {
-    arg: {
-      dateRange: {
-        from: sub(startOfMonth(today), { days: 7 }),
-        to: add(endOfMonth(today), { days: 7 }),
-      },
+  const { data: contentSchedules, isLoading: isLoadingContentSchedules } = useSupaQuery(
+    getContentSchedules,
+    {
+      queryKey: ["getContentSchedules"],
     },
-    queryKey: ["getDataFromScheduleSourcesByTimeRange"],
-    refetchOnWindowFocus: false,
-  });
+  );
+  const { data: scheduleDataFromAllSources, isLoading: isLoadingScheduleDataFromAllSources } =
+    useSupaQuery(getDataFromScheduleSourcesByTimeRange, {
+      arg: {
+        dateRange: {
+          from: sub(startOfMonth(today), { days: 7 }),
+          to: add(endOfMonth(today), { days: 7 }),
+        },
+      },
+      queryKey: ["getDataFromScheduleSourcesByTimeRange"],
+      refetchOnWindowFocus: false,
+    });
 
   useEffect(() => {
     const loadPreviewUrls = async () => {
@@ -90,6 +94,8 @@ export default function Calendar() {
 
     if (contentSchedules && contentSchedules.length > 0) {
       loadPreviewUrls();
+    } else {
+      setIsLoadingPreviewUrls(isLoadingContentSchedules);
     }
   }, [contentSchedules]);
 
@@ -139,6 +145,8 @@ export default function Calendar() {
     };
     if (contentSchedules && scheduleDataFromAllSources) {
       loadCalendarEvents();
+    } else {
+      setIsLoadingCalendarEvents(isLoadingContentSchedules || isLoadingScheduleDataFromAllSources);
     }
   }, [contentSchedules, scheduleDataFromAllSources]);
 

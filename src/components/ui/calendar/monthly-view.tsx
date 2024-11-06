@@ -13,14 +13,20 @@ import {
   startOfWeek,
 } from "date-fns";
 import { CalendarEvent } from "./full-calendar";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 import Image from "next/image";
-import { IgPublishResult, PublishStatus } from "@/src/consts/destinations";
+import { IgPublishResult, ContentPublishStatus } from "@/src/consts/destinations";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../dialog";
+import { ContentItemMetadata } from "@/src/consts/content";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
@@ -263,7 +269,8 @@ const EventPill = ({
 
   const [showError, setShowError] = useState(false);
   const publishResult = (event.contentSchedule.result as IgPublishResult) ?? {};
-  const hasFailed = event.contentSchedule.status === PublishStatus.Failed;
+  const hasFailed = event.contentSchedule.status === ContentPublishStatus.Failed;
+  console.log({ publishResult });
 
   return (
     <>
@@ -290,15 +297,24 @@ const EventPill = ({
                 hasFailed && "bg-red-600 dark:bg-red-700",
               )}
             >
-              <p
-                className={cn(
-                  "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
-                  (event.hasDataChanged || publishResult.ig_permalink || hasFailed) &&
-                    "text-white group-hover/event-li:text-white",
-                )}
-              >
-                {event.title}
-              </p>
+              <div className="flex flex-1 items-center gap-1">
+                {hasFailed ? (
+                  <XMarkIcon className="h-4 w-4 text-white" />
+                ) : publishResult.ig_permalink ? (
+                  <CheckCircleIcon className="h-4 w-4 text-white" />
+                ) : event.hasDataChanged ? (
+                  <ExclamationTriangleIcon className="h-4 w-4 text-white" />
+                ) : null}
+                <p
+                  className={cn(
+                    "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
+                    (event.hasDataChanged || publishResult.ig_permalink || hasFailed) &&
+                      "text-white group-hover/event-li:text-white",
+                  )}
+                >
+                  {event.title}
+                </p>
+              </div>
               <time
                 dateTime={event.start.toISOString()}
                 className={cn(
@@ -353,12 +369,14 @@ const EventLineItem = ({
   const [showError, setShowError] = useState(false);
   const publishResult = (event.contentSchedule.result as IgPublishResult) ?? {};
   const hasPublishedContent = publishResult.ig_permalink;
-  const hasFailed = event.contentSchedule.status === PublishStatus.Failed;
+  const hasFailed = event.contentSchedule.status === ContentPublishStatus.Failed;
   const colorTheme = hasFailed
     ? "text-red-600"
     : hasPublishedContent
     ? "text-green-600"
     : event.hasDataChanged && "text-orange-500";
+
+  const firstItem = event.contentSchedule.content.content_items[1];
 
   return (
     <>
@@ -377,18 +395,22 @@ const EventLineItem = ({
       >
         <div className="flex-auto">
           <div className="flex items-center gap-1">
+            {hasFailed ? (
+              <XMarkIcon className="h-4 w-4 text-red-600" />
+            ) : publishResult.ig_permalink ? (
+              <CheckCircleIcon className="h-4 w-4 text-green-600" />
+            ) : event.hasDataChanged ? (
+              <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />
+            ) : null}
             <p className={cn("line-clamp-2 font-semibold text-secondary-foreground", colorTheme)}>
               {event.title}
             </p>
           </div>
           <time
             dateTime={event.start.toISOString()}
-            className={cn("mt-2 flex items-center text-secondary-foreground", colorTheme)}
+            className={cn("mt-2 flex items-center text-secondary-foreground")}
           >
-            <ClockIcon
-              className={cn("mr-2 h-5 w-5 text-gray-400", colorTheme)}
-              aria-hidden="true"
-            />
+            <ClockIcon className={cn("mr-2 h-4 w-4 text-gray-400")} aria-hidden="true" />
             {event.start.toLocaleTimeString([], {
               hour: "numeric",
               minute: "2-digit",
@@ -396,8 +418,11 @@ const EventLineItem = ({
           </time>
         </div>
         <div>
-          {event.contentSchedule.content.content_items.length > 0 &&
-            previewUrls.has(event.contentSchedule.content.content_items[0].id) && (
+          {firstItem &&
+            previewUrls.has(firstItem.id) &&
+            ((firstItem.metadata as ContentItemMetadata)?.mime_type?.startsWith("video") ? (
+              <video src={previewUrls.get(firstItem.id) || ""} className="h-[50px] w-[50px]" />
+            ) : (
               <Image
                 className="h-[50px] w-[50px] rounded-sm object-contain"
                 src={previewUrls.get(event.contentSchedule.content.content_items[0].id) || ""}
@@ -405,7 +430,7 @@ const EventLineItem = ({
                 width={50}
                 height={50}
               />
-            )}
+            ))}
         </div>
       </li>
     </>
@@ -432,7 +457,7 @@ const PublishErrorDialog = ({
           </p>
         </DialogHeader>
         <ReactJson
-          src={(event.contentSchedule.result as object) || {}}
+          src={event.contentSchedule.result as object}
           displayDataTypes={false}
           name={false}
           theme={"chalk"}

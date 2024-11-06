@@ -5,8 +5,6 @@ import { Pike13Client } from "./pike13";
 import { flattenSchedule } from "./utils";
 import { MindbodyClient } from "./mindbody";
 
-console.log("HEREEEEE");
-
 export interface SourceClient {
   getScheduleData(from: string, to: string): Promise<ScheduleData>;
 }

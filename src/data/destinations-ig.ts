@@ -28,5 +28,5 @@ export const getInstagramMedia = async ({
   destinationId: string;
   mediaId: string;
 }): Promise<InstagramMedia> => {
-  return (await fetch(`/api/destinations/${destinationId}/instagram/ig-media/${mediaId}`)).json();
+  return (await fetch(`/api/destinations/${destinationId}/instagram/media/${mediaId}`)).json();
 };

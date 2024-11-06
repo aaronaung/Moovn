@@ -44,7 +44,7 @@ export const igTokenUpdater = (destinationId: string, { client }: SupabaseOption
     await client
       .from("destinations")
       .update({
-        long_lived_token: token.access_token,
+        long_lived_token: token.long_lived_access_token,
         token_last_refreshed_at: token.last_refreshed_at.toISOString(),
       })
       .eq("id", destinationId);

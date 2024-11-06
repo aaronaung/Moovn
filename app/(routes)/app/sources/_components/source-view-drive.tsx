@@ -4,7 +4,7 @@ import { syncDriveSource, getSourceSyncsBySourceId } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
 import { Button } from "@/src/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, RotateCw } from "lucide-react";
 import { useState } from "react";
 
 import SourceSyncsTable from "@/src/components/tables/source-syncs";
@@ -15,10 +15,12 @@ import { Header2 } from "@/src/components/common/header";
 
 export default function SourceViewDrive({ source }: { source: Tables<"sources"> }) {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPerformingImmediateRefresh, setIsPerformingImmediateRefresh] = useState(false);
   const {
     data: sourceSyncs,
     isLoading: isLoadingSourceSync,
     refetch,
+    isRefetching: isRefetchingSourceSync,
   } = useSupaQuery(getSourceSyncsBySourceId, {
     arg: source.id,
     queryKey: ["getSourceSyncsBySourceId", source.id],
@@ -41,12 +43,14 @@ export default function SourceViewDrive({ source }: { source: Tables<"sources"> 
     } finally {
       setIsSyncing(false);
       // Poll for updates every second for 10 seconds
+      setIsPerformingImmediateRefresh(true);
       if (!syncErr) {
         for (let i = 0; i < 10; i++) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           await refetch();
         }
       }
+      setIsPerformingImmediateRefresh(false);
     }
   };
 
@@ -59,7 +63,7 @@ export default function SourceViewDrive({ source }: { source: Tables<"sources"> 
             Syncs are performed every 3 hours and can be triggered manually.
           </p>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <Button
             onClick={handleSync}
             disabled={isSyncing || isLoadingSourceSync}
@@ -67,6 +71,21 @@ export default function SourceViewDrive({ source }: { source: Tables<"sources"> 
           >
             <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
             {isSyncing ? "Syncing..." : "Sync Now"}
+          </Button>
+
+          <Button
+            onClick={() => refetch()}
+            disabled={isRefetchingSourceSync && !isPerformingImmediateRefresh}
+            variant="outline"
+            className="gap-2"
+          >
+            <RotateCw
+              className={cn(
+                "h-4 w-4",
+                isRefetchingSourceSync && !isPerformingImmediateRefresh && "animate-spin",
+              )}
+            />
+            Refresh
           </Button>
         </div>
       </div>

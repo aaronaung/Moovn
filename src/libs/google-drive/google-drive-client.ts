@@ -39,7 +39,7 @@ export class GoogleDriveClient {
     try {
       const response = await this.driveService.files.list({
         q: folderId ? `'${folderId}' in parents` : undefined,
-        fields: fields || "files(id, name, mimeType, webViewLink, modifiedTime)",
+        fields: fields || "files(*)",
       });
 
       return response.data.files || [];

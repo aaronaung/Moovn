@@ -114,6 +114,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             !file.id ||
             !file.name ||
             !file.modifiedTime ||
+            file.trashed ||
             (!file.mimeType?.startsWith("image/") && !file.mimeType?.startsWith("video/"))
           ) {
             continue;

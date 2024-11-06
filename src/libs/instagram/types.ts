@@ -1,5 +1,5 @@
 export type InstagramAPIToken = {
-  access_token: string;
+  long_lived_access_token: string;
   last_refreshed_at: Date;
 };
 
@@ -13,7 +13,7 @@ export type InstagramMedia = {
   id: string;
   permalink: string;
   media_url: string;
-  // more here: https://developers.facebook.com/docs/instagram-api/reference/ig-media/
+  // more here: https://developers.facebook.com/docs/instagram-api/reference/media/
 };
 
 export type CreateMediaContainerInput = {

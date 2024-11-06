@@ -3,7 +3,7 @@ export enum DestinationTypes {
   Email = "Email",
 }
 
-export enum PublishStatus {
+export enum ContentPublishStatus {
   Pending = "Pending",
   Published = "Published",
   Failed = "Failed",

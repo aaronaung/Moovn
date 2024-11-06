@@ -5,7 +5,7 @@ import { Tables } from "@/types/db";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn } from "@/src/utils";
-import { PublishStatus } from "@/src/consts/destinations";
+import { ContentPublishStatus } from "@/src/consts/destinations";
 import ReactJson from "react-json-view";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { useState } from "react";
@@ -34,7 +34,8 @@ export default function ContentSchedulesTable({ data }: ContentSchedulesTablePro
             // Extract date from at(...) format
             const dateStr = scheduleExpression.match(/at\((.*?)\)/)?.[1];
             if (!dateStr) return scheduleExpression;
-            const date = new Date(dateStr);
+
+            const date = new Date(dateStr + "Z");
             return format(date, "MMM d, yyyy hh:mm aa");
           } catch (e) {
             return scheduleExpression;
@@ -48,9 +49,9 @@ export default function ContentSchedulesTable({ data }: ContentSchedulesTablePro
           return (
             <Badge
               className={cn(
-                status === PublishStatus.Published && "bg-green-500",
-                status === PublishStatus.Failed && "bg-red-500",
-                status === PublishStatus.Pending && "bg-blue-500",
+                status === ContentPublishStatus.Published && "bg-green-500",
+                status === ContentPublishStatus.Failed && "bg-red-500",
+                status === ContentPublishStatus.Pending && "bg-blue-500",
               )}
             >
               {status}

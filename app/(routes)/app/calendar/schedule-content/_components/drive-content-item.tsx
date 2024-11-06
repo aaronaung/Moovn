@@ -13,6 +13,8 @@ import { deconstructContentIdbKey } from "@/src/libs/content";
 import { TemplateItemMetadata } from "@/src/consts/templates";
 import { db } from "@/src/libs/indexeddb/indexeddb";
 import { ContentItemType } from "@/src/consts/content";
+import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
+import Link from "next/link";
 
 export const DESIGN_WIDTH = 220;
 
@@ -87,7 +89,21 @@ export const DriveContentItem = React.memo(function DriveContentItem({
     }
 
     if (!templateItemMetadata || !signedUrl) {
-      return <p className="text-sm text-muted-foreground">No content available</p>;
+      return (
+        <div className="flex h-full flex-col items-center justify-center px-4">
+          <GoogleDriveIcon className="mb-2 h-6 w-6" />
+          <p className="text-center text-sm text-muted-foreground">
+            {`${templateItemMetadata.drive_folder_name}/${range}/${templateItemMetadata.drive_file_name}`}{" "}
+            doesn't exist
+          </p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            If you think this is a mistake, try{" "}
+            <Link href={`/app/sources`} className="underline">
+              syncing your Drive integration.
+            </Link>{" "}
+          </p>
+        </div>
+      );
     }
 
     if (templateItemMetadata.mime_type?.startsWith("image/")) {
