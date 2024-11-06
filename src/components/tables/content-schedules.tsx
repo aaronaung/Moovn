@@ -6,9 +6,11 @@ import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { cn } from "@/src/utils";
 import { ContentPublishStatus } from "@/src/consts/destinations";
-import ReactJson from "react-json-view";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { useState } from "react";
+import dynamic from "next/dynamic";
+
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 const columnHelper = createColumnHelper<Tables<"content_schedules">>();
 

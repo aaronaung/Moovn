@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 import { getSourcesByType } from "@/src/data/sources";
 import { SourceTypes } from "@/src/consts/sources";
 import { DriveSourceClient } from "@/src/libs/sources/drive";
-import { supaServerClient } from "@/src/data/clients/server";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/db";
+import { env } from "@/env.mjs";
 
 export async function GET() {
   try {
-    const supabase = supaServerClient();
+    const supabase = createClient<Database>(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY,
+    );
     const driveSources = await getSourcesByType(SourceTypes.GoogleDrive, {
       client: supabase,
     });
