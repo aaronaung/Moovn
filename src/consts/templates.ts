@@ -7,9 +7,6 @@ export type DriveTemplateItemMetadata = {
   drive_folder_id: string;
   drive_folder_name: string;
   drive_file_name: string;
-  last_synced?: string;
-  sync_error?: string;
-  mime_type?: string;
 };
 
 export enum TemplateCreationRequestStatus {

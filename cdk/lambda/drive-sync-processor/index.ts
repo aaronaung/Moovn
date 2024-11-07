@@ -49,7 +49,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
 
     const settings = source.settings as GoogleDriveSourceSettings;
     if (!settings.refresh_token) {
-      throw new Error(`Source ${sourceId} has no refresh token`);
+      throw new Error(`Source is not connected to Google Drive`);
     }
 
     const driveClient = new GoogleDriveClient(
@@ -260,16 +260,6 @@ async function syncSource(sourceId: string, forceSync: boolean) {
                 error: `Error syncing Drive file to R2: ${fileSyncError}`,
               });
             }
-            await supabase
-              .from("template_items")
-              .update({
-                metadata: {
-                  ...(templateItem.metadata as TemplateItemMetadata),
-                  mime_type: file.mimeType,
-                  last_source_sync_id: sourceSyncId,
-                },
-              })
-              .eq("id", templateItem.id);
           }
         }
       }

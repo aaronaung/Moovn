@@ -2,7 +2,7 @@
 
 import { Button } from "@/src/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tables } from "@/types/db";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import {
@@ -76,6 +76,16 @@ export default function SaveDriveTemplateItem({
   const { mutateAsync: _saveTemplateItem } = useSupaMutation(saveTemplateItem, {
     invalidate: [["getTemplateItemsByTemplateId", parentTemplate?.id ?? ""]],
   });
+
+  useEffect(() => {
+    if (driveSources?.[0]?.id) {
+      setSelectedSource(
+        templateItemMetadata?.drive_source_id
+          ? driveSources.find((source) => source.id === templateItemMetadata.drive_source_id)
+          : driveSources[0],
+      );
+    }
+  }, [driveSources]);
 
   const handleAddTemplateItem = async () => {
     if (!selectedFolder || !fileName) {
