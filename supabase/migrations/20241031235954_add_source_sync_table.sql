@@ -1,6 +1,6 @@
 create table source_syncs (
     id uuid primary key default gen_random_uuid(),
-    source_id uuid not null references sources(id),
+    source_id uuid not null references sources(id) on delete cascade,
     status text not null,
     duration_ms bigint default 0,
     errors jsonb, 

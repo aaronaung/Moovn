@@ -50,6 +50,7 @@ export default function SourcesPage() {
           title: "Source deleted",
           variant: "success",
         });
+        setSelectedSource(sources?.[0]);
       },
       onError: (error) => {
         console.error(error);
