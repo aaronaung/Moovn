@@ -12,7 +12,7 @@ import { driveSyncR2Path } from "@/src/libs/storage";
 import { deconstructContentIdbKey } from "@/src/libs/content";
 import { TemplateItemMetadata } from "@/src/consts/templates";
 import { db } from "@/src/libs/indexeddb/indexeddb";
-import { ContentItemType } from "@/src/consts/content";
+import { ContentItemType, R2MetadataForContentItem } from "@/src/consts/content";
 import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
 import Link from "next/link";
 
@@ -43,7 +43,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
     const fetchSignedUrl = async () => {
       try {
         setIsLoading(true);
-        const { metadata, signedUrl } = await signUrlWithMetadata(
+        const { metadata, signedUrl } = await signUrlWithMetadata<R2MetadataForContentItem>(
           "drive-sync",
           driveSyncR2Path(
             template.owner_id,
@@ -52,7 +52,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
             templateItemMetadata.drive_file_name,
           ),
         );
-        const mimeType = metadata.mime_type;
+        const mimeType = metadata.drive_mime_type;
         if (signedUrl) {
           await db.contentItems.put({
             key: contentItemIdbKey,

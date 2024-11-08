@@ -25,6 +25,15 @@ export type ContentItemMetadata = {
   mime_type?: string;
 };
 
+// This is the metadata that is stored in R2 for a content item
+export type R2MetadataForContentItem = {
+  drive_file_id: string;
+  drive_last_modified: string;
+  drive_mime_type: string;
+  source_id: string;
+  template_item_id: string;
+};
+
 export const CONTENT_TYPES_BY_DESTINATION_TYPE: { [key: string]: string[] } = {
   [DestinationTypes.Instagram]: [ContentType.InstagramPost, ContentType.InstagramStory],
 };

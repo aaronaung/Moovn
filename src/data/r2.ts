@@ -21,10 +21,10 @@ export async function signUrl(bucketName: BucketName, key: string): Promise<stri
   return data.signedUrl;
 }
 
-export async function signUrlWithMetadata(
+export async function signUrlWithMetadata<T>(
   bucketName: BucketName,
   key: string,
-): Promise<{ signedUrl: string; metadata: Record<string, string> }> {
+): Promise<{ signedUrl: string; metadata: T }> {
   const response = await fetch(
     `${BASE_URL}/sign-url?bucket=${encodeURIComponent(
       getBucketName(bucketName),
