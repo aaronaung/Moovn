@@ -21,6 +21,27 @@ export async function signUrl(bucketName: BucketName, key: string): Promise<stri
   return data.signedUrl;
 }
 
+export async function signUrlWithMetadata(
+  bucketName: BucketName,
+  key: string,
+): Promise<{ signedUrl: string; metadata: Record<string, string> }> {
+  const response = await fetch(
+    `${BASE_URL}/sign-url?bucket=${encodeURIComponent(
+      getBucketName(bucketName),
+    )}&key=${encodeURIComponent(key)}&includeMetadata=true`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to sign URL with metadata: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
+
 export async function uploadObject(
   bucketName: BucketName,
   key: string,

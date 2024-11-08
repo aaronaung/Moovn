@@ -7,7 +7,7 @@ import { DownloadCloudIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import Image from "next/image";
 import { cn } from "@/src/utils";
-import { signUrl } from "@/src/data/r2";
+import { signUrlWithMetadata } from "@/src/data/r2";
 import { driveSyncR2Path } from "@/src/libs/storage";
 import { deconstructContentIdbKey } from "@/src/libs/content";
 import { TemplateItemMetadata } from "@/src/consts/templates";
@@ -32,6 +32,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
   width?: number;
 }) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +43,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
     const fetchSignedUrl = async () => {
       try {
         setIsLoading(true);
-        const signedUrl = await signUrl(
+        const { metadata, signedUrl } = await signUrlWithMetadata(
           "drive-sync",
           driveSyncR2Path(
             template.owner_id,
@@ -51,7 +52,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
             templateItemMetadata.drive_file_name,
           ),
         );
-        setSignedUrl(signedUrl);
+        const mimeType = metadata.mime_type;
         if (signedUrl) {
           await db.contentItems.put({
             key: contentItemIdbKey,
@@ -61,11 +62,13 @@ export const DriveContentItem = React.memo(function DriveContentItem({
             type: ContentItemType.DriveFile,
             position: templateItem.position,
             metadata: {
-              mime_type: templateItemMetadata.mime_type,
+              mime_type: mimeType,
             },
             created_at: new Date(),
             updated_at: new Date(),
           });
+          setSignedUrl(signedUrl);
+          setMimeType(mimeType);
         } else {
           await db.contentItems.delete(contentItemIdbKey);
         }
@@ -106,7 +109,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
       );
     }
 
-    if (templateItemMetadata.mime_type?.startsWith("image/")) {
+    if (mimeType?.startsWith("image/")) {
       return (
         <Image
           src={signedUrl!}
@@ -116,7 +119,7 @@ export const DriveContentItem = React.memo(function DriveContentItem({
           className="rounded-md object-cover"
         />
       );
-    } else if (templateItemMetadata.mime_type?.startsWith("video/")) {
+    } else if (mimeType?.startsWith("video/")) {
       return (
         <video src={signedUrl!} controls width={width} height={width} className="rounded-md">
           Your browser does not support the video tag.

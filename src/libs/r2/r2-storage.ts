@@ -39,6 +39,23 @@ class R2Storage {
     return await getSignedUrl(this.client, command, { expiresIn });
   }
 
+  async signUrlWithMetadata(
+    bucketName: string,
+    key: string,
+    expiresIn: number = 3600,
+  ): Promise<{ signedUrl: string; metadata: Record<string, string> } | undefined> {
+    const metadata = await this.getObjectMetadata(bucketName, key);
+    if (!metadata) {
+      return undefined;
+    }
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(this.client, command, { expiresIn });
+    return { signedUrl, metadata: metadata.Metadata ?? {} };
+  }
+
   async uploadObject(
     bucketName: string,
     key: string,
