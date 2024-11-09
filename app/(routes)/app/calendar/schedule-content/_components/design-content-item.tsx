@@ -376,7 +376,7 @@ const DesignNotFound = ({ label }: { label?: string }) => {
   return (
     <p className="px-4 text-center text-sm text-muted-foreground">
       {label ||
-        "We couldn't generate the design. Please check for schedule data for this template. If this seems wrong, refresh or contact support."}
+        "We couldn't generate the design. If this persists, please refresh the page or contact support."}
     </p>
   );
 };

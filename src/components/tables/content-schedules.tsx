@@ -9,6 +9,7 @@ import { ContentPublishStatus } from "@/src/consts/destinations";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { Button } from "../ui/button";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -69,17 +70,18 @@ export default function ContentSchedulesTable({ data }: ContentSchedulesTablePro
         },
       }),
       columnHelper.accessor("result", {
-        header: "Result",
+        header: "Instagram Post",
         cell: ({ getValue }) => {
-          const result = getValue();
-          if (!result) return null;
+          const result = getValue() as { ig_permalink: string };
+          if (!result?.ig_permalink) return null;
           return (
-            <button
-              onClick={() => setSelectedResult(result)}
+            <Button
+              variant="link"
+              onClick={() => window.open(result.ig_permalink, "_blank")}
               className="text-sm text-blue-500 hover:underline"
             >
-              View Result
-            </button>
+              View Post
+            </Button>
           );
         },
       }),

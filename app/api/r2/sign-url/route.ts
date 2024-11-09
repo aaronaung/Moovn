@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     if (includeMetadata) {
       const signedUrlWithMetadata = await r2.signUrlWithMetadata(bucketName, key);
-      return NextResponse.json(signedUrlWithMetadata);
+      return NextResponse.json(signedUrlWithMetadata ?? { signedUrl: null, metadata: {} });
     }
     const signedUrl = await r2.signUrl(bucketName, key);
     return NextResponse.json({ signedUrl });
