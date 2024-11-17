@@ -85,7 +85,7 @@ export class Pike13Client implements SourceClient {
           date: eventsByDay[0].date,
           siteTimeZone: eventsByDay[0].timezone,
           event: (eventsByDay || []).map((event: any, index: number) => {
-            const headshotUrl = `https://assets.moovn.co/headshots/${index + 1}.png`;
+            const headshotUrl = `https://assets.moovn.co/headshots/${(index + 1) % 10}.png`;
             return {
               staff: (event.staff_members || [])
                 .filter((s: any) => Boolean(staffMembersById[s.id]))
@@ -93,6 +93,7 @@ export class Pike13Client implements SourceClient {
                   const staffMember = staffMembersById[s.id];
 
                   return {
+                    id: staffMember?.id,
                     name: staffMember?.name,
                     photo: headshotUrl,
                     instagramHandle: "aarondidi", // staffMember.name.replace(/[^0-9a-z]/gi, "").toLowerCase(), // todo: grab instagram handle from pike13

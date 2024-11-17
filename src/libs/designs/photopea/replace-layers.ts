@@ -114,17 +114,41 @@ if (loadedLayers && loadedLayers.length > 0) {
         var targetRight = target.bounds[2].value;
         var targetBottom = target.bounds[3].value;
       
+        doc.activeLayer = source;
+
+        // Crop vertically if source extends below target
         if (sourceBottom > targetBottom) {
-          doc.activeLayer = source;
           doc.selection.select([
-            [targetLeft - 5, targetBottom + 5],
-            [targetRight + 5, targetBottom + 5],
+            [sourceLeft - 5, targetBottom + 5],
+            [sourceRight + 5, targetBottom + 5], 
             [sourceRight + 5, sourceBottom + 5],
             [sourceLeft - 5, sourceBottom + 5]
           ]);
           doc.selection.clear();
           doc.selection.deselect();
         }
+
+        // Crop horizontally if source extends beyond target width
+        if (sourceLeft < targetLeft || sourceRight > targetRight) {
+          doc.selection.select([
+            [sourceLeft - 5, sourceTop - 5],
+            [targetLeft - 5, sourceTop - 5],
+            [targetLeft - 5, sourceBottom + 5],
+            [sourceLeft - 5, sourceBottom + 5]
+          ]);
+          doc.selection.clear();
+          doc.selection.deselect();
+
+          doc.selection.select([
+            [targetRight + 5, sourceTop - 5],
+            [sourceRight + 5, sourceTop - 5],
+            [sourceRight + 5, sourceBottom + 5],
+            [targetRight + 5, sourceBottom + 5]
+          ]);
+          doc.selection.clear();
+          doc.selection.deselect();
+        }
+
         source.name = target.name;
         target.remove();
       } 
@@ -142,6 +166,7 @@ var layers = ${JSON.stringify(replaceLayers)};
 var loadedLayers = doc.artLayers;
 
 function checkLayerTranslatesComplete() {
+console.log("checking layer complete", layers)
   for (var i = 0; i < layers.length; i++) {
     var sourceName = layers[i].sourceLayerName;
     var targetName = layers[i].targetLayerName;
@@ -190,7 +215,7 @@ function checkLayerTranslatesComplete() {
         // target.remove();
       } else {
         console.log("source layer position not equal to target layer position", {
-          sourceCenterX, sourceTop, targetCenterX, targetTop
+          sourceCenterX, sourceTop, targetCenterX, targetTop, source, target, sourceName, targetName
         });
         return false;
       }

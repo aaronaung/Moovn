@@ -32,10 +32,10 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
       return flattenSchedule(await pike13Client.getScheduleData(from, to));
     case SourceTypes.Mindbody:
       sourceSettings = source.settings as MindbodySourceSettings;
-      if (!sourceSettings?.siteId) {
+      if (!sourceSettings?.site_id) {
         return null;
       }
-      const mindbodyClient = new MindbodyClient(sourceSettings.siteId);
+      const mindbodyClient = new MindbodyClient(sourceSettings.site_id);
       return flattenSchedule(await mindbodyClient.getScheduleData(from, to));
     default:
       return {};

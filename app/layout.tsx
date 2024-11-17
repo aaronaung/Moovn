@@ -16,6 +16,7 @@ import { EmailEditorProvider } from "@/src/contexts/email-editor";
 import { DesignGenQueueProvider } from "@/src/contexts/design-gen-queue";
 import { Suspense } from "react";
 import { Spinner } from "@/src/components/common/loading-spinner";
+import StaffImagesPrefetch from "@/src/components/staff-images-prefetch";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           disableTransitionOnChange
                         >
                           <TooltipProvider>{children}</TooltipProvider>
+                          <StaffImagesPrefetch />
                         </ThemeProvider>
                       </ReactDnDProvider>
                     </DesignGenQueueProvider>

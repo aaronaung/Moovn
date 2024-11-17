@@ -2,7 +2,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ScheduleData } from "../libs/sources";
 import { db } from "../libs/indexeddb/indexeddb";
-import { getRangeStart, deconstructContentItemIdbKey } from "../libs/content";
+import {
+  getRangeStart,
+  deconstructContentItemIdbKey,
+  deconstructContentIdbKey,
+} from "../libs/content";
 import { isBefore, startOfYesterday } from "date-fns";
 import { generateDesignHash } from "../libs/designs/util";
 import { readPsd } from "ag-psd";
@@ -95,6 +99,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
         setQueuedJobs(remainingJobs);
 
         const { contentIdbKey, template, templateItem, idbKey, schedule, forceRefresh } = nextJob;
+        const { sourceId } = deconstructContentIdbKey(contentIdbKey);
         try {
           await cleanupIdb();
           const debug = searchParams?.get("debug") === "true";
@@ -130,7 +135,7 @@ export const DesignGenQueueProvider: React.FC<{ children: React.ReactNode }> = (
           }
           const templatePsd = readPsd(templateFile);
 
-          const designGenSteps = await determineDesignGenSteps(schedule, templatePsd);
+          const designGenSteps = await determineDesignGenSteps(schedule, templatePsd, sourceId);
 
           const photopeaEl = addHeadlessPhotopeaToDom(debug);
           const start = performance.now();

@@ -40,13 +40,21 @@ export type TemplateItem = {
   jpg?: ArrayBuffer;
 };
 
+export type StaffImage = {
+  key: string; // `${sourceId}-${staffId}`
+  blob: ArrayBuffer;
+  lastUpdated: Date;
+};
+
 export const db = new Dexie("moovn") as Dexie & {
   contentItems: EntityTable<ContentItem, "key">;
   templateItems: EntityTable<TemplateItem, "key">;
+  staffImages: EntityTable<StaffImage, "key">;
 };
 
-db.version(1).stores({
+db.version(2).stores({
   contentItems:
     "key, content_idb_key, template_id, template_item_id, type, position, metadata, hash, created_at, updated_at, psd, jpg",
   templateItems: "key, template_id, type, position, metadata, created_at, updated_at, psd, jpg",
+  staffImages: "key, sourceId, staffId, lastUpdated",
 });

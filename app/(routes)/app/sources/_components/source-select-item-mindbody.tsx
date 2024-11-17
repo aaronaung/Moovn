@@ -13,16 +13,16 @@ import Link from "next/link";
 
 export default function SourceSelectItemMindbody({ source }: { source: Tables<"sources"> }) {
   const { data: siteData, isLoading: isLoadingSiteData } = useSupaQuery(getMindbodySiteData, {
-    arg: (source.settings as MindbodySourceSettings).siteId,
-    queryKey: ["getMindbodySiteData", (source.settings as MindbodySourceSettings).siteId],
+    arg: (source.settings as MindbodySourceSettings).site_id,
+    queryKey: ["getMindbodySiteData", (source.settings as MindbodySourceSettings).site_id],
   });
   const { data: activationData, isLoading: isLoadingActivationData } = useSupaQuery(
     getMindbodyActivationCodeAndLink,
     {
-      arg: (source.settings as MindbodySourceSettings).siteId,
+      arg: (source.settings as MindbodySourceSettings).site_id,
       queryKey: [
         "getMindbodyActivationCodeAndLink",
-        (source.settings as MindbodySourceSettings).siteId,
+        (source.settings as MindbodySourceSettings).site_id,
       ],
       retry: false,
     },

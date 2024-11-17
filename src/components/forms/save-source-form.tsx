@@ -19,7 +19,7 @@ const formSchema = z.object({
   settings: z
     .object({
       url: z.string().url({ message: "Must be a valid url." }).optional(),
-      siteId: z.string().min(1, { message: "Site ID is required." }).optional(),
+      site_id: z.string().min(1, { message: "Site ID is required." }).optional(),
     })
     .optional(),
 });
@@ -51,7 +51,7 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
     resolver: zodResolver(formSchema),
   });
   const selectedSourceType = watch("type");
-  const siteId = watch("settings.siteId");
+  const siteId = watch("settings.site_id");
 
   useEffect(() => {
     setValue("settings", {});
@@ -99,12 +99,12 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
           <>
             <InputText
               label="Site ID"
-              rhfKey="settings.siteId"
+              rhfKey="settings.site_id"
               register={register}
               inputProps={{
                 placeholder: "Enter your Mindbody Site ID",
               }}
-              error={(errors.settings as any)?.siteId?.message}
+              error={(errors.settings as any)?.site_id?.message}
             />
           </>
         );
@@ -121,8 +121,8 @@ export default function SaveSourceForm({ defaultValues, onSubmitted }: SaveSourc
       });
       return;
     }
-    if (formValues.type === SourceTypes.Mindbody && !formValues.settings.siteId) {
-      setError("settings.siteId", {
+    if (formValues.type === SourceTypes.Mindbody && !formValues.settings.site_id) {
+      setError("settings.site_id", {
         message: "Site ID is required.",
       });
       return;

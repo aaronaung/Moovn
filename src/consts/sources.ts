@@ -14,7 +14,7 @@ export enum SourceDataView {
 export const SOURCE_HAS_NO_DATA_ID = "Source has no data";
 
 export type MindbodySourceSettings = {
-  siteId: string;
+  site_id: string;
 };
 
 export type GoogleDriveSourceSettings = Credentials;

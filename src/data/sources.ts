@@ -196,3 +196,9 @@ export const getSourceSyncsBySourceId = async (sourceId: string, { client }: Sup
       .order("created_at", { ascending: false }),
   );
 };
+
+export const getSourcesByTypes = async (types: SourceTypes[], { client }: SupabaseOptions) => {
+  return throwOrData(
+    client.from("sources").select("*").in("type", types).order("created_at", { ascending: false }),
+  );
+};

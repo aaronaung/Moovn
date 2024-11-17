@@ -245,6 +245,9 @@ dependencies:
   object-hash:
     specifier: ^3.0.0
     version: 3.0.0
+  p-limit:
+    specifier: ^6.1.0
+    version: 6.1.0
   path-to-regexp:
     specifier: ^6.2.1
     version: 6.2.1
@@ -6286,6 +6289,7 @@ packages:
 
   /acorn-import-assertions@1.9.0(acorn@8.10.0):
     resolution: {integrity: sha512-cmMwop9x+8KFhxvKrKfPYmN6/pKTYYHBqLa0DfvVZcKMJWNyWLnaqND7dx/qn66R7ewM1UX5XMaDVP5wlVTaVA==}
+    deprecated: package has been renamed to acorn-import-attributes
     peerDependencies:
       acorn: ^8
     dependencies:
@@ -9052,6 +9056,13 @@ packages:
     dependencies:
       yocto-queue: 0.1.0
 
+  /p-limit@6.1.0:
+    resolution: {integrity: sha512-H0jc0q1vOzlEk0TqAKXKZxdl7kX3OFUzCnNVUnq5Pc3DGo0kpeaMuPqxQn235HibwBEb0/pm9dgKTjXy66fBkg==}
+    engines: {node: '>=18'}
+    dependencies:
+      yocto-queue: 1.1.1
+    dev: false
+
   /p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
@@ -9538,7 +9549,7 @@ packages:
       react: '>=15'
     dependencies:
       react: 18.2.0
-      unlayer-types: 1.151.0
+      unlayer-types: 1.157.0
     dev: false
 
   /react-fast-compare@3.2.2:
@@ -10667,8 +10678,8 @@ packages:
       '@fastify/busboy': 2.1.1
     dev: false
 
-  /unlayer-types@1.151.0:
-    resolution: {integrity: sha512-u7DFz78SAcx+hVjkgE3HlpQ6o8FcvpKnEPagog/xvsvQ7vksn+kKxXGOvUmhRAl9EBt3TL7fTUnGlQ8Pg356wA==}
+  /unlayer-types@1.157.0:
+    resolution: {integrity: sha512-D9xnoeQREgUxEkaFG3q90CVicmysu8REVIkQA3alHaTG3JM+LPzdq20vjrd6V4iGuvvUD8L5EDQybSsSRS/k+g==}
     dev: false
 
   /update-browserslist-db@1.0.13(browserslist@4.22.1):
@@ -11034,6 +11045,11 @@ packages:
   /yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  /yocto-queue@1.1.1:
+    resolution: {integrity: sha512-b4JR1PFR10y1mKjhHY9LaGo6tmrgjit7hxVIeAmyMw3jegXR4dhYqLaQF5zMXZxY7tLpMyJeLjr1C4rLmkVe8g==}
+    engines: {node: '>=12.20'}
+    dev: false
 
   /zod@3.22.4:
     resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}

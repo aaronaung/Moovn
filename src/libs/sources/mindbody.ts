@@ -11,16 +11,16 @@ export class MindbodyClient implements SourceClient {
     this.apiKey = env.MINDBODY_API_KEY;
   }
 
-  private async getSites() {
+  async getSites() {
     const resp = await fetch(`https://api.mindbodyonline.com/public/v6/site/sites`, {
       headers: {
         "API-Key": this.apiKey,
       },
     });
-    return (await resp.json()).Sites;
+    return (await resp.json()).Sites || [];
   }
 
-  private async getRawEventOcurrences(from: string, to: string) {
+  async getRawEventOcurrences(from: string, to: string) {
     const urlParams = new URLSearchParams();
     urlParams.set("startDateTime", from);
     urlParams.set("endDateTime", to);
@@ -78,6 +78,7 @@ export class MindbodyClient implements SourceClient {
           end: event.EndDateTime, // Site's local time
           staff: [
             {
+              id: event.Staff?.Id,
               name: event.Staff?.Name,
               photo:
                 event.Staff?.ImageUrl ??
