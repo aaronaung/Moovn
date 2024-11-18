@@ -12,11 +12,20 @@ export function generateCaption(template: string, schedule?: { [key: string]: st
     let [actualKey, dateFormat] = key.split("|");
     actualKey = actualKey.trim();
 
+    let defaultDateFormat;
+    if (actualKey.endsWith("start")) {
+      defaultDateFormat = "hh:mm aa";
+    } else if (actualKey.endsWith("end")) {
+      defaultDateFormat = "hh:mm aa";
+    } else if (actualKey.endsWith("date")) {
+      defaultDateFormat = "EEE, MMM dd";
+    }
+
     if (actualKey in schedule) {
-      if (dateFormat) {
+      if (dateFormat ?? defaultDateFormat) {
         try {
           const date = parseISO(schedule[actualKey]);
-          return format(date, dateFormat.trim());
+          return format(date, (dateFormat ?? defaultDateFormat).trim());
         } catch (error) {
           console.error(`Error formatting date: ${error}`);
           return schedule[actualKey]; // Fallback to the original value

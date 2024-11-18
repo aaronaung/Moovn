@@ -182,7 +182,7 @@ export default function Calendar() {
               router.push("/app/calendar/schedule-content");
             }}
           >
-            Schedule content
+            Schedule
           </Button>,
         ]}
       />

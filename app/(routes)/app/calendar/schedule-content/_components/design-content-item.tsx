@@ -32,7 +32,7 @@ import _ from "lodash";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
-export const DESIGN_WIDTH = 220;
+export const DESIGN_WIDTH = 250;
 
 export const DesignContentItem = memo(
   function DesignContentItem({
@@ -142,14 +142,24 @@ export const DesignContentItem = memo(
     const renderDesignContent = () => {
       if (isDesignNotReady || !designJpgUrl) {
         return (
-          <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
+          <div
+            className={`flex w-full items-center justify-center rounded-md`}
+            style={{
+              maxHeight: DESIGN_WIDTH,
+            }}
+          >
             <Spinner />
           </div>
         );
       }
       if (isDesignGenTimedout) {
         return (
-          <div className={`flex h-[220px] w-full items-center justify-center rounded-md`}>
+          <div
+            className={`flex w-full items-center justify-center rounded-md`}
+            style={{
+              maxHeight: DESIGN_WIDTH,
+            }}
+          >
             <p className="p-2 text-center text-xs text-muted-foreground">
               We couldn&apos;t generate the design. Please refresh or contact support.
             </p>

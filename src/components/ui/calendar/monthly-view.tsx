@@ -270,7 +270,6 @@ const EventPill = ({
   const [showError, setShowError] = useState(false);
   const publishResult = (event.contentSchedule.result as IgPublishResult) ?? {};
   const hasFailed = event.contentSchedule.status === ContentPublishStatus.Failed;
-  console.log({ publishResult });
 
   return (
     <>
@@ -307,7 +306,7 @@ const EventPill = ({
                 ) : null}
                 <p
                   className={cn(
-                    "line-clamp-1 flex-auto text-left font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
+                    "line-clamp-1 flex-auto text-left text-xs font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
                     (event.hasDataChanged || publishResult.ig_permalink || hasFailed) &&
                       "text-white group-hover/event-li:text-white",
                   )}

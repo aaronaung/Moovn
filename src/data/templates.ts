@@ -51,7 +51,7 @@ export const saveTemplate = async (
   return throwOrData(
     client
       .from("templates")
-      .upsert(_.omit(template, ["template_item_design_requests"]) as Tables<"templates">)
+      .upsert(_.omit(template, ["template_item_design_requests", "template_items"]) as Tables<"templates">)
       .select("*")
       .single(),
   );
