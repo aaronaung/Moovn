@@ -40,21 +40,19 @@ export function Navbar() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center">
-            <MoovnLogo width={70} height={70} />
-          </Link>
-          <div className="ml-10 hidden space-x-8 lg:block">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {item.name}
-              </a>
-            ))}
-          </div>
+        <Link href="/" className="flex items-center">
+          <MoovnLogo width={70} height={70} />
+        </Link>
+        <div className="hidden items-center space-x-8 lg:flex">
+          {navItems.map((item) => (
+            <a
+              key={item.name}
+              href={item.href}
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              {item.name}
+            </a>
+          ))}
         </div>
         <div className="flex items-center gap-4">
           <ModeToggle />
@@ -72,22 +70,26 @@ export function Navbar() {
               </SheetTrigger>
               <SheetContent>
                 <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
+                  <SheetTitle>
+                    <Link href="/" className="flex items-center">
+                      <MoovnLogo width={70} height={70} />
+                    </Link>
+                  </SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 flex flex-col space-y-4">
                   {navItems.map((item) => (
                     <a
                       key={item.name}
                       href={item.href}
-                      className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-sm font-medium transition-colors hover:text-primary"
                     >
                       {item.name}
                     </a>
                   ))}
-                  <Link href="/app/sources" className="mt-4">
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
                 </div>
+                <Link href="/app/sources" className="mt-8">
+                  <Button className="w-full">Get Started</Button>
+                </Link>
               </SheetContent>
             </Sheet>
           </div>
