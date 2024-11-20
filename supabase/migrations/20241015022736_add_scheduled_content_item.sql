@@ -1,7 +1,7 @@
 create table "public"."content_items" (
   "id" uuid primary key default gen_random_uuid(),
   "content_id" uuid not null references "public"."content" ("id") on delete cascade,
-  "template_item_id" uuid references "public"."template_items" ("id") on delete cascade, -- nullable for non-auto-generated content items
+  "template_item_id" uuid references "public"."template_items" ("id"), -- nullable for non-auto-generated content items
   "type" text not null,
   "position" int not null,
   "hash" text,

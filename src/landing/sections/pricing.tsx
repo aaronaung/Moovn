@@ -44,7 +44,7 @@ export function PricingSection() {
             Simple, Transparent Pricing
           </h2>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            Choose the plan that best fits your studio's needs. All plans include a 14-day free
+            Choose the plan that best fits your studio&apos;s needs. All plans include a 14-day free
             trial.
           </p>
         </div>

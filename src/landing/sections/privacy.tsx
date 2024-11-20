@@ -10,9 +10,9 @@ export function PrivacyContent() {
         <section>
           <h2 className="border-b pb-2 text-2xl font-semibold">1. Introduction</h2>
           <p className="mt-4">
-            At Moovn ("we", "us", "our"), we take your privacy seriously. This Privacy Policy
-            explains how we collect, use, disclose, and safeguard your information when you use our
-            service.
+            At Moovn (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;), we take your privacy
+            seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard
+            your information when you use our service.
           </p>
         </section>
 

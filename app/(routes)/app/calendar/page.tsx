@@ -17,6 +17,7 @@ import {
 import { generateDesignHash } from "@/src/libs/designs/util";
 import { SourceDataView } from "@/src/consts/sources";
 import { signUrl } from "@/src/data/r2";
+import { contentItemR2Path } from "@/src/libs/storage";
 
 export default function Calendar() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function Calendar() {
               new Promise(async (resolve) => {
                 const signedUrl = await signUrl(
                   "scheduled-content",
-                  `${contentSchedule.content?.owner_id}/${contentSchedule.content?.id}/${item.id}`,
+                  contentItemR2Path(contentSchedule.owner_id, contentSchedule.content_id, item.id),
                 );
                 resolve({
                   contentItemId: item.id,

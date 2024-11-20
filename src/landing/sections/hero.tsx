@@ -10,7 +10,7 @@ export function HeroSection() {
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           <div className="flex flex-col justify-center text-center lg:text-left">
             <h1 className="mt-8 text-3xl font-bold tracking-tight sm:mt-0 sm:text-4xl md:text-5xl lg:text-6xl">
-              Automate Your Studio's Social Media Presence
+              Automate Your Studio&apos;s Social Media Presence
             </h1>
             <p className="mt-4 text-base leading-7 text-muted-foreground sm:mt-6 sm:text-lg sm:leading-8">
               <span className="sm:hidden">

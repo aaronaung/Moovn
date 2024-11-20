@@ -7,12 +7,9 @@ import { BLANK_DESIGN_TEMPLATES, FREE_DESIGN_TEMPLATES } from "../consts/templat
 import { flushSync } from "react-dom";
 import { ContentType } from "../consts/content";
 import { signUrl } from "../data/r2";
+import { freeDesignTemplateR2Path } from "../libs/storage";
+import { db, FreeDesignTemplate } from "../libs/indexeddb/indexeddb";
 
-type FreeDesignTemplate = {
-  jpg: ArrayBuffer;
-  psd: ArrayBuffer;
-  title: string;
-};
 export type PhotopeaEditorMetadata = {
   title: string;
   source_data_view: string;
@@ -84,6 +81,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
       [ContentType.InstagramStory]: [],
     },
   });
+  console.log({ freeDesignTemplates });
   const [blankDesignTemplates, setBlankDesignTemplates] = useState<{
     [key: string]: ArrayBuffer;
   }>({
@@ -95,27 +93,58 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchFreeDesignTemplates = async () => {
       setIsLoadingFreeDesignTemplates(true);
-      const downloads: Promise<{
-        jpg: ArrayBuffer;
-        psd: ArrayBuffer;
-        scheduleRange: string;
-        contentType: string;
-        title: string;
-      }>[] = [];
+      const downloads: Promise<FreeDesignTemplate>[] = [];
+
+      const designTemplates: {
+        [key: string]: {
+          [key: string]: FreeDesignTemplate[];
+        };
+      } = {};
 
       for (const [scheduleRange, byContentType] of Object.entries(FREE_DESIGN_TEMPLATES)) {
         for (const [contentType, templates] of Object.entries(byContentType)) {
           for (const template of templates) {
-            const download = new Promise<{
-              scheduleRange: string;
-              contentType: string;
-              jpg: ArrayBuffer;
-              psd: ArrayBuffer;
-              title: string;
-            }>(async (resolve) => {
+            const psdPath = freeDesignTemplateR2Path(
+              contentType,
+              template.fileName,
+              template.version,
+              "psd",
+            );
+            const jpgPath = freeDesignTemplateR2Path(
+              contentType,
+              template.fileName,
+              template.version,
+              "jpg",
+            );
+            const idbKey = `${contentType}/${template.fileName}`;
+
+            const fromIdb = await db.freeDesignTemplates.get(idbKey);
+            if (fromIdb && fromIdb.version === template.version) {
+              if (!designTemplates[scheduleRange]) {
+                designTemplates[scheduleRange] = {};
+              }
+              if (!designTemplates[scheduleRange][contentType]) {
+                designTemplates[scheduleRange][contentType] = [];
+              }
+              designTemplates[scheduleRange][contentType].push({
+                title: fromIdb.title,
+                jpg: fromIdb.jpg,
+                psd: fromIdb.psd,
+                key: idbKey,
+                scheduleRange,
+                contentType,
+                version: template.version,
+              });
+              continue;
+            } else {
+              // delete the old version
+              await db.freeDesignTemplates.delete(idbKey);
+            }
+
+            const download = new Promise<FreeDesignTemplate>(async (resolve) => {
               const [psdUrl, jpgUrl] = await Promise.all([
-                signUrl("free-design-templates", `${contentType}/${template.fileName}.psd`),
-                signUrl("free-design-templates", `${contentType}/${template.fileName}.jpg`),
+                signUrl("free-design-templates", psdPath),
+                signUrl("free-design-templates", jpgPath),
               ]);
               const [psd, jpg] = await Promise.all([fetch(psdUrl), fetch(jpgUrl)]);
               const [psdArrayBuffer, jpgArrayBuffer] = await Promise.all([
@@ -128,6 +157,8 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
                 jpg: jpgArrayBuffer,
                 psd: psdArrayBuffer,
                 title: template.title,
+                key: idbKey,
+                version: template.version,
               });
             });
             downloads.push(download);
@@ -135,11 +166,6 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         }
       }
       const downloaded = await Promise.all(downloads);
-      const designTemplates: {
-        [key: string]: {
-          [key: string]: FreeDesignTemplate[];
-        };
-      } = {};
       for (const download of downloaded) {
         if (!designTemplates[download.scheduleRange]) {
           designTemplates[download.scheduleRange] = {};
@@ -147,11 +173,8 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
         if (!designTemplates[download.scheduleRange][download.contentType]) {
           designTemplates[download.scheduleRange][download.contentType] = [];
         }
-        designTemplates[download.scheduleRange][download.contentType].push({
-          title: download.title,
-          jpg: download.jpg,
-          psd: download.psd,
-        });
+        designTemplates[download.scheduleRange][download.contentType].push(download);
+        await db.freeDesignTemplates.put(download);
       }
 
       const blankDesignDownloads: Promise<{

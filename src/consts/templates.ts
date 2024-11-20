@@ -15,23 +15,26 @@ export enum TemplateCreationRequestStatus {
 }
 
 export const FREE_DESIGN_TEMPLATES: {
-  [key: string]: { [key: string]: { title: string; fileName: string }[] };
+  [key: string]: { [key: string]: { title: string; fileName: string; version: number }[] };
 } = {
   [SourceDataView.Daily]: {
     [ContentType.InstagramPost]: [
       {
         title: "Daily Small IG post",
         fileName: "daily_sm_1",
+        version: 1,
       },
       {
         title: "Daily Medium IG post",
         fileName: "daily_md_1",
+        version: 1,
       },
     ],
     [ContentType.InstagramStory]: [
       {
         title: "Daily IG story #1",
-        fileName: "daily_template_1",
+        fileName: "daily_story_1",
+        version: 1,
       },
     ],
   },
@@ -40,18 +43,22 @@ export const FREE_DESIGN_TEMPLATES: {
       {
         title: "Weekly Small IG post (day 1-3)",
         fileName: "weekly_sm_1_p1",
+        version: 1,
       },
       {
         title: "Weekly Small IG post (day 4-6)",
         fileName: "weekly_sm_1_p2",
+        version: 1,
       },
       {
         title: "Weekly Medium IG post (day 1-3)",
         fileName: "weekly_md_1_p1",
+        version: 1,
       },
       {
         title: "Weekly Medium IG post (day 4-6)",
         fileName: "weekly_md_1_p2",
+        version: 1,
       },
     ],
   },

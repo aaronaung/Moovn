@@ -25,6 +25,7 @@ import { uploadObject } from "@/src/data/r2";
 import { ContentItemType } from "@/src/consts/content";
 import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
 import { DriveTemplateItemMetadata } from "@/src/consts/templates";
+import { templateItemR2Path } from "@/src/libs/storage";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -106,7 +107,7 @@ export default function TemplateContainer({
     await Promise.all([
       uploadObject(
         "templates",
-        `${template.id}/${templateItem.id}`,
+        templateItemR2Path(template.owner_id, template.id, templateItem.id),
         new Blob([designExport["psd"]]),
       ),
       db.contentItems.where("template_item_id").equals(templateItem.id).delete(), // Bust design cache since the template has changed, so we can regenerate the design.

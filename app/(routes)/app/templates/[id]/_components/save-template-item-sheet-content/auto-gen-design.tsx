@@ -362,7 +362,7 @@ const SelectTemplateCreatorSection = ({
                             ? "0 0 0 2px #4CAF50"
                             : "none" /* emulate the border */,
                       }}
-                      src={`data:image/jpeg;base64,${Buffer.from(template.jpg).toString("base64")}`}
+                      src={URL.createObjectURL(new Blob([template.jpg]))}
                       className="w-[150px] cursor-pointer rounded-md object-cover sm:w-[200px]"
                       onClick={() => {
                         onTemplateSelect(`${index}`);

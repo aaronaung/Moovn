@@ -38,7 +38,7 @@ export function Footer() {
           <div className="space-y-8">
             <MoovnLogo className="h-7" />
             <p className="text-sm leading-6 text-muted-foreground">
-              Automate your studio's social media presence with beautiful designs and smart
+              Automate your studio&apos;s social media presence with beautiful designs and smart
               scheduling.
             </p>
             <div className="flex space-x-6">

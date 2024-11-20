@@ -29,6 +29,7 @@ import { useDesignGenQueue } from "@/src/contexts/design-gen-queue";
 import { deleteObject, uploadObject } from "@/src/data/r2";
 import Image from "next/image";
 import _ from "lodash";
+import { designOverwriteR2Path } from "@/src/libs/storage";
 
 const ImageViewer = dynamic(() => import("react-viewer"), { ssr: false });
 
@@ -123,8 +124,8 @@ export const DesignContentItem = memo(
         return;
       }
       // upload overwrite content to storage.
-      const psdPath = `${template.owner_id}/${contentItemIdbKey}.psd`;
-      const jpgPath = `${template.owner_id}/${contentItemIdbKey}.jpg`;
+      const psdPath = designOverwriteR2Path(template.owner_id, contentItemIdbKey, "psd");
+      const jpgPath = designOverwriteR2Path(template.owner_id, contentItemIdbKey, "jpg");
 
       await Promise.all([
         uploadObject("design-overwrites", psdPath, new Blob([designExport["psd"]])),

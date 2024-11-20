@@ -10,8 +10,8 @@ export function TermsContent() {
         <section>
           <h2 className="border-b pb-2 text-2xl font-semibold">1. Agreement to Terms</h2>
           <p className="mt-4">
-            By accessing or using Moovn's services, you agree to be bound by these Terms of Service
-            and our Privacy Policy.
+            By accessing or using Moovn&apos;s services, you agree to be bound by these Terms of
+            Service and our Privacy Policy.
           </p>
         </section>
 
@@ -62,8 +62,8 @@ export function TermsContent() {
         <section>
           <h2 className="border-b pb-2 text-2xl font-semibold">6. Limitation of Liability</h2>
           <p className="mt-4">
-            Moovn is provided "as is" without warranties of any kind. We are not liable for any
-            damages arising from your use of the service.
+            Moovn is provided &quot;as is&quot; without warranties of any kind. We are not liable
+            for any damages arising from your use of the service.
           </p>
         </section>
 

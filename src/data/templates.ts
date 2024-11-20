@@ -51,7 +51,12 @@ export const saveTemplate = async (
   return throwOrData(
     client
       .from("templates")
-      .upsert(_.omit(template, ["template_item_design_requests", "template_items"]) as Tables<"templates">)
+      .upsert(
+        _.omit(template, [
+          "template_item_design_requests",
+          "template_items",
+        ]) as Tables<"templates">,
+      )
       .select("*")
       .single(),
   );
@@ -64,7 +69,6 @@ export const deleteTemplate = async (
   const resp = throwOrData(client.from("templates").delete().eq("id", template.id));
   await deleteObject("templates", `${template.owner_id}/${template.id}`);
   await db.templateItems.where("template_id").equals(template.id).delete();
-  await db.contentItems.where("template_id").equals(template.id).delete();
   return resp;
 };
 
@@ -97,7 +101,6 @@ export const saveTemplateItem = async (
 export const deleteTemplateItem = async (id: string, { client }: SupabaseOptions) => {
   const resp = throwOrData(client.from("template_items").delete().eq("id", id));
   await db.templateItems.delete(id);
-  await db.contentItems.where("template_item_id").equals(id).delete();
   return resp;
 };
 

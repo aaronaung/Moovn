@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ScheduleData } from "../sources";
 import { MD5 as hash } from "object-hash";
 import { signUrl } from "@/src/data/r2";
+import { designOverwriteR2Path } from "../storage";
 
 export enum PSDActionType {
   EditText = "editText",
@@ -112,8 +113,8 @@ export const generateDesignHash = (templateItemId: string, data: any) =>
 
 export const getDesignOverwrites = async (ownerId: string, contentItemIdbKey: string) => {
   const [psdUrl, jpgUrl] = await Promise.all([
-    signUrl("design-overwrites", `${ownerId}/${contentItemIdbKey}.psd`),
-    signUrl("design-overwrites", `${ownerId}/${contentItemIdbKey}.jpg`),
+    signUrl("design-overwrites", designOverwriteR2Path(ownerId, contentItemIdbKey, "psd")),
+    signUrl("design-overwrites", designOverwriteR2Path(ownerId, contentItemIdbKey, "jpg")),
   ]);
   return {
     psdUrl,

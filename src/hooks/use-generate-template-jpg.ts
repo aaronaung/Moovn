@@ -5,6 +5,7 @@ import { addHeadlessPhotopeaToDom } from "../libs/designs/photopea/utils";
 import { db } from "../libs/indexeddb/indexeddb";
 import { signUrl } from "../data/r2";
 import { ContentItemType } from "../consts/content";
+import { templateItemR2Path } from "../libs/storage";
 
 export const useGenerateTemplateJpg = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,7 @@ export const useGenerateTemplateJpg = () => {
     if (!templateData) {
       signedTemplateUrl = await signUrl(
         "templates",
-        `${template.owner_id}/${template.id}/${templateItem.id}`,
+        templateItemR2Path(template.owner_id, template.id, templateItem.id),
       );
     }
     const psdArrayBuffer = templateData ?? (await (await fetch(signedTemplateUrl!)).arrayBuffer());
