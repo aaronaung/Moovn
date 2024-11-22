@@ -180,7 +180,6 @@ const DateTimePicker = (props: DatePickerProps) => {
   });
 
   const dateDisplayFormat = hasTime ? "MM/dd/yyyy hh:mm a" : "MM/dd/yyyy";
-  console.log({ date: props.value?.date });
 
   return (
     <Popover open={open} onOpenChange={setOpen} aria-label="Date Time Picker">

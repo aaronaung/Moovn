@@ -43,7 +43,7 @@ export default function StaffImagesPrefetch() {
             .filter((member: StaffMember) => member.profile_image_url)
             .map((member: StaffMember) => {
               return limit(async () => {
-                const key = `${source.id}-${member.id}`;
+                const key = member.profile_image_url;
                 try {
                   // Check if we already have this image cached
                   const existingImage = await db.staffImages.get(key);

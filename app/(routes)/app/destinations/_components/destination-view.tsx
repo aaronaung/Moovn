@@ -20,6 +20,19 @@ export default function DestinationView({ destination }: { destination: Tables<"
     queryKey: ["getContentSchedulesForDestination", destination.id],
   });
 
+  const sortedSchedules = [...(schedules ?? [])].sort((a: any, b: any) => {
+    const dateStrA = a.schedule_expression.match(/at\((.*?)\)/)?.[1];
+    if (!dateStrA) return a.schedule_expression;
+
+    const dateA = new Date(dateStrA + "Z");
+
+    const dateStrB = b.schedule_expression.match(/at\((.*?)\)/)?.[1];
+    if (!dateStrB) return b.schedule_expression;
+
+    const dateB = new Date(dateStrB + "Z");
+    return dateA.getTime() - dateB.getTime();
+  });
+
   return (
     <div className="flex h-full flex-col space-y-3">
       <div className="flex items-center justify-between">
@@ -45,7 +58,7 @@ export default function DestinationView({ destination }: { destination: Tables<"
         <Spinner />
       ) : (
         <div className="flex-1  overflow-auto">
-          <ContentSchedulesTable data={schedules ?? []} />
+          <ContentSchedulesTable data={sortedSchedules ?? []} />
         </div>
       )}
     </div>

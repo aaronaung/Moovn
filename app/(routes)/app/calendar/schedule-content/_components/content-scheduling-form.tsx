@@ -159,6 +159,7 @@ export default function ContentSchedulingForm({
       enabled: !errors.schedule_range,
     },
   );
+  console.log({ scheduleData });
 
   const { scheduleContents: scheduleContent, isScheduling } = useScheduleContent({
     sourceId,

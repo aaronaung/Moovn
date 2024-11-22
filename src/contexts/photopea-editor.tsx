@@ -81,7 +81,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
       [ContentType.InstagramStory]: [],
     },
   });
-  console.log({ freeDesignTemplates });
+
   const [blankDesignTemplates, setBlankDesignTemplates] = useState<{
     [key: string]: ArrayBuffer;
   }>({

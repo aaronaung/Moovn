@@ -85,12 +85,17 @@ export class Pike13Client implements SourceClient {
           date: eventsByDay[0].date,
           siteTimeZone: eventsByDay[0].timezone,
           event: (eventsByDay || []).map((event: any, index: number) => {
-            const headshotUrl = `https://assets.moovn.co/headshots/${(index + 1) % 10}.png`;
             return {
               staff: (event.staff_members || [])
                 .filter((s: any) => Boolean(staffMembersById[s.id]))
                 .map((s: any) => {
                   const staffMember = staffMembersById[s.id];
+                  // Simple hash function to get consistent number between 1-9
+                  const hash = (staffMember?.name || "").split("").reduce((acc: any, char: any) => {
+                    return acc + char.charCodeAt(0);
+                  }, 0);
+                  const headshotNumber = (hash % 9) + 1;
+                  const headshotUrl = `https://assets.moovn.co/headshots/${headshotNumber}.png`;
 
                   return {
                     id: staffMember?.id,

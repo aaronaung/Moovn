@@ -112,26 +112,24 @@ export const determineDesignGenSteps = async (
         ];
       }
     } else {
+      // If you're here, the layer is a staff image.
       const photoRegex = /^day#\d+\.event#\d+\.staff#\d+\.photo$/;
       if (!photoRegex.test(layerName)) {
         continue;
       }
+      const staffPhotoUrl = value;
 
       const staffParentKey = layerName.split(".");
       staffParentKey.pop();
       const instagramTag = schedules[`${staffParentKey.join(".")}.instagramHandle`];
-      const staffId = schedules[`${staffParentKey.join(".")}.id`];
 
       const index = loadAssetsPromises.length;
-      const valueSplit = value.split("/");
-      const loadedAssetLayerName = valueSplit[valueSplit.length - 1]; // Photoshop always uses the last segment of the URL as the layer name.
+      const photoUrlSplit = staffPhotoUrl.split("/");
+      const loadedAssetLayerName = photoUrlSplit[photoUrlSplit.length - 1]; // Photoshop always uses the last segment of the URL as the layer name.
 
-      if (sourceId && staffId) {
-        const staffImageCacheKey = `${sourceId}-${staffId}`;
-
-        const staffImage = await db.staffImages.get(staffImageCacheKey);
+      if (staffPhotoUrl) {
+        const staffImage = await db.staffImages.get(staffPhotoUrl);
         if (staffImage) {
-          console.log("USING IMAGE FROM cache", staffImageCacheKey);
           loadAssetsPromises.push(
             new Promise<LoadAsset>(async (resolve) => {
               resolve({
@@ -142,11 +140,11 @@ export const determineDesignGenSteps = async (
           );
         } else {
           // Image not in cache, fetch and store it
-          const imageBuffer = await fetchImage(value);
+          const imageBuffer = await fetchImage(staffPhotoUrl);
 
           // Store in cache
           await db.staffImages.put({
-            key: staffImageCacheKey,
+            key: staffPhotoUrl,
             blob: imageBuffer,
             lastUpdated: new Date(),
           });
@@ -160,16 +158,6 @@ export const determineDesignGenSteps = async (
             }),
           );
         }
-      } else {
-        // No source/staff ID, just fetch without caching
-        loadAssetsPromises.push(
-          new Promise<LoadAsset>(async (resolve) => {
-            resolve({
-              asset: await fetchImage(value),
-              layerName: `${loadedAssetLayerName}#${index}`,
-            });
-          }),
-        );
       }
 
       genSteps.replaceLayers.push({

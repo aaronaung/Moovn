@@ -40,7 +40,6 @@ export default function SourceView({ selectedSource }: { selectedSource: Tables<
     if (isLoadingScheduleData) {
       return <Spinner className="mt-4" />;
     }
-    console.log({ scheduleData });
     switch (selectedSource.type) {
       case SourceTypes.GoogleDrive:
         return <SourceViewDrive source={selectedSource} />;

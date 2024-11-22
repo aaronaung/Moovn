@@ -39,6 +39,9 @@ function EventCard({ event }: { event: Event }) {
           <p className="text-sm text-muted-foreground">
             {format(parseISO(event.start), "h:mm a")} - {format(parseISO(event.end), "h:mm a")}
           </p>
+          <p className="text-sm text-muted-foreground">
+            {event.staff.map((staff) => staff.name).join(", ")}
+          </p>
         </div>
         <div className="flex -space-x-2 self-stretch p-2">
           {event.staff.map((staff) => (
