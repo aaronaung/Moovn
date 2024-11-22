@@ -50,9 +50,11 @@ export const getSourcesByType = async (type: SourceTypes, { client }: SupabaseOp
 export const getScheduleDataForSource = async ({
   id,
   view,
+  flatten = true,
 }: {
   id: string;
   view: SourceDataView;
+  flatten?: boolean;
 }): Promise<ScheduleData> => {
   const current = new Date();
   let range = {
@@ -66,7 +68,9 @@ export const getScheduleDataForSource = async ({
     };
   }
 
-  const resp = await fetch(`/api/sources/${id}/schedules?from=${range.from}&to=${range.to}`);
+  const resp = await fetch(
+    `/api/sources/${id}/schedules?flatten=${flatten}&from=${range.from}&to=${range.to}`,
+  );
   return resp.json();
 };
 

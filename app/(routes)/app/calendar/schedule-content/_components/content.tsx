@@ -67,7 +67,7 @@ export const Content: React.FC<ContentProps> = memo(
 
     const designLoading = isJobPending(contentIdbKey);
     return (
-      <div className="flex w-full flex-col gap-2 sm:w-fit">
+      <div className="m-1 flex w-full flex-col gap-2 sm:w-fit">
         <div className="ml-1 flex items-center gap-2">
           <Checkbox
             disabled={designLoading || !!publishDateTime.error}
@@ -100,7 +100,7 @@ export const Content: React.FC<ContentProps> = memo(
           </Tooltip>
         </div>
         <div
-          className={cn("m-1", isSelected && "rounded-md")}
+          className={cn(isSelected && "rounded-md")}
           style={{
             boxShadow: isSelected ? "0 0 0 2px #4CAF50" : "none" /* emulate the border */,
           }}

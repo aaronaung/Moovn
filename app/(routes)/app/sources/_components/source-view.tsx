@@ -6,11 +6,9 @@ import { SourceDataView, SourceTypes } from "@/src/consts/sources";
 import { getScheduleDataForSource } from "@/src/data/sources";
 import { useSupaQuery } from "@/src/hooks/use-supabase";
 import { Tables } from "@/types/db";
-import dynamic from "next/dynamic";
 import { useState } from "react";
 import SourceViewDrive from "./source-view-drive";
-
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
+import SourceViewSchedule from "./source-view-schedule";
 
 export default function SourceView({ selectedSource }: { selectedSource: Tables<"sources"> }) {
   const [selectedView, setSelectedView] = useState<SourceDataView>(SourceDataView.Daily);
@@ -19,11 +17,13 @@ export default function SourceView({ selectedSource }: { selectedSource: Tables<
     data: scheduleData,
     isLoading: isLoadingScheduleData,
     isRefetching,
+    refetch,
   } = useSupaQuery(getScheduleDataForSource, {
     queryKey: ["getScheduleDataForSource", selectedSource.id, selectedView],
     arg: {
       id: selectedSource?.id,
       view: selectedView,
+      flatten: false,
     },
     enabled: !!selectedSource && selectedSource.type !== SourceTypes.GoogleDrive,
     refetchOnWindowFocus: false,
@@ -37,27 +37,21 @@ export default function SourceView({ selectedSource }: { selectedSource: Tables<
     if (!selectedSource) {
       return <p className="text-sm text-muted-foreground">Please select a source first.</p>;
     }
-    if (isLoadingScheduleData || isRefetching) {
+    if (isLoadingScheduleData) {
       return <Spinner className="mt-4" />;
     }
+    console.log({ scheduleData });
     switch (selectedSource.type) {
       case SourceTypes.GoogleDrive:
         return <SourceViewDrive source={selectedSource} />;
+
       default:
         return (
-          <div className="flex-1 overflow-scroll">
-            <ReactJson
-              src={scheduleData || {}}
-              shouldCollapse={(field) => (field.name ? field.name.startsWith("schedules") : false)}
-              displayDataTypes={false}
-              name={false}
-              theme={"chalk"}
-              style={{
-                padding: 16,
-                borderRadius: 8,
-              }}
-            />
-          </div>
+          <SourceViewSchedule
+            scheduleData={scheduleData as any}
+            isRefetching={isRefetching}
+            onRefresh={() => refetch()}
+          />
         );
     }
   };

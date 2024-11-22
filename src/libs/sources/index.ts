@@ -13,7 +13,12 @@ export type ScheduleData = {
   [key: string]: any;
 };
 
-export const getScheduleDataFromSource = async (sourceId: string, from: string, to: string) => {
+export const getScheduleDataFromSource = async (
+  sourceId: string,
+  from: string,
+  to: string,
+  flatten: boolean,
+) => {
   const source = await getSourceById(sourceId, {
     client: supaServerClient(),
   });
@@ -22,6 +27,7 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
   }
 
   let sourceSettings;
+  let scheduleData: ScheduleData;
   switch (source.type) {
     case SourceTypes.Pike13:
       sourceSettings = source.settings as Pike13SourceSettings;
@@ -29,14 +35,22 @@ export const getScheduleDataFromSource = async (sourceId: string, from: string, 
         return null;
       }
       const pike13Client = new Pike13Client(sourceSettings.url);
-      return flattenSchedule(await pike13Client.getScheduleData(from, to));
+      scheduleData = await pike13Client.getScheduleData(from, to);
+      if (flatten) {
+        return flattenSchedule(scheduleData);
+      }
+      return scheduleData;
     case SourceTypes.Mindbody:
       sourceSettings = source.settings as MindbodySourceSettings;
       if (!sourceSettings?.site_id) {
         return null;
       }
       const mindbodyClient = new MindbodyClient(sourceSettings.site_id);
-      return flattenSchedule(await mindbodyClient.getScheduleData(from, to));
+      scheduleData = await mindbodyClient.getScheduleData(from, to);
+      if (flatten) {
+        return flattenSchedule(scheduleData);
+      }
+      return scheduleData;
     default:
       return {};
   }

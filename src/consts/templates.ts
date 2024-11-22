@@ -22,7 +22,7 @@ export const FREE_DESIGN_TEMPLATES: {
       {
         title: "Daily Small IG post",
         fileName: "daily_sm_1",
-        version: 2,
+        version: 1,
       },
       {
         title: "Daily Medium IG post",
