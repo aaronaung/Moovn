@@ -55,8 +55,8 @@ function EventCard({ event }: { event: Event }) {
 
 function StaffAvatar({ staff }: { staff: { id: string; name: string; photo: string } }) {
   return (
-    <div className="h-full min-h-[2.5rem] w-10 overflow-hidden rounded-full">
-      <img src={staff.photo} alt={staff.name} className="h-full w-full object-cover" />
+    <div className="h-full min-h-[2.5rem] w-auto max-w-[4rem] overflow-hidden">
+      <img src={staff.photo} alt={staff.name} className="h-full w-full object-contain" />
     </div>
   );
 }

@@ -98,7 +98,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
+    <div>
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={

@@ -82,6 +82,7 @@ export default function Calendar() {
         }
         const contentItemPreviewUrlData = await Promise.all(contentItemPreviewUrlPromises);
         const contentItemPreviewUrls = new Map<string, string>();
+
         for (const data of contentItemPreviewUrlData) {
           contentItemPreviewUrls.set(data.contentItemId, data.url);
         }

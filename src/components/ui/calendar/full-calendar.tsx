@@ -130,7 +130,7 @@ export default function FullCalendar({
 
   return (
     <div className="lg:flex lg:h-full lg:flex-col">
-      <header className="flex items-center justify-between py-4 lg:flex-none">
+      <header className="flex items-center justify-between pb-4 lg:flex-none">
         <div className="relative flex items-center gap-1 rounded-md md:gap-2">
           <button
             type="button"

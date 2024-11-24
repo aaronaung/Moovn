@@ -49,7 +49,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="mt-2 flex flex-col sm:h-[calc(100vh-80px)]">
+    <div>
       {/** Todo: check if the template is associated with any content that's to be published */}
 
       <SaveTemplateItemSheet

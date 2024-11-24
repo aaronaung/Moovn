@@ -13,12 +13,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { CalendarEvent } from "./full-calendar";
-import {
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { ClockIcon } from "@heroicons/react/24/outline";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -290,20 +285,13 @@ const EventPill = ({
           >
             <div
               className={cn(
-                `flex w-full cursor-pointer items-center rounded-full bg-secondary px-1.5 dark:bg-neutral-600`,
+                `flex w-full cursor-pointer items-center rounded-md bg-secondary px-1.5 dark:bg-neutral-600`,
                 event.hasDataChanged && "bg-orange-500 dark:bg-orange-600",
                 publishResult.ig_permalink && "bg-green-600 dark:bg-green-700",
                 hasFailed && "bg-red-600 dark:bg-red-700",
               )}
             >
               <div className="flex flex-1 items-center gap-1">
-                {hasFailed ? (
-                  <XMarkIcon className="h-4 w-4 text-white" />
-                ) : publishResult.ig_permalink ? (
-                  <CheckCircleIcon className="h-4 w-4 text-white" />
-                ) : event.hasDataChanged ? (
-                  <ExclamationTriangleIcon className="h-4 w-4 text-white" />
-                ) : null}
                 <p
                   className={cn(
                     "line-clamp-1 flex-auto text-left text-xs font-medium text-secondary-foreground group-hover/event-li:text-indigo-600",
@@ -375,7 +363,7 @@ const EventLineItem = ({
     ? "text-green-600"
     : event.hasDataChanged && "text-orange-500";
 
-  const firstItem = event.contentSchedule.content.content_items[1];
+  const firstItem = event.contentSchedule.content.content_items[0];
 
   return (
     <>
@@ -390,44 +378,47 @@ const EventLineItem = ({
             onEventClick?.(event);
           }
         }}
-        className="group flex cursor-pointer p-3 pr-6 focus-within:bg-secondary hover:bg-secondary"
+        className="cursor-pointerfocus-within:bg-secondary group flex hover:bg-secondary"
       >
-        <div className="flex-auto">
+        <div className="flex-auto px-2 py-3">
           <div className="flex items-center gap-1">
-            {hasFailed ? (
+            {/* {hasFailed ? (
               <XMarkIcon className="h-4 w-4 text-red-600" />
             ) : publishResult.ig_permalink ? (
               <CheckCircleIcon className="h-4 w-4 text-green-600" />
             ) : event.hasDataChanged ? (
               <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />
-            ) : null}
+            ) : null} */}
             <p className={cn("line-clamp-2 font-semibold text-secondary-foreground", colorTheme)}>
               {event.title}
             </p>
           </div>
           <time
             dateTime={event.start.toISOString()}
-            className={cn("mt-2 flex items-center text-secondary-foreground")}
+            className={cn("mt-2 flex items-center text-secondary-foreground", colorTheme)}
           >
-            <ClockIcon className={cn("mr-2 h-4 w-4 text-gray-400")} aria-hidden="true" />
+            <ClockIcon
+              className={cn("mr-1 h-4 w-4 text-gray-400", colorTheme)}
+              aria-hidden="true"
+            />
             {event.start.toLocaleTimeString([], {
               hour: "numeric",
               minute: "2-digit",
             })}
           </time>
         </div>
-        <div>
+        <div className="h-full">
           {firstItem &&
             previewUrls.has(firstItem.id) &&
             ((firstItem.metadata as ContentItemMetadata)?.mime_type?.startsWith("video") ? (
-              <video src={previewUrls.get(firstItem.id) || ""} className="h-[50px] w-[50px]" />
+              <video src={previewUrls.get(firstItem.id) || ""} className="h-full w-[80px]" />
             ) : (
               <Image
-                className="h-[50px] w-[50px] rounded-sm object-contain"
+                className="h-full w-[80px] rounded-sm object-contain"
                 src={previewUrls.get(event.contentSchedule.content.content_items[0].id) || ""}
                 alt={"preview"}
-                width={50}
-                height={50}
+                width={80}
+                height={80}
               />
             ))}
         </div>
