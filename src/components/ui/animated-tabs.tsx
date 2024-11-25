@@ -13,11 +13,7 @@ type AnimatedTabsProps = {
   value: string;
   onChange: (value: string) => void;
 };
-export default function AnimatedTabs({
-  tabs,
-  value,
-  onChange,
-}: AnimatedTabsProps) {
+export default function AnimatedTabs({ tabs, value, onChange }: AnimatedTabsProps) {
   return (
     <div className="flex space-x-1">
       {tabs.map((tab) => (
@@ -34,7 +30,7 @@ export default function AnimatedTabs({
           {value === tab.id && (
             <motion.span
               layoutId="bubble"
-              className="absolute inset-0 z-10 bg-white mix-blend-difference"
+              // className="absolute inset-0 z-10 bg-white mix-blend-difference"
               style={{ borderRadius: 9999 }}
               transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
             />

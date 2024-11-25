@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { RefObject, useRef } from "react";
 import { useDateSegment } from "react-aria";
 import { DateFieldState, DateSegment as IDateSegment } from "react-stately";
 import { cn } from "@/src/utils";
@@ -11,11 +11,11 @@ interface DateSegmentProps {
 }
 
 function DateSegment({ segment, state }: DateSegmentProps) {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   const {
     segmentProps: { ...segmentProps },
-  } = useDateSegment(segment, state, ref);
+  } = useDateSegment(segment, state, ref as RefObject<HTMLDivElement>);
 
   return (
     <div

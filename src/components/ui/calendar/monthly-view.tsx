@@ -378,7 +378,7 @@ const EventLineItem = ({
             onEventClick?.(event);
           }
         }}
-        className="cursor-pointerfocus-within:bg-secondary group flex hover:bg-secondary"
+        className="group flex cursor-pointer focus-within:bg-secondary hover:bg-secondary"
       >
         <div className="flex-auto px-2 py-3">
           <div className="flex items-center gap-1">

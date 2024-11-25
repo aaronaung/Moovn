@@ -28,8 +28,12 @@ const MISSING_DETAILS = {
 };
 
 export default async function ScheduleContent() {
-  const allSources = await getScheduleSources({ client: supaServerComponentClient() });
-  const allTemplates = await getAllTemplates({ client: supaServerComponentClient() });
+  const allSources = await getScheduleSources({
+    client: await supaServerComponentClient(),
+  });
+  const allTemplates = await getAllTemplates({
+    client: await supaServerComponentClient(),
+  });
 
   const availableSources = allSources.filter((source) => source.type !== SourceTypes.GoogleDrive);
   const availableTemplates = allTemplates.filter(
@@ -44,7 +48,7 @@ export default async function ScheduleContent() {
       ),
   );
   const availableDestinations = await getAllDestinations({
-    client: supaServerComponentClient(),
+    client: await supaServerComponentClient(),
   });
   const connectedDestinations = (availableDestinations ?? []).filter(
     (destination: Tables<"destinations">) =>

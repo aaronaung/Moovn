@@ -10,12 +10,11 @@ export const metadata: Metadata = {
   description: "Sign in to your account",
 };
 
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: { return_path?: string };
+export default async function SignInPage(props: {
+  searchParams: Promise<{ return_path?: string }>;
 }) {
-  const user = await getAuthUser({ client: supaServerComponentClient() });
+  const searchParams = await props.searchParams;
+  const user = await getAuthUser({ client: await supaServerComponentClient() });
   if (user) {
     redirect(searchParams.return_path || "/app/sources");
   }

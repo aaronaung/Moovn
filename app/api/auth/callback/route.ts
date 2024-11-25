@@ -9,11 +9,9 @@ export async function GET(request: NextRequest) {
   const returnPath = requestUrl.searchParams.get("return_path");
 
   if (code) {
-    await supaServerComponentClient().auth.exchangeCodeForSession(code);
+    await (await supaServerComponentClient()).auth.exchangeCodeForSession(code);
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(
-    requestUrl.origin.concat(returnPath || "/app/sources"),
-  );
+  return NextResponse.redirect(requestUrl.origin.concat(returnPath || "/app/sources"));
 }

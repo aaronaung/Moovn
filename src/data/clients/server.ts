@@ -14,8 +14,8 @@ export const supaServerClient = () => {
   );
 };
 
-export function supaServerComponentClient() {
-  const cookieStore = cookies();
+export async function supaServerComponentClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

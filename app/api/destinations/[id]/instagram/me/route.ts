@@ -5,7 +5,8 @@ import { verifyDestinationAccess } from "../../../util";
 import { supaServerClient } from "@/src/data/clients/server";
 import { igTokenUpdater } from "@/src/data/destinations";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const verifyResult = await verifyDestinationAccess(params.id);
   if (verifyResult.status !== 200) {
     return Response.json({ message: verifyResult.error }, { status: verifyResult.status });

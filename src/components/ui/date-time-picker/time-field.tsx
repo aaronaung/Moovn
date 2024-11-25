@@ -1,7 +1,7 @@
 "use client";
 
 import { DateSegment } from "./date-segment";
-import { useRef } from "react";
+import { RefObject, useRef } from "react";
 import { AriaTimeFieldProps, TimeValue, useLocale, useTimeField } from "react-aria";
 import { useTimeFieldState } from "react-stately";
 import { cn } from "@/src/utils";
@@ -17,7 +17,7 @@ function TimeField(props: AriaTimeFieldProps<TimeValue>) {
   const {
     fieldProps: { ...fieldProps },
     labelProps,
-  } = useTimeField(props, state, ref);
+  } = useTimeField(props, state, ref as RefObject<Element>);
 
   return (
     <div

@@ -1,7 +1,8 @@
 import { getScheduleDataFromSource } from "@/src/libs/sources";
 import { NextRequest } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const from = req.nextUrl.searchParams.get("from");
   const to = req.nextUrl.searchParams.get("to");
   const flatten = req.nextUrl.searchParams.get("flatten");

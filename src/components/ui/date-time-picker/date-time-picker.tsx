@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarIcon } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { RefObject, useRef, useState } from "react";
 import { DateValue, useButton, useDatePicker, useInteractOutside } from "react-aria";
 import { DatePickerStateOptions, useDatePickerState } from "react-stately";
 import { cn } from "@/src/utils";
@@ -41,10 +41,10 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DatePickerStateOptions<D
       buttonProps: _buttonProps,
       dialogProps,
       calendarProps,
-    } = useDatePicker(props, state, ref);
-    const { buttonProps } = useButton(_buttonProps, buttonRef);
+    } = useDatePicker(props, state, ref as RefObject<Element>);
+    const { buttonProps } = useButton(_buttonProps, buttonRef as RefObject<Element>);
     useInteractOutside({
-      ref: contentRef,
+      ref: contentRef as RefObject<Element>,
       onInteractOutside: (e) => {
         setOpen(false);
       },

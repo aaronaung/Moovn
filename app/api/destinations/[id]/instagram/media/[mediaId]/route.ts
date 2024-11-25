@@ -6,8 +6,9 @@ import { igTokenUpdater } from "@/src/data/destinations";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string; mediaId: string } },
+  props: { params: Promise<{ id: string; mediaId: string }> }
 ) {
+  const params = await props.params;
   const verifyResult = await verifyDestinationAccess(params.id);
   if (verifyResult.status !== 200) {
     return Response.json({ message: verifyResult.error }, { status: verifyResult.status });

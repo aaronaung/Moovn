@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { DriveSourceClient } from "@/src/libs/sources/drive";
 import { supaServerClient } from "@/src/data/clients/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const sourceId = params.id;
     const supabase = supaServerClient();

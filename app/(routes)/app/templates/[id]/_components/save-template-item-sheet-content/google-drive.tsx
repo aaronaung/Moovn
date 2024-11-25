@@ -77,6 +77,8 @@ export default function SaveDriveTemplateItem({
     invalidate: [["getTemplateItemsByTemplateId", parentTemplate?.id ?? ""]],
   });
 
+  console.log({ driveSources });
+
   useEffect(() => {
     if (driveSources?.[0]?.id) {
       setSelectedSource(

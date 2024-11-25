@@ -9,7 +9,6 @@ import { ContentPublishStatus } from "@/src/consts/destinations";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Button } from "../ui/button";
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -75,13 +74,14 @@ export default function ContentSchedulesTable({ data }: ContentSchedulesTablePro
           const result = getValue() as { ig_permalink: string };
           if (!result?.ig_permalink) return null;
           return (
-            <Button
-              variant="link"
-              onClick={() => window.open(result.ig_permalink, "_blank")}
+            <a
+              href={result.ig_permalink}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-sm text-blue-500 hover:underline"
             >
               View Post
-            </Button>
+            </a>
           );
         },
       }),

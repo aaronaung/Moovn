@@ -39,30 +39,20 @@ const queryClient = new QueryClient({
   }),
 });
 
-// const stripePromise = loadStripe(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full overscroll-none scroll-smooth bg-background">
-      <link rel="icon" href="/favicon.ico" sizes="any" />
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
       <body
         className={`${inter.className} ${
           process.env.NODE_ENV === "development" ? "debug-screens" : ""
         } overscroll-none`}
+        suppressHydrationWarning
       >
-        {/* <Elements
-          stripe={stripePromise}
-          options={{
-            // USING ELEMENTS ALLOW US TO HAVE CUSTOM STRIPE ELEMENTS FOR CHECKOUT
-            // FOR NOW WE DON"T USE THIS.
-            // SEE https://docs.stripe.com/payments/accept-a-payment?platform=web&ui=checkout for more info.
-            clientSecret: "",
-          }}
-        ></Elements> */}
-
         <AsyncFileUploadProvider>
           <ReactQueryProvider>
-            {/* The rest of your application */}
             <ReactQueryDevtools initialIsOpen={false} />
             <Suspense fallback={<Spinner className="my-32" />}>
               <PhotopeaHeadlessProvider>
@@ -75,9 +65,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           defaultTheme="system"
                           enableSystem
                           disableTransitionOnChange
+                          storageKey="moovn-theme"
                         >
-                          <TooltipProvider>{children}</TooltipProvider>
-                          <StaffImagesPrefetch />
+                          <div className="h-full overscroll-none scroll-smooth bg-background">
+                            <TooltipProvider>{children}</TooltipProvider>
+                            <StaffImagesPrefetch />
+                          </div>
                         </ThemeProvider>
                       </ReactDnDProvider>
                     </DesignGenQueueProvider>

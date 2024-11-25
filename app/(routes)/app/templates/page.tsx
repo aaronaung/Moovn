@@ -89,7 +89,7 @@ export default function TemplatesPage() {
         }}
       />
 
-      <div className="mb-3 mt-2 flex items-end">
+      <div className="mb-3 flex items-end">
         <div className="flex-1">
           <Header2 title="Design templates" />
           <p className="hidden text-sm text-muted-foreground sm:block">

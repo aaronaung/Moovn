@@ -9,8 +9,9 @@ import { Header2 } from "@/src/components/common/header";
 import { InstagramIcon } from "@/src/components/ui/icons/instagram";
 import { getAuthUser } from "@/src/data/users";
 
-export default async function TemplatePage({ params }: { params: { id: string } }) {
-  const supabase = supaServerComponentClient();
+export default async function TemplatePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await supaServerComponentClient();
   const template = await getTemplateById(params.id, {
     client: supabase,
   });

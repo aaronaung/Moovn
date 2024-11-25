@@ -2,10 +2,8 @@ import { NextRequest } from "next/server";
 import { stripeClient } from "../../..";
 import Stripe from "stripe";
 
-export async function POST(
-  _: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const subscription = await stripeClient.subscriptions.retrieve(params.id, {
     expand: ["schedule"],
   });

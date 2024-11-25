@@ -3,7 +3,8 @@ import { GoogleDriveClient } from "@/src/libs/google-drive/google-drive-client";
 import { supaServerClient } from "@/src/data/clients/server";
 import { GoogleDriveSourceSettings } from "@/src/consts/sources";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supaServerClient();
   try {
     const sourceId = params.id;

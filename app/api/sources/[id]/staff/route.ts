@@ -4,7 +4,8 @@ import { MindbodySourceSettings, Pike13SourceSettings, SourceTypes } from "@/src
 import { MindbodyClient } from "@/src/libs/sources/mindbody";
 import { Pike13Client } from "@/src/libs/sources/pike13";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const sourceId = params.id;
     const supabase = supaServerClient();

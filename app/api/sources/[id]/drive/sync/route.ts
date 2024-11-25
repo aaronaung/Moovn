@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supaServerClient } from "@/src/data/clients/server";
 import { SourceTypes } from "@/src/consts/sources";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const sourceId = params.id;
     const { force_sync = false } = await req.json();

@@ -6,7 +6,8 @@ const DownloadImageSchema = z.object({
 });
 export type DownloadImageRequest = z.infer<typeof DownloadImageSchema>;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { url } = DownloadImageSchema.parse(await req.json());
 
   const arrayBuffer = await (await fetch(url)).arrayBuffer();

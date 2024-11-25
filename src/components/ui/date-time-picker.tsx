@@ -2,7 +2,7 @@
 import { CalendarDateTime } from "@internationalized/date";
 import { format } from "date-fns";
 import { CalendarIcon, ClockIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, RefObject } from "react";
 import {
   DateValue,
   TimeValue,
@@ -31,11 +31,11 @@ interface DateSegmentProps {
 }
 
 function DateSegment({ segment, state }: DateSegmentProps) {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   const {
     segmentProps: { ...segmentProps },
-  } = useDateSegment(segment, state, ref);
+  } = useDateSegment(segment, state, ref as RefObject<HTMLElement>);
 
   return (
     <div
@@ -74,7 +74,7 @@ function TimeField({
     locale,
   });
 
-  useTimeField(props, state, ref);
+  useTimeField(props, state, ref as RefObject<HTMLElement>);
 
   return (
     <div
@@ -173,7 +173,7 @@ const DateTimePicker = (props: DatePickerProps) => {
 
   const state = useDatePickerState(datePickerProps);
   useInteractOutside({
-    ref: contentRef,
+    ref: contentRef as RefObject<Element>,
     onInteractOutside: (e) => {
       setOpen(false);
     },

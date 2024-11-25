@@ -15,6 +15,7 @@ export async function GET() {
     const driveSources = await getSourcesByType(SourceTypes.GoogleDrive, {
       client: supabase,
     });
+    console.log({ driveSources });
 
     if (!driveSources || driveSources.length === 0) {
       return NextResponse.json({ sources: [] });

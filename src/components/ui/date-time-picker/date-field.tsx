@@ -2,7 +2,7 @@
 
 import { DateSegment } from "./date-segment";
 import { createCalendar } from "@internationalized/date";
-import { useRef } from "react";
+import { RefObject, useRef } from "react";
 import { AriaDatePickerProps, DateValue, useDateField, useLocale } from "react-aria";
 import { useDateFieldState } from "react-stately";
 import { cn } from "@/src/utils";
@@ -16,7 +16,7 @@ function DateField(props: AriaDatePickerProps<DateValue>) {
     locale,
     createCalendar,
   });
-  const { fieldProps } = useDateField(props, state, ref);
+  const { fieldProps } = useDateField(props, state, ref as RefObject<Element>);
 
   return (
     <div
@@ -30,7 +30,7 @@ function DateField(props: AriaDatePickerProps<DateValue>) {
       {state.segments.map((segment, i) => (
         <DateSegment key={i} segment={segment} state={state} />
       ))}
-      {state.validationState === "invalid" && <span aria-hidden="true">🚫</span>}
+      {state.isInvalid && <span aria-hidden="true">🚫</span>}
     </div>
   );
 }

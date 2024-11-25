@@ -22,7 +22,7 @@ type PhotopeaEditorOptions = {
   isMetadataEditable?: boolean;
 };
 type PhotopeaEditorContextValue = {
-  initialize: (args: { ref: RefObject<HTMLIFrameElement> }) => void;
+  initialize: (args: { ref: RefObject<HTMLIFrameElement | null> }) => void;
   isOpen: boolean;
   close: () => void;
   save: (designExport: DesignExport, metadata: PhotopeaEditorMetadata) => Promise<void>;
@@ -56,7 +56,7 @@ function usePhotopeaEditor() {
 }
 
 function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
-  const [ref, setRef] = useState<RefObject<HTMLIFrameElement> | null>(null);
+  const [ref, setRef] = useState<RefObject<HTMLIFrameElement | null> | null>(null);
   const [metadata, setMetadata] = useState<PhotopeaEditorMetadata>({
     title: "Untitled",
     source_data_view: SourceDataView.Daily,
@@ -245,7 +245,7 @@ function PhotopeaEditorProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(false);
   };
 
-  const initialize = ({ ref }: { ref: RefObject<HTMLIFrameElement> }) => {
+  const initialize = ({ ref }: { ref: RefObject<HTMLIFrameElement | null> }) => {
     setRef(ref);
   };
 

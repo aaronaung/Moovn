@@ -8,7 +8,7 @@ import {
   getWeeksInMonth,
 } from "@internationalized/date";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import React, { useMemo } from "react";
+import React, { RefObject, useMemo } from "react";
 import {
   CalendarProps,
   DateValue,
@@ -38,8 +38,14 @@ function Calendar(props: CalendarProps<DateValue>) {
     nextButtonProps: _nextButtonProps,
     title,
   } = useCalendar(props, state);
-  const { buttonProps: prevButtonProps } = useButton(_prevButtonProps, prevButtonRef);
-  const { buttonProps: nextButtonProps } = useButton(_nextButtonProps, nextButtonRef);
+  const { buttonProps: prevButtonProps } = useButton(
+    _prevButtonProps,
+    prevButtonRef as RefObject<Element>,
+  );
+  const { buttonProps: nextButtonProps } = useButton(
+    _nextButtonProps,
+    nextButtonRef as RefObject<Element>,
+  );
 
   return (
     <div {...calendarProps} className="space-y-4">
@@ -115,7 +121,7 @@ interface CalendarCellProps {
 function CalendarCell({ state, date }: CalendarCellProps) {
   const ref = React.useRef<HTMLButtonElement | null>(null);
   const { cellProps, buttonProps, isSelected, isOutsideVisibleRange, isDisabled, formattedDate } =
-    useCalendarCell({ date }, state, ref);
+    useCalendarCell({ date }, state, ref as RefObject<HTMLElement>);
 
   const isToday = useMemo(() => {
     const timezone = getLocalTimeZone();
