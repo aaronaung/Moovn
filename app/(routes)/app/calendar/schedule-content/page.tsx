@@ -73,7 +73,7 @@ export default async function ScheduleContent() {
   }
 
   return (
-    <div>
+    <>
       <Link href="/app/calendar" passHref>
         <Button variant="ghost" className="mb-2">
           <ArrowLeftIcon className="h-4 w-4" />
@@ -84,6 +84,6 @@ export default async function ScheduleContent() {
         availableSources={availableSources}
         availableTemplates={availableTemplates}
       />
-    </div>
+    </>
   );
 }

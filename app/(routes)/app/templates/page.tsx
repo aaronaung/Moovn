@@ -49,7 +49,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div>
+    <>
       {/** Todo: check if the template is associated with any content that's to be published */}
 
       <SaveTemplateItemSheet
@@ -161,6 +161,6 @@ export default function TemplatesPage() {
           }
         />
       )}
-    </div>
+    </>
   );
 }

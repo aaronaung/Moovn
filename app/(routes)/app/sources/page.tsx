@@ -98,7 +98,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div>
+    <>
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
@@ -187,6 +187,6 @@ export default function SourcesPage() {
           }
         />
       )}
-    </div>
+    </>
   );
 }

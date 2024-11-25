@@ -85,7 +85,7 @@ export default function DestinationsPage() {
   };
 
   return (
-    <div>
+    <>
       <DeleteConfirmationDialog
         isOpen={deleteConfirmationDialogState.isOpen}
         label={
@@ -180,6 +180,6 @@ export default function DestinationsPage() {
           }
         />
       )}
-    </div>
+    </>
   );
 }

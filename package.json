@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "browser": {
     "fs": false
@@ -98,7 +99,7 @@
     "react": "19.0.0-rc-66855b96-20241106",
     "react-aria": "^3.29.1",
     "react-big-calendar": "^1.8.4",
-    "react-day-picker": "^8.9.0",
+    "react-day-picker": "^8.10.1",
     "react-device-detect": "^2.2.3",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",

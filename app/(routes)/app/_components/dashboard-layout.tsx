@@ -56,7 +56,7 @@ export default function Dashboard({ children, className }: { children: any; clas
           </div>
 
           <div className="flex-1">
-            <nav className="flex h-full flex-col items-start space-y-1 px-2 text-sm font-medium">
+            <nav className="flex h-full flex-col items-start space-y-1 px-2 pb-8 text-sm font-medium">
               {appSidebarNavigation.map((n) => (
                 <Link
                   key={n.href}
