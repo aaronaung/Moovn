@@ -2,7 +2,7 @@ import { SourceTypes } from "@/src/consts/sources";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/db";
-import * as logger from "lambda-log";
+import { log } from "@/src/libs/logger";
 import { error, success } from "../utils";
 import { subDays } from "date-fns";
 
@@ -32,6 +32,11 @@ export const handler = async (event: any) => {
 
     if (queryError) throw queryError;
 
+    log.info("Starting drive sync", {
+      sourceCount: sources.length,
+      forceSync,
+    });
+
     // Process sources in batches of 10
     for (let i = 0; i < sources.length; i += 10) {
       const batch = sources.slice(i, i + 10);
@@ -44,31 +49,30 @@ export const handler = async (event: any) => {
         }),
       );
 
-      logger.info(`Sent batch of sources to SQS for drive sync`, {
-        sourceIds: batchSourceIds,
+      log.info("Sent batch of sources to SQS for drive sync", {
         batchNumber: Math.floor(i / 10) + 1,
         totalBatches: Math.ceil(sources.length / 10),
+        sourceIds: batchSourceIds,
       });
     }
 
     // Delete expired source syncs
-    logger.info("Deleting source syncs older than 7 days");
+    log.info("Deleting source syncs older than 7 days");
     const sevenDaysAgo = subDays(new Date(), 7);
     const { error } = await supabase
       .from("source_syncs")
       .delete()
       .lt("created_at", sevenDaysAgo.toISOString());
+
     if (error) {
-      logger.error("Failed to clean up old source syncs", { error });
+      log.error("Failed to clean up old source syncs", { error });
     } else {
-      logger.info("Successfully cleaned up old source syncs");
+      log.info("Successfully cleaned up old source syncs");
     }
 
     return success("Drive sync initiated successfully");
   } catch (err: any) {
-    logger.error("Error in initiator function:", {
-      err,
-    });
+    log.error("Drive sync initiation failed", { error: err.message });
     return error("Error during drive sync initiation", 500);
   }
 };

@@ -7,7 +7,7 @@ import { getBucketName } from "@/src/libs/r2/r2-buckets";
 import { CreateMediaContainerInput, InstagramAPIToken } from "@/src/libs/instagram/types";
 import { Database } from "@/types/db";
 import { ContentItemMetadata, ContentItemType, ContentMetadata } from "@/src/consts/content";
-import * as logger from "lambda-log";
+import { log } from "@/src/libs/logger";
 import { InstagramTag } from "@/src/libs/designs/photopea/utils";
 import { IgPublishResult, ContentPublishStatus } from "@/src/consts/destinations";
 
@@ -24,10 +24,7 @@ export const handler = async (event: any) => {
 
   try {
     const { contentId, contentPath } = event;
-    logger.info("Publishing content", {
-      contentId,
-      contentPath,
-    });
+    log.info("Starting content publish", { contentId, contentPath });
 
     if (!contentId) {
       return error(`contentId missing in body`, 400);
@@ -51,7 +48,7 @@ export const handler = async (event: any) => {
     if (getContentErr) {
       throw new Error(getContentErr.message);
     }
-    logger.info("Content fetched", {
+    log.info("Content fetched successfully", {
       content,
     });
 
@@ -107,9 +104,7 @@ export const handler = async (event: any) => {
           });
         }
 
-        logger.info("Content to publish", {
-          toPublish,
-        });
+        log.info("Content to publish", { toPublish });
         let publishedMediaIds = [];
         const caption = (content.metadata as ContentMetadata)?.ig_caption;
         const igUserId = content.destination.linked_ig_user_id;
@@ -172,9 +167,7 @@ export const handler = async (event: any) => {
             return data;
           }),
         );
-        logger.info("Published media ids", {
-          publishedMediaIds,
-        });
+        log.info("Published media ids", { publishedMediaIds });
         break;
       default:
         throw new Error(`Destination type ${content.destination?.type ?? ""} not supported`);
@@ -182,7 +175,7 @@ export const handler = async (event: any) => {
 
     return success(`Content ${content.id} published successfully`);
   } catch (err: any) {
-    logger.error("Error publishing content", {
+    log.error("Error publishing content", {
       error: err,
     });
 
@@ -202,7 +195,7 @@ export const handler = async (event: any) => {
         })
         .eq("content_id", event.contentId);
     } catch (updateErr: any) {
-      logger.error("Failed to update content schedule with error status", {
+      log.error("Failed to update content schedule with error status", {
         error: updateErr,
       });
     }

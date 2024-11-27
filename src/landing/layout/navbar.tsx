@@ -64,9 +64,7 @@ export function Navbar() {
           <div className="lg:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
+                <Menu className="h-6 w-6" />
               </SheetTrigger>
               <SheetContent>
                 <SheetHeader>

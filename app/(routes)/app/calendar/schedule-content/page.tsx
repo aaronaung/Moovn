@@ -74,11 +74,13 @@ export default async function ScheduleContent() {
 
   return (
     <>
-      <Link href="/app/calendar" passHref>
-        <Button variant="ghost" className="mb-2">
-          <ArrowLeftIcon className="h-4 w-4" />
-        </Button>
-      </Link>
+      <div className="w-fit">
+        <Link href="/app/calendar">
+          <Button variant="ghost" className="mb-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
       <ContentSchedulingForm
         availableDestinations={connectedDestinations}
         availableSources={availableSources}

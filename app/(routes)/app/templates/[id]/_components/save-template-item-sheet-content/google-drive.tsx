@@ -16,7 +16,7 @@ import { drive_v3 } from "googleapis";
 import { useSupaMutation, useSupaQuery } from "@/src/hooks/use-supabase";
 import { getDriveSourcesWithAccessToken, listDriveFolders } from "@/src/data/sources";
 import { ScrollArea } from "@/src/components/ui/scroll-area";
-import { FileIcon, FolderIcon } from "lucide-react";
+import { FileIcon, FolderIcon, PlusIcon } from "lucide-react";
 import { Header2 } from "@/src/components/common/header";
 import InputText from "@/src/components/ui/input/text";
 import { saveTemplate, saveTemplateItem } from "@/src/data/templates";
@@ -26,6 +26,7 @@ import { toast } from "@/src/components/ui/use-toast";
 import { DriveTemplateItemMetadata } from "@/src/consts/templates";
 import { SheetFooter } from "@/src/components/ui/sheet";
 import { db } from "@/src/libs/indexeddb/indexeddb";
+import { GoogleDriveIcon } from "@/src/components/ui/icons/google";
 
 export default function SaveDriveTemplateItem({
   user,
@@ -146,13 +147,21 @@ export default function SaveDriveTemplateItem({
 
   if (!driveSources || driveSources.length === 0) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">No Google Drive Sources</h2>
-        <p className="text-sm text-muted-foreground">
-          You need to add a Google Drive source to continue.
-        </p>
+      <div className="flex flex-col items-center justify-center space-y-6 p-8 text-center">
+        <div className="rounded-full bg-muted p-6">
+          <GoogleDriveIcon className="h-12 w-12 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight">No Google Drive Sources</h2>
+          <p className="text-sm text-muted-foreground">
+            Connect your Google Drive account to start creating templates
+          </p>
+        </div>
         <Link href="/app/sources">
-          <Button>Add Google Drive Source</Button>
+          <Button className="gap-2" size="lg">
+            <PlusIcon className="h-4 w-4" />
+            Add Google Drive Source
+          </Button>
         </Link>
       </div>
     );

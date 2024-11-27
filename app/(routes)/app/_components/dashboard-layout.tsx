@@ -22,7 +22,6 @@ import { getAuthUser } from "@/src/data/users";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/src/components/ui/sheet";
-import { Button } from "@/src/components/ui/button";
 
 export const COLLAPSED_WIDTH = 70;
 export const EXPANDED_WIDTH = 200;
@@ -139,10 +138,7 @@ export default function Dashboard({ children, className }: { children: any; clas
         <header className="flex h-14 items-center border-b bg-muted px-4 md:hidden lg:h-[60px]">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-2">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
+              <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="left" className="flex w-72 flex-col p-0">
               <div className="flex h-14 items-center border-b px-4">

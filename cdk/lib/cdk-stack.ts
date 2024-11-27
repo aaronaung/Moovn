@@ -40,6 +40,7 @@ export class MoovnStack extends cdk.Stack {
           "date-fns",
           "date-fns-tz",
           "lodash",
+          "winston",
         ],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {

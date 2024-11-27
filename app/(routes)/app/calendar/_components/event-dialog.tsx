@@ -1,4 +1,3 @@
-import { Header2 } from "@/src/components/common/header";
 import { CalendarEvent } from "@/src/components/ui/calendar/full-calendar";
 import {
   Carousel,
@@ -360,9 +359,7 @@ export default function EventDialog({
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent side="bottom" className="flex h-[95dvh] flex-col items-center">
         <SheetHeader>
-          <SheetTitle>
-            <Header2 title={content.template?.name ?? "Untitled"} />
-          </SheetTitle>
+          <SheetTitle>{content.template?.name ?? "Untitled"}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-2 overflow-scroll">
           {event.hasDataChanged && (

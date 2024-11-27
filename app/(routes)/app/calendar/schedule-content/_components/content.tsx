@@ -75,7 +75,7 @@ export const Content: React.FC<ContentProps> = memo(
             onCheckedChange={(checked: boolean) => onSelectChange(checked)}
           />
           <Tooltip>
-            <TooltipTrigger className="w-full">
+            <TooltipTrigger asChild className="w-full">
               <DateTimePicker
                 isDisabled={designLoading}
                 value={{

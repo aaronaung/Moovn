@@ -6,9 +6,10 @@ import { format, isAfter, isBefore, isValid, parse, subDays } from "date-fns";
 import { Database, Tables } from "@/types/db";
 import { TemplateItemMetadata } from "@/src/consts/templates";
 import { GoogleDriveSourceSettings, SourceSyncStatus } from "@/src/consts/sources";
-import * as logger from "lambda-log";
+import { log } from "@/src/libs/logger";
 import { error, success } from "../utils";
 import { driveSyncR2Path } from "@/src/libs/storage";
+import { ContentItemType } from "@/src/consts/content";
 
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
@@ -61,33 +62,42 @@ async function syncSource(sourceId: string, forceSync: boolean) {
     const { data: templateItems, error: templateItemsError } = await supabase
       .from("template_items")
       .select("*")
+      .eq("type", ContentItemType.DriveFile)
       .eq("metadata->>drive_source_id", sourceId);
 
     if (templateItemsError) throw templateItemsError;
 
     const uniqueRootFolderIds = new Set<string>(
-      templateItems.map(
-        (templateItem) => (templateItem.metadata as TemplateItemMetadata).drive_folder_id,
-      ),
+      templateItems
+        .filter((templateItem) => (templateItem.metadata as TemplateItemMetadata).drive_folder_id)
+        .map((templateItem) => (templateItem.metadata as TemplateItemMetadata).drive_folder_id),
     );
     const templateItemKey = (folderId: string, fileName: string) => `${folderId}/${fileName}`;
-    const templateItemMap = new Map<string, Tables<"template_items">>(
-      templateItems.map((templateItem) => {
-        const metadata = templateItem.metadata as TemplateItemMetadata;
-        return [templateItemKey(metadata.drive_folder_id, metadata.drive_file_name), templateItem];
-      }),
-    ); // ${rootFolderId}/${fileName} -> templateItem
 
-    logger.info(`Starting sync for source ${sourceId}`, {
+    // ${rootFolderId}/${fileName} -> templateItem
+    const drivePathToTemplateItemMap = new Map<string, Tables<"template_items">>();
+    templateItems.forEach((templateItem) => {
+      const metadata = templateItem.metadata as TemplateItemMetadata;
+      if (!metadata.drive_folder_id || !metadata.drive_file_name) {
+        log.warn(`Template item has no drive folder id or file name`, {
+          templateItem,
+        });
+        return;
+      }
+      const key = templateItemKey(metadata.drive_folder_id, metadata.drive_file_name);
+      drivePathToTemplateItemMap.set(key, templateItem);
+    });
+
+    log.info("Starting sync for source", {
       sourceId,
       ownerId: source.owner_id,
       uniqueRootFolderIds,
-      templateItemMap,
+      templateItems,
+      drivePathToTemplateItemMap,
     });
 
     for (const rootFolderId of uniqueRootFolderIds) {
-      logger.info(`Syncing root folder ${rootFolderId}`);
-      logger.options.meta.rootFolderId = rootFolderId;
+      log.info("Processing root folder", { rootFolderId });
       const subFolders = await driveClient.listFiles(rootFolderId);
 
       for (const subFolder of subFolders) {
@@ -108,11 +118,16 @@ async function syncSource(sourceId: string, forceSync: boolean) {
         if (!isDateFolder || isBefore(parsedDate, twoDaysAgo)) {
           continue;
         }
-        logger.info(`Found valid date subfolder`, { dateSubFolderName });
+        log.info("Found valid date subfolder", { dateSubFolderName });
 
         // Sync image and video files in the sub date folder.
         const files = await driveClient.listFiles(subFolder.id);
-        logger.info(`Found files in date subfolder`, { fileNames: files.map((file) => file.name) });
+        if (files.length > 0) {
+          log.info("Found files to process", {
+            folderPath: `${rootFolderId}/${dateSubFolderName}`,
+            fileCount: files.length,
+          });
+        }
         for (const file of files) {
           const {
             id,
@@ -136,11 +151,10 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             continue;
           }
           const key = templateItemKey(rootFolderId, name);
-          const templateItem = templateItemMap.get(key);
+          const templateItem = drivePathToTemplateItemMap.get(key);
           if (!templateItem) {
-            logger.warn(`Matching template item not found for drive file`, {
+            log.warn(`Matching template item not found for drive file`, {
               templateItemKey: key,
-              templateItemMap,
               rootFolderId,
               dateSubFolderName,
               file,
@@ -219,7 +233,7 @@ async function syncSource(sourceId: string, forceSync: boolean) {
             !isAfter(new Date(modifiedTime), new Date(r2LastModified)) &&
             !forceSync
           ) {
-            logger.info(`Drive file has not changed since last upload`, {
+            log.info(`Drive file has not changed since last upload`, {
               driveFile: file,
               r2ObjectMetadata: objectMetadata,
             });
@@ -227,14 +241,12 @@ async function syncSource(sourceId: string, forceSync: boolean) {
           }
 
           // Upload to R2
-          logger.options.meta = {
+          log.info("Syncing Drive file to R2", {
             templateItem,
             driveFilePath: `${rootFolderId}/${dateSubFolderName}/${file.name}`,
             bucketName,
             r2Key,
-          };
-
-          logger.info(`Syncing Drive file to R2`);
+          });
           let fileSyncError: string | undefined;
           try {
             const stream = await driveClient.getFileStream(id);
@@ -245,10 +257,12 @@ async function syncSource(sourceId: string, forceSync: boolean) {
               drive_last_modified: modifiedTime,
               drive_mime_type: mimeType,
             });
-            logger.info(`Synced Drive file to R2`);
+            log.info("File sync completed", { r2Key });
           } catch (err: any) {
-            logger.error(`Error syncing Drive file to R2`, {
-              err,
+            log.error("File sync failed", {
+              error: err.message,
+              r2Key,
+              fileId: id,
             });
             fileSyncError = err.message;
           } finally {
@@ -275,7 +289,12 @@ async function syncSource(sourceId: string, forceSync: boolean) {
       })
       .eq("id", sourceSyncId);
 
-    logger.info(`Completed sync for source ${sourceId}`);
+    log.info("Source sync completed", {
+      sourceId,
+      duration: Date.now() - startTime,
+      errorCount: syncErrors.length,
+    });
+
     return success(`Source ${sourceId} synced successfully`);
   } catch (err: any) {
     const durationMs = Date.now() - startTime;
@@ -287,7 +306,8 @@ async function syncSource(sourceId: string, forceSync: boolean) {
         duration_ms: durationMs,
       })
       .eq("id", sourceSyncId);
-    logger.error(`Error syncing source ${sourceId}:`, {
+
+    log.error(`Error syncing source ${sourceId}:`, {
       err,
     });
     return error(err.message, 500);
@@ -306,11 +326,14 @@ export const handler = async (event: any) => {
   const successfulSources = results.filter((result) => result.statusCode === 200);
   const failedSources = results.filter((result) => result.statusCode !== 200);
 
-  logger.info(`Successfully synced ${successfulSources.length} drive sources`);
-  logger.info(`Failed to synced ${failedSources.length} drive sources`);
+  log.info("Sync completion summary", {
+    successful: successfulSources.length,
+    failed: failedSources.length,
+  });
 
   if (failedSources.length > 0) {
-    logger.error("Failed sources:", failedSources);
+    log.error("Failed sources:", { failedSources });
   }
-  return success(`Sync completed`);
+
+  return success("Sync completed");
 };

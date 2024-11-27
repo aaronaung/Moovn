@@ -165,10 +165,10 @@ export default function TemplateContainer({
         }
         const metadata = templateItem.metadata as DriveTemplateItemMetadata;
         return (
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center p-8 text-center">
             <GoogleDriveIcon className="h-12 w-12" />
-            <div className="mt-2 flex items-center">
-              <FileIcon className="mr-1 h-4 w-4" />
+            <div className="mt-2 flex">
+              <FileIcon className="mr-1 mt-0.5 h-4 w-4" />
               <p className="text-sm font-medium">
                 {metadata.drive_folder_name}/YYYY-MM-DD/{metadata.drive_file_name}
               </p>
@@ -206,7 +206,7 @@ export default function TemplateContainer({
             <DropdownMenu>
               <DropdownMenuTrigger disabled={isLoadingTemplateSignedUrl || !idbTemplateItem}>
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <Button
                       className="group hover:bg-secondary-foreground hover:text-secondary"
                       variant="secondary"
