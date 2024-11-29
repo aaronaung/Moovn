@@ -30,7 +30,7 @@ export function useScheduleContent({
   availableTemplates,
 }: {
   sourceId: string;
-  destinationId: string;
+  destinationId?: string | null;
   availableTemplates: Tables<"templates">[];
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
@@ -90,6 +90,7 @@ export function useScheduleContent({
 
     const content = await _saveContent({
       source_id: sourceId,
+      title: template.name,
       source_data_view: template.source_data_view,
       type: template.content_type,
       owner_id: ownerId,
