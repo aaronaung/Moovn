@@ -133,7 +133,7 @@ export default function Calendar() {
             contentSchedule: schedule,
             data: dataForEvent,
             hasDataChanged,
-            title: content.template?.name ?? "Untitled",
+            title: content.title ?? content.template?.name ?? "Untitled",
             start: scheduledDate,
           } as CalendarEvent;
         });

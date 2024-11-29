@@ -16,7 +16,7 @@ export default function DestinationView({ destination }: { destination: Tables<"
     refetch,
     isRefetching,
   } = useSupaQuery(getContentSchedulesForDestination, {
-    arg: destination.id,
+    arg: { destinationId: destination.id },
     queryKey: ["getContentSchedulesForDestination", destination.id],
   });
 

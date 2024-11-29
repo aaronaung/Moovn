@@ -12,37 +12,40 @@ export type Database = {
       content: {
         Row: {
           created_at: string | null
-          destination_id: string
+          destination_id: string | null
           id: string
           metadata: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
-          template_id: string
+          template_id: string | null
+          title: string | null
           type: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          destination_id: string
+          destination_id?: string | null
           id?: string
           metadata?: Json | null
           owner_id: string
           source_data_view: string
           source_id: string
-          template_id: string
+          template_id?: string | null
+          title?: string | null
           type: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          destination_id?: string
+          destination_id?: string | null
           id?: string
           metadata?: Json | null
           owner_id?: string
           source_data_view?: string
           source_id?: string
-          template_id?: string
+          template_id?: string | null
+          title?: string | null
           type?: string
           updated_at?: string | null
         }

@@ -46,7 +46,7 @@ export default function DestinationsPage() {
     }
   }, [hasDestinations, selectedDestination, destinations]);
 
-  const { mutateAsync: _deleteDestination, isPending: isDeletingTemplate } = useSupaMutation(
+  const { mutateAsync: _deleteDestination, isPending: isDeletingDestination } = useSupaMutation(
     deleteDestination,
     {
       invalidate: [["getAllDestinations"]],
@@ -91,7 +91,7 @@ export default function DestinationsPage() {
         label={
           "Deleting this destination will delete all associated scheduled contents. Are you sure?"
         }
-        isDeleting={isDeletingTemplate}
+        isDeleting={isDeletingDestination}
         onClose={() => {
           setDeleteConfirmationDialogState({
             isOpen: false,

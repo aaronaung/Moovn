@@ -3,6 +3,7 @@ import { SupabaseOptions } from "./clients/types";
 import { throwOrData } from "./util";
 import { getAuthUser } from "./users";
 import { InstagramAPIToken } from "../libs/instagram/types";
+import { ContentPublishStatus } from "../consts/destinations";
 
 export const saveDestination = async (
   destination: Partial<Tables<"destinations">>,
@@ -17,6 +18,24 @@ export const saveDestination = async (
 };
 
 export const deleteDestination = async (id: string, { client }: SupabaseOptions) => {
+  const pendingSchedules = await getContentSchedulesForDestination(
+    { destinationId: id, status: ContentPublishStatus.Pending },
+    { client },
+  );
+
+  // This deletes the schedule in AWS EventBridge.
+  const scheduleDeletions = pendingSchedules.map((schedule) =>
+    fetch(`/api/content/delete-schedule`, {
+      method: "POST",
+      body: JSON.stringify({ scheduleName: schedule.name }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
+  );
+  await Promise.all(scheduleDeletions);
+
+  // We have a trigger that deletes the pending content & content schedule db records when the destination is deleted
   return throwOrData(client.from("destinations").delete().eq("id", id).single());
 };
 
@@ -52,22 +71,26 @@ export const igTokenUpdater = (destinationId: string, { client }: SupabaseOption
 };
 
 export const getContentSchedulesForDestination = async (
-  destinationId: string,
+  { destinationId, status }: { destinationId: string; status?: ContentPublishStatus },
   { client }: SupabaseOptions,
 ) => {
-  return throwOrData(
-    client
-      .from("content_schedules")
-      .select(
-        `
+  let query = client
+    .from("content_schedules")
+    .select(
+      `
+      *,
+      content!inner(
         *,
-        content!inner(
-          *,
-          destination:destinations!inner(*)
-        )
-      `,
+        destination:destinations!inner(*)
       )
-      .eq("content.destination_id", destinationId)
-      .order("created_at", { ascending: false }),
-  );
+    `,
+    )
+    .eq("content.destination_id", destinationId)
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  return throwOrData(query);
 };
