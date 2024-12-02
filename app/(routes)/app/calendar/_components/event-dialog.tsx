@@ -82,7 +82,7 @@ export default function EventDialog({
 
   const { isJobPending } = useDesignGenQueue();
 
-  const { scheduleContents: scheduleContent } = useScheduleContent({
+  const { scheduleContents } = useScheduleContent({
     sourceId: content.source_id,
     destinationId: content.destination_id,
     availableTemplates: content.template ? [content.template] : [],
@@ -187,7 +187,7 @@ export default function EventDialog({
           ]);
         }
       } else {
-        await scheduleContent(
+        await scheduleContents(
           [contentIdbKey],
           { [contentIdbKey]: publishDateTime },
           { [contentIdbKey]: newCaption },

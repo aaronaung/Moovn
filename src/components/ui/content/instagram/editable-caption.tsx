@@ -3,7 +3,6 @@ import { Button } from "@/src/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/src/components/ui/tooltip";
 import InputTextArea from "@/src/components/ui/input/textarea";
 import { cn } from "@/src/utils";
-import { DESIGN_WIDTH } from "@/app/(routes)/app/calendar/schedule-content/_components/design-content-item";
 
 interface EditableCaptionProps {
   initialCaption: string;
@@ -31,7 +30,7 @@ export const EditableCaption: React.FC<EditableCaptionProps> = ({
 
   if (isEditing) {
     return (
-      <div className={cn("group mt-3 rounded-md px-1", className)}>
+      <div className={cn("group mt-3 w-full rounded-md px-1", className)}>
         <InputTextArea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
@@ -68,9 +67,6 @@ export const EditableCaption: React.FC<EditableCaptionProps> = ({
             !caption && "text-muted-foreground",
             className,
           )}
-          style={{
-            maxWidth: DESIGN_WIDTH,
-          }}
         >
           {caption || "Add caption here..."}
         </p>

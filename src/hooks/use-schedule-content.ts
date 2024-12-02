@@ -97,7 +97,7 @@ export function useScheduleContent({
       template_id: template.id,
       destination_id: destinationId,
       metadata: {
-        ...(template.ig_caption_template ? { ig_caption: caption } : {}),
+        ...(caption ? { ig_caption: caption } : {}),
       } as IgContentMetadata,
     });
 

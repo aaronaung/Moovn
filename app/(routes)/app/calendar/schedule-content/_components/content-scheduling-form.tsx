@@ -159,9 +159,8 @@ export default function ContentSchedulingForm({
       enabled: !errors.schedule_range,
     },
   );
-  console.log({ scheduleData });
 
-  const { scheduleContents: scheduleContent, isScheduling } = useScheduleContent({
+  const { scheduleContents, isScheduling } = useScheduleContent({
     sourceId,
     destinationId,
     availableTemplates,
@@ -173,7 +172,7 @@ export default function ContentSchedulingForm({
     }
 
     try {
-      await scheduleContent(selectedContentItems, publishDateTimeMap, captionMap);
+      await scheduleContents(selectedContentItems, publishDateTimeMap, captionMap);
       toast({
         variant: "success",
         title: "Content scheduled successfully",

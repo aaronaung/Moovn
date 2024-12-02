@@ -23,7 +23,7 @@ import { ScheduleData } from "@/src/libs/sources";
 import { cn } from "@/src/utils";
 import { Tables } from "@/types/db";
 import _ from "lodash";
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { DriveContentItem } from "./drive-content-item";
 
 export const InstagramContent = memo(
@@ -56,6 +56,12 @@ export const InstagramContent = memo(
       },
     );
     const { sourceId, range } = deconstructContentIdbKey(contentIdbKey);
+
+    useEffect(() => {
+      if (!caption) {
+        onCaptionChange(generateCaption(template.ig_caption_template || "", scheduleData as any));
+      }
+    }, []);
 
     const renderDesignContainer = () => {
       if (isLoadingTemplateItems || !templateItems) {
