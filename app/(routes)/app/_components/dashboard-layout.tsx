@@ -68,7 +68,7 @@ export default function Dashboard({ children, className }: { children: any; clas
                   <div
                     className={cn(
                       "absolute flex h-full items-center transition-all duration-300",
-                      isExpanded ? "left-4" : "left-1/2 -translate-x-1/2",
+                      "left-4",
                     )}
                   >
                     <n.icon className="h-6 w-6 shrink-0" />
@@ -209,9 +209,26 @@ export default function Dashboard({ children, className }: { children: any; clas
 
 function Logo({ isExpanded }: { isExpanded: boolean }) {
   return (
-    <div className={cn("flex items-center", !isExpanded && "w-full justify-center")}>
-      <Link href="/" className={cn("flex items-center", !isExpanded && "w-full justify-center")}>
-        {isExpanded ? <MoovnLogo className="h-8" /> : <MoovnIcon2 className="h-5" />}
+    <div className={cn("flex items-center")}>
+      <Link href="/" className={cn("flex h-8 items-center pl-4 md:pl-0")}>
+        <div className="relative h-8 w-[120px]">
+          <div
+            className={cn(
+              "absolute left-0 top-1/2 -translate-y-1/2 transition-opacity duration-200",
+              isExpanded ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <MoovnLogo className="h-8" />
+          </div>
+          <div
+            className={cn(
+              "absolute -left-3 top-1/2 -translate-y-1/2 transition-opacity duration-200",
+              isExpanded ? "opacity-0" : "opacity-100",
+            )}
+          >
+            <MoovnIcon2 className="h-5" />
+          </div>
+        </div>
       </Link>
     </div>
   );
