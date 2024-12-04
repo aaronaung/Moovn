@@ -93,8 +93,7 @@ export default function Dashboard({ children, className }: { children: any; clas
                   >
                     <div
                       className={cn(
-                        "absolute flex h-full items-center transition-all duration-300",
-                        isExpanded ? "left-4" : "left-1/2 -translate-x-1/2",
+                        "absolute left-4 flex h-full items-center transition-all duration-300",
                       )}
                     >
                       <UserCircleIcon className="h-7 w-7 shrink-0" />
