@@ -32,7 +32,7 @@ export function HeroSection() {
           </div>
           <div className="relative mt-8 lg:mt-0">
             <Image
-              src="/hero-image.png"
+              src="/demo.gif"
               alt="App preview"
               width={600}
               height={600}
