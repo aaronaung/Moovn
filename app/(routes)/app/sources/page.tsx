@@ -15,8 +15,17 @@ import { SourceSelectItem } from "./_components/source-select-item";
 import SourceView from "./_components/source-view";
 import { useSearchParams } from "next/navigation";
 import { SourceTypes } from "@/src/consts/sources";
+import { AccessControl } from "@/src/components/auth/access-control";
 
 export default function SourcesPage() {
+  return (
+    <AccessControl allowedUserTypes={["studio"]}>
+      <SourcesPageContent />
+    </AccessControl>
+  );
+}
+
+function SourcesPageContent() {
   const [sourceDialogState, setSourceDialogState] = useState<{
     isOpen: boolean;
     source?: Tables<"sources">;

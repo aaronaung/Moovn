@@ -19,7 +19,7 @@ import { toast } from "../ui/use-toast";
 import { useRouter } from "next/navigation";
 
 import { ModeToggle } from "../common/mode-toggle";
-import { GoogleIcon } from "../ui/icons/google";
+// import { GoogleIcon } from "../ui/icons/google";
 import { MoovnLogo } from "../ui/icons/moovn";
 
 const formSchema = z.object({
@@ -33,11 +33,7 @@ const formSchema = z.object({
 
 type SignInFormSchema = z.infer<typeof formSchema>;
 
-export function SignInForm({
-  returnPath = "/app/sources",
-}: {
-  returnPath?: string;
-}) {
+export function SignInForm({ returnPath = "/app/sources" }: { returnPath?: string }) {
   const router = useRouter();
   const {
     register,
@@ -47,6 +43,8 @@ export function SignInForm({
     resolver: zodResolver(formSchema),
   });
 
+  // Temporarily disabled Google sign-in
+  /*
   async function handleLoginWithGoogle() {
     try {
       const { data, error } =
@@ -72,14 +70,14 @@ export function SignInForm({
       });
     }
   }
+  */
 
   async function handleEmailLogin(formValues: SignInFormSchema) {
     try {
-      const { data, error } =
-        await supaClientComponentClient.auth.signInWithPassword({
-          email: formValues.email,
-          password: formValues.password,
-        });
+      const { data, error } = await supaClientComponentClient.auth.signInWithPassword({
+        email: formValues.email,
+        password: formValues.password,
+      });
       if (error) {
         toast({
           variant: "destructive",
@@ -118,9 +116,7 @@ export function SignInForm({
             </div>
           </div>
         </CardTitle>
-        <CardDescription>
-          Enter your email below to sign in to your account
-        </CardDescription>
+        <CardDescription>Enter your email below to sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -148,6 +144,8 @@ export function SignInForm({
             <Button type="submit" className="w-full rounded-full">
               Sign in
             </Button>
+            {/* Temporarily disabled Google sign-in */}
+            {/*
             <Button
               type="button"
               onClick={(e) => {
@@ -160,6 +158,7 @@ export function SignInForm({
               <GoogleIcon className="mr-2 h-5 w-5 rounded-full" />
               Sign in with Google
             </Button>
+            */}
           </div>
         </form>
         <div className="mt-4 text-center text-sm">

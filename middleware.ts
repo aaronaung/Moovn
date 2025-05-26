@@ -8,6 +8,7 @@ const excludedPaths = [
   "/api/auth/callback",
   "/api/auth/instagram/callback",
   "/api/auth/mindbody/callback",
+  "/api/users/check-handle-availability",
 ];
 
 const internalApis = ["/api/destinations/:id/instagram/media/publish"];

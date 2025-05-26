@@ -107,14 +107,9 @@ export const flattenSchedule = (input?: ScheduleData) => {
 
 export const organizeScheduleDataByView = (
   view: string,
-  scheduleData: ScheduleData,
+  scheduleData: { [key: string]: any },
   scheduleRange?: { from: Date; to: Date }, // only used for weekly view
 ) => {
-  console.log("calling organizeScheduleByDataView", {
-    view,
-    scheduleData,
-    scheduleRange,
-  });
   const organizedSchedule: { [key: string]: any } = {};
 
   // Helper function to get the start and end of a week
