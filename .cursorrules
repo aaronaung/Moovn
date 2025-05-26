@@ -269,6 +269,47 @@ export const getUserByEmail = async (email: string) => {
 - Never apply migrations directly without creating the file first
 - Include clear comments explaining what the migration does
 
+#### ✅ DO: Use Current DateTime for Migration Timestamps
+
+- **ALWAYS** use the current date and time when creating new migration files
+- Never use future dates or arbitrary timestamps
+- Migration files must be in chronological order to maintain proper database schema evolution
+- Use format: `YYYYMMDDHHMMSS` (Year-Month-Day-Hour-Minute-Second)
+
+```bash
+# Good: Current datetime (example for January 25, 2025 at 3:45:30 PM)
+20250125154530_add_new_feature.sql
+
+# Bad: Future date or arbitrary timestamp
+20260101000000_add_new_feature.sql
+20240101000000_add_new_feature.sql (if current date is 2025)
+```
+
+#### ✅ DO: Check Migration Dependencies
+
+- Ensure migrations that depend on other schema changes come AFTER the prerequisite migrations
+- If Migration A creates a table, Migration B (which adds policies to that table) must have a later timestamp
+- Review existing migrations before creating new ones to understand dependencies
+- Test migration order by running them in sequence
+
+#### ❌ AVOID: Migration Ordering Issues
+
+- Creating migrations with timestamps that break chronological dependency order
+- Applying migrations that reference tables/columns that don't exist yet
+- Using past dates when the migration should run after existing ones
+
+```sql
+-- Bad: This migration tries to add policies to a table that doesn't exist yet
+-- File: 20250125120000_add_policies.sql (runs before table creation)
+CREATE POLICY "example" ON my_table FOR SELECT;
+
+-- Good: Ensure table exists first
+-- File: 20250125115900_create_table.sql (runs first)
+CREATE TABLE my_table (...);
+-- File: 20250125120000_add_policies.sql (runs after table creation)
+CREATE POLICY "example" ON my_table FOR SELECT;
+```
+
 #### ❌ AVOID: Direct Database Changes
 
 - Never apply migrations without writing the migration file
