@@ -26,9 +26,7 @@ const formSchema = z.object({
   first_name: z.string().min(1, {
     message: "First name can't be empty.",
   }),
-  last_name: z.string().min(1, {
-    message: "Last name can't be empty.",
-  }),
+  last_name: z.string(),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
@@ -148,13 +146,15 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
         });
       } else {
         toast({
-          title: "Sign up successful 👋",
+          title: "Account created successfully! 🎉",
           variant: "success",
-          description: "Please check your email for a confirmation link.",
+          description: "Welcome to Moovn! Redirecting you now...",
         });
-        reset();
-        setUserType("studio");
-        setHandleError(null);
+
+        // Redirect immediately since email confirmation is disabled
+        setTimeout(() => {
+          window.location.href = returnPath;
+        }, 500);
       }
     } catch (error) {
       console.log("error signing up", error);
@@ -187,21 +187,24 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <InputText
-                label="First name"
+                label={userType === "studio" ? "Studio Name" : "First name"}
                 inputProps={{
-                  placeholder: "John",
+                  placeholder: userType === "studio" ? "Your Studio" : "John",
                 }}
                 register={register}
                 rhfKey="first_name"
                 error={errors.first_name?.message}
+                className={userType === "studio" ? "col-span-2" : ""}
               />
-              <InputText
-                label="Last name"
-                inputProps={{ placeholder: "Doe" }}
-                register={register}
-                rhfKey="last_name"
-                error={errors.last_name?.message}
-              />
+              {userType === "instructor" && (
+                <InputText
+                  label="Last name"
+                  inputProps={{ placeholder: "Doe" }}
+                  register={register}
+                  rhfKey="last_name"
+                  error={errors.last_name?.message}
+                />
+              )}
             </div>
 
             <InputText
