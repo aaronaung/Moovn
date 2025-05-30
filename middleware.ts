@@ -11,13 +11,24 @@ const excludedPaths = [
   "/api/users/check-handle-availability",
 ];
 
+const nonHandleRootRoutes = ["/privacy", "/terms", "/sign-in", "/sign-up", "/app", "/api"];
+
 const internalApis = ["/api/destinations/:id/instagram/media/publish"];
 
 export async function middleware(req: NextRequest) {
   try {
+    const pathname = req.nextUrl.pathname;
+
+    // Check if this is a handle-based landing page (public pages that don't need auth)
+    // These are routes like /studio-name or /instructor-name
+    const isHandlePage = pathname !== "/" && !nonHandleRootRoutes.includes(pathname);
+
+    if (isHandlePage) {
+      return NextResponse.next();
+    }
+
     for (const route of excludedPaths) {
       const urlMatch = match(route, { decode: decodeURIComponent });
-      const pathname = req.nextUrl.pathname;
 
       if (urlMatch(pathname)) {
         return NextResponse.next();
@@ -25,7 +36,6 @@ export async function middleware(req: NextRequest) {
     }
     for (const route of internalApis) {
       const urlMatch = match(route, { decode: decodeURIComponent });
-      const pathname = req.nextUrl.pathname;
 
       if (urlMatch(pathname)) {
         if (req.headers.get("x-internal-api-key") !== env.INTERNAL_API_KEY) {

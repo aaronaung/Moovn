@@ -185,38 +185,6 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
       <CardContent>
         <form onSubmit={handleSubmit(handleSignUp)}>
           <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <InputText
-                label={userType === "studio" ? "Studio Name" : "First name"}
-                inputProps={{
-                  placeholder: userType === "studio" ? "Your Studio" : "John",
-                }}
-                register={register}
-                rhfKey="first_name"
-                error={errors.first_name?.message}
-                className={userType === "studio" ? "col-span-2" : ""}
-              />
-              {userType === "instructor" && (
-                <InputText
-                  label="Last name"
-                  inputProps={{ placeholder: "Doe" }}
-                  register={register}
-                  rhfKey="last_name"
-                  error={errors.last_name?.message}
-                />
-              )}
-            </div>
-
-            <InputText
-              label="Email"
-              rhfKey="email"
-              register={register}
-              inputProps={{
-                placeholder: "example@moovn.co",
-              }}
-              error={errors.email?.message}
-            />
-
             <div className="space-y-2">
               <label className="text-sm font-medium">Account Type</label>
               <Tabs
@@ -230,7 +198,27 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
               </Tabs>
               {errors.type && <p className="text-sm text-red-500">{errors.type.message}</p>}
             </div>
-
+            <div className="grid grid-cols-2 gap-4">
+              <InputText
+                label={userType === "studio" ? "Studio Name" : "First name"}
+                inputProps={{
+                  placeholder: userType === "studio" ? "Your Studio" : "John",
+                }}
+                register={register}
+                rhfKey="first_name"
+                error={errors.first_name?.message}
+                className={userType === "studio" ? "col-span-2" : "col-span-1"}
+              />
+              {userType === "instructor" && (
+                <InputText
+                  label="Last name"
+                  inputProps={{ placeholder: "Doe" }}
+                  register={register}
+                  rhfKey="last_name"
+                  error={errors.last_name?.message}
+                />
+              )}
+            </div>
             <div className="space-y-2">
               <InputText
                 label="Handle"
@@ -248,7 +236,15 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
                 <p className="text-xs text-green-600">Handle is available!</p>
               )}
             </div>
-
+            <InputText
+              label="Email"
+              rhfKey="email"
+              register={register}
+              inputProps={{
+                placeholder: "example@moovn.co",
+              }}
+              error={errors.email?.message}
+            />
             <InputShowHide
               label="Password"
               rhfKey="password"
@@ -258,7 +254,6 @@ export function SignUpForm({ returnPath = "/app/sources" }: { returnPath?: strin
               }}
               error={errors.password?.message}
             />
-
             <Button
               type="submit"
               className="w-full rounded-full"
