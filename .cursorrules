@@ -1,0 +1,334 @@
+# Cursor Rules for Moovn v2
+
+## UI/UX Design Patterns
+
+### Form Design & Auto-Save Patterns
+
+#### ✅ DO: Use React Hook Form + Zod for All Forms
+
+- Always use `react-hook-form` with `zodResolver` for form management
+- Define Zod schemas for comprehensive validation
+- Use `form.register()` to connect inputs to the form
+- Leverage `watch()` for reactive form values and auto-save functionality
+- Use `setValue()` for programmatic form updates
+- Handle form initialization carefully to prevent overwriting user input
+
+#### ✅ DO: Proper Form Initialization
+
+```typescript
+// Good: Initialize form only once to prevent input overwrites
+const isInitialized = useRef(false);
+
+useEffect(() => {
+  if (user && !isInitialized.current) {
+    setValue("first_name", user.first_name || "");
+    setValue("last_name", user.last_name || "");
+    setValue("handle", user.handle || "");
+    isInitialized.current = true;
+  }
+}, [user, setValue]);
+
+// Bad: Reinitializing on every user data change
+useEffect(() => {
+  if (user) {
+    setValue("first_name", user.first_name || "");
+    // This will overwrite user input during auto-save cycles
+  }
+}, [user, setValue]);
+```
+
+#### ✅ DO: Zod Schema Design
+
+```typescript
+// Good: Comprehensive schema with proper validation
+const profileFormSchema = z.object({
+  first_name: z.string().max(50, "Name is too long").optional(),
+  last_name: z.string().max(50, "Name is too long").optional(),
+  handle: z
+    .string()
+    .regex(/^[a-zA-Z0-9_]*$/, "Handle can only contain letters, numbers, and underscores")
+    .max(30, "Handle is too long")
+    .optional()
+    .or(z.literal("")),
+});
+
+type FormData = z.infer<typeof profileFormSchema>;
+```
+
+#### ✅ DO: Auto-Save with React Hook Form
+
+```typescript
+// Good: Watch form values and debounce for auto-save
+const watchedFirstName = watch("first_name");
+const debouncedFirstName = useDebounce(watchedFirstName, 500);
+
+useEffect(() => {
+  if (!user || !isInitialized.current || debouncedFirstName === (user.first_name || "")) return;
+  saveField("first_name", debouncedFirstName || "");
+}, [debouncedFirstName]);
+```
+
+#### ❌ AVOID: Manual State Management for Forms
+
+- Don't use individual `useState` for each form field
+- Don't manually handle form validation
+- Don't create custom form submission logic when react-hook-form can handle it
+- Don't use uncontrolled inputs without proper form integration
+
+#### ✅ DO: Prevent Layout Shift
+
+- Use absolute positioning for status indicators (spinners, checkmarks, error icons)
+- Avoid dynamic text messages that appear/disappear and cause layout shift
+- Reserve space for error messages or use consistent positioning
+- Use a single global loading indicator instead of multiple field-level indicators
+
+#### ✅ DO: Auto-Save Best Practices
+
+- Implement debounced auto-save (500ms delay) for form fields
+- Update only the specific field that changed, not the entire form
+- Use separate useEffect hooks for each field to avoid race conditions
+- Disable form inputs during save operations to prevent conflicts
+- Show a single spinner in card corner during any save operation
+
+#### ✅ DO: Success Feedback
+
+- Use green checkmarks (CheckCircle icon) positioned absolutely in input fields
+- Show success indicators for 3 seconds then auto-hide
+- Avoid success text messages that cause layout shift
+- Position success indicators consistently (right-3 top-1/2)
+
+#### ✅ DO: Error Handling
+
+- Show validation errors immediately below the relevant field
+- Use red text for error messages
+- Only show error states, avoid "available" or "valid" messages unless critical
+- Clear errors when user starts typing (via validation)
+
+#### ✅ DO: Field-Specific Updates
+
+```typescript
+// Good: Update only the changed field
+const saveField = async (
+  fieldName: "first_name" | "last_name" | "handle",
+  value: string | null,
+) => {
+  await updateProfile({ [fieldName]: value });
+};
+
+// Bad: Update entire profile every time
+const saveProfile = async (allData) => {
+  await updateProfile({ email, handle, avatar_url, first_name, last_name });
+};
+```
+
+#### ❌ AVOID: Layout Shift Anti-Patterns
+
+- Dynamic "Saving..." or "Saved successfully!" text messages
+- Multiple spinners in different form fields
+- Success/error messages that push content down
+- Updating multiple fields when only one changed
+- Race conditions between multiple auto-save operations
+
+### Form Validation Patterns
+
+#### ✅ DO: Use Zod for Validation
+
+```typescript
+const nameSchema = z.string().max(50, "Name is too long");
+const handleSchema = z
+  .string()
+  .regex(/^[a-zA-Z0-9_]*$/, "Handle can only contain letters, numbers, and underscores")
+  .max(30, "Handle is too long");
+```
+
+#### ✅ DO: Debounced Validation
+
+- Use `useDebounce` hook with 500ms delay
+- Validate on debounced value change, not on every keystroke
+- Clear validation errors when user starts typing
+
+### Loading States
+
+#### ✅ DO: Unified Loading States
+
+- Use a single `isSavingProfile` state for all form operations
+- Show global spinner in card corner during any save
+- Disable all form inputs during save operations
+- Use consistent spinner component and positioning
+
+#### ❌ AVOID: Multiple Loading States
+
+- Separate loading states for each field
+- Multiple spinners visible simultaneously
+- Inconsistent loading indicators
+
+### Mobile-First & Responsive Design
+
+#### ✅ DO: Constrain Width on Desktop
+
+- Use `max-w-md` or similar constraints for form layouts
+- Center content with `mx-auto` on larger screens
+- Maintain mobile-first responsive design
+- Use grid layouts that collapse on mobile (`grid-cols-1 sm:grid-cols-2`)
+
+### Component Architecture
+
+#### ✅ DO: Single Responsibility
+
+- One function per field update operation
+- Separate useEffect hooks for each auto-save field
+- Clear separation between validation, saving, and UI state
+- Reusable patterns across similar forms
+
+#### ✅ DO: Consistent State Management
+
+```typescript
+// Good: Clear, specific state variables
+const [isSavingProfile, setIsSavingProfile] = useState(false);
+const [fieldSuccess, setFieldSuccess] = useState<{
+  first_name?: boolean;
+  last_name?: boolean;
+  handle?: boolean;
+}>({});
+
+// Bad: Generic or unclear state
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(null);
+```
+
+### Code Cleanliness
+
+#### ✅ DO: Keep Code Clean and Minimal
+
+- Only write code that is actually used
+- Remove unused functions, variables, and imports immediately
+- Don't create "helper" functions unless they're actually needed
+- Prefer inline logic over unnecessary abstractions
+
+#### ❌ AVOID: Unused Code
+
+- Functions that are defined but never called
+- Variables that are declared but never used
+- Imports that aren't referenced
+- "Future-proofing" code that isn't currently needed
+
+```typescript
+// Bad: Unused function
+export const getUserByEmail = async (email: string) => {
+  // This function is never called anywhere
+};
+
+// Good: Only write what you need
+// If you need to get a user by email, write it when you actually use it
+```
+
+### Accessibility & UX
+
+#### ✅ DO: Progressive Enhancement
+
+- Forms work without JavaScript
+- Clear visual feedback for all states
+- Proper loading states and error handling
+- Keyboard navigation support
+
+#### ✅ DO: User-Friendly Patterns
+
+- Auto-save eliminates need for save buttons
+- Clear indication when operations are in progress
+- Immediate feedback for validation errors
+- Non-intrusive success confirmations
+
+## Code Style
+
+### TypeScript
+
+- Use strict typing for all form data and API responses
+- Define clear interfaces for component props
+- Use union types for field names in generic functions
+
+### React Patterns
+
+- Use custom hooks for complex state logic
+- Implement proper cleanup in useEffect hooks
+- Use React.memo for performance optimization where needed
+- Follow hooks rules and dependencies
+
+### API Design
+
+- Update only changed fields in database operations
+- Use proper HTTP status codes
+- Implement proper error handling and user feedback
+- Validate data on both client and server
+
+### Database Migrations
+
+#### ✅ DO: Always Create Migration Files First
+
+- Write migration files in `supabase/migrations/` before applying any database changes
+- Use proper timestamp format: `YYYYMMDDHHMMSS_description.sql`
+- Never apply migrations directly without creating the file first
+- Include clear comments explaining what the migration does
+
+#### ✅ DO: Use Current DateTime for Migration Timestamps
+
+- **ALWAYS** use the current date and time when creating new migration files
+- Never use future dates or arbitrary timestamps
+- Migration files must be in chronological order to maintain proper database schema evolution
+- Use format: `YYYYMMDDHHMMSS` (Year-Month-Day-Hour-Minute-Second)
+
+```bash
+# Good: Current datetime (example for January 25, 2025 at 3:45:30 PM)
+20250125154530_add_new_feature.sql
+
+# Bad: Future date or arbitrary timestamp
+20260101000000_add_new_feature.sql
+20240101000000_add_new_feature.sql (if current date is 2025)
+```
+
+#### ✅ DO: Check Migration Dependencies
+
+- Ensure migrations that depend on other schema changes come AFTER the prerequisite migrations
+- If Migration A creates a table, Migration B (which adds policies to that table) must have a later timestamp
+- Review existing migrations before creating new ones to understand dependencies
+- Test migration order by running them in sequence
+
+#### ❌ AVOID: Migration Ordering Issues
+
+- Creating migrations with timestamps that break chronological dependency order
+- Applying migrations that reference tables/columns that don't exist yet
+- Using past dates when the migration should run after existing ones
+
+```sql
+-- Bad: This migration tries to add policies to a table that doesn't exist yet
+-- File: 20250125120000_add_policies.sql (runs before table creation)
+CREATE POLICY "example" ON my_table FOR SELECT;
+
+-- Good: Ensure table exists first
+-- File: 20250125115900_create_table.sql (runs first)
+CREATE TABLE my_table (...);
+-- File: 20250125120000_add_policies.sql (runs after table creation)
+CREATE POLICY "example" ON my_table FOR SELECT;
+```
+
+#### ❌ AVOID: Direct Database Changes
+
+- Never apply migrations without writing the migration file
+- Don't use tools to apply changes directly to the database
+- Avoid skipping the migration file creation step
+
+```sql
+-- Good: Proper migration file with clear description
+-- supabase/migrations/20250125120000_add_studio_instructor_links_rls_policies.sql
+
+-- Add RLS policies for studio_instructor_links table
+CREATE POLICY "Studios can create their own instructor links" ON studio_instructor_links
+  FOR INSERT WITH CHECK (auth.uid() = studio_id);
+```
+
+## Testing Considerations
+
+- Test auto-save functionality with debounced inputs
+- Verify no layout shift occurs during state changes
+- Test error states and recovery
+- Ensure accessibility compliance
+- Test on mobile devices for responsive behavior

@@ -77,14 +77,16 @@ export const getScheduleDataForSource = async ({
 export const getScheduleDataForSourceByTimeRange = async ({
   id,
   dateRange,
+  flatten = true,
 }: {
   id: string;
   dateRange: { from: Date; to: Date };
+  flatten?: boolean;
 }): Promise<ScheduleData> => {
   const from = format(dateRange.from, "yyyy-MM-dd");
   const to = format(dateRange.to, "yyyy-MM-dd");
 
-  const resp = await fetch(`/api/sources/${id}/schedules?from=${from}&to=${to}`);
+  const resp = await fetch(`/api/sources/${id}/schedules?from=${from}&to=${to}&flatten=${flatten}`);
   return resp.json();
 };
 
@@ -205,4 +207,19 @@ export const getSourcesByTypes = async (types: SourceTypes[], { client }: Supaba
   return throwOrData(
     client.from("sources").select("*").in("type", types).order("created_at", { ascending: false }),
   );
+};
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  profile_image_url: string;
+}
+
+export const getStaffBySourceId = async (sourceId: string): Promise<StaffMember[]> => {
+  const response = await fetch(`/api/sources/${sourceId}/staff`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch staff");
+  }
+  const data = await response.json();
+  return data.staff ?? [];
 };

@@ -9,16 +9,31 @@ export interface SourceClient {
   getScheduleData(from: string, to: string): Promise<ScheduleData>;
 }
 
-export type ScheduleData = {
-  [key: string]: any;
-};
+export type ScheduleData =
+  | {
+      day: {
+        date: string;
+        siteTimeZone: string;
+        event: {
+          name: string;
+          start: string;
+          end: string;
+          staff: {
+            id: string;
+            name: string;
+            photo: string;
+          }[];
+        }[];
+      }[];
+    }
+  | { [key: string]: any };
 
 export const getScheduleDataFromSource = async (
   sourceId: string,
   from: string,
   to: string,
   flatten: boolean,
-) => {
+): Promise<ScheduleData | null> => {
   const source = await getSourceById(sourceId, {
     client: supaServerClient(),
   });
@@ -34,6 +49,7 @@ export const getScheduleDataFromSource = async (
       if (!sourceSettings?.url) {
         return null;
       }
+
       const pike13Client = new Pike13Client(sourceSettings.url);
       scheduleData = await pike13Client.getScheduleData(from, to);
       if (flatten) {

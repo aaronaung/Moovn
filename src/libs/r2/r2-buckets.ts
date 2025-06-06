@@ -5,6 +5,7 @@ const BUCKET_NAMES = [
   "scheduled-content",
   "free-design-templates",
   "drive-sync",
+  "public",
 ] as const;
 
 export type BucketName = (typeof BUCKET_NAMES)[number];

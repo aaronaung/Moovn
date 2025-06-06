@@ -32,7 +32,7 @@ export default function ContentList({
     from: Date;
     to: Date;
   };
-  scheduleData: ScheduleData;
+  scheduleData: { [key: string]: any };
   selectedContentItems: string[];
   setSelectedContentItems: Dispatch<SetStateAction<string[]>>;
   publishDateTimeMap: { [key: string]: { date: Date; error: string | undefined } };

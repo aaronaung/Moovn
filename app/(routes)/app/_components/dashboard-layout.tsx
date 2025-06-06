@@ -7,9 +7,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import { UserCircleIcon } from "@heroicons/react/24/outline";
+import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar";
 import { usePathname, useRouter } from "next/navigation";
-import { appSidebarNavigation } from "../navigation";
+import { getAppSidebarNavigation } from "../navigation";
 import { cn } from "@/src/utils";
 import { useState } from "react";
 import { supaClientComponentClient } from "@/src/data/clients/browser";
@@ -22,16 +22,30 @@ import { getAuthUser } from "@/src/data/users";
 import { Spinner } from "@/src/components/common/loading-spinner";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/src/components/ui/sheet";
+import { Button } from "@/src/components/ui/button";
 
 export const COLLAPSED_WIDTH = 70;
 export const EXPANDED_WIDTH = 200;
 
+const getUserInitials = (user: any) => {
+  if (user?.first_name && user?.last_name) {
+    return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+  }
+  if (user?.email) {
+    return user.email[0].toUpperCase();
+  }
+  return "U";
+};
+
 export default function Dashboard({ children, className }: { children: any; className?: string }) {
   const { data: user, isLoading } = useSupaQuery(getAuthUser, { queryKey: ["getAuthUser"] });
-  const path = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const router = useRouter();
+
+  // Get role-based navigation
+  const navigation = getAppSidebarNavigation(user || null);
 
   if (isLoading) {
     return <Spinner className="mt-8" />;
@@ -56,13 +70,13 @@ export default function Dashboard({ children, className }: { children: any; clas
 
           <div className="flex-1">
             <nav className="flex h-full flex-col items-start space-y-1 px-2 pb-8 text-sm font-medium">
-              {appSidebarNavigation.map((n) => (
+              {navigation.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}
                   className={cn(
                     "relative flex h-10 w-full items-center rounded-lg transition-all hover:bg-muted hover:text-primary",
-                    path?.startsWith(n.href) && "bg-muted text-primary",
+                    pathname?.startsWith(n.href) && "bg-muted text-primary",
                   )}
                 >
                   <div
@@ -96,7 +110,10 @@ export default function Dashboard({ children, className }: { children: any; clas
                         "absolute left-4 flex h-full items-center transition-all duration-300",
                       )}
                     >
-                      <UserCircleIcon className="h-7 w-7 shrink-0" />
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={user?.avatar_url || undefined} alt="Profile" />
+                        <AvatarFallback className="text-xs">{getUserInitials(user)}</AvatarFallback>
+                      </Avatar>
                     </div>
                     <span
                       className={cn(
@@ -115,6 +132,10 @@ export default function Dashboard({ children, className }: { children: any; clas
                       <p className="text-sm text-muted-foreground">{userDisplayName(user)}</p>
                     </div>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/app/profile">Profile Settings</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async () => {
@@ -137,21 +158,24 @@ export default function Dashboard({ children, className }: { children: any; clas
         <header className="flex h-14 items-center border-b bg-muted px-4 md:hidden lg:h-[60px]">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Menu className="h-5 w-5" />
+              <Button variant="outline" size="icon" className="shrink-0">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex w-72 flex-col p-0">
               <div className="flex h-14 items-center border-b px-4">
                 <Logo isExpanded={true} />
               </div>
               <nav className="flex-1 space-y-1 px-2 py-4">
-                {appSidebarNavigation.map((n) => (
+                {navigation.map((n) => (
                   <Link
                     key={n.href}
                     href={n.href}
                     onClick={() => setSheetOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-all hover:bg-muted hover:text-primary",
-                      path?.startsWith(n.href) && "bg-muted text-primary",
+                      pathname?.startsWith(n.href) && "bg-muted text-primary",
                     )}
                   >
                     <n.icon className="h-6 w-6" />
@@ -174,7 +198,10 @@ export default function Dashboard({ children, className }: { children: any; clas
             <ModeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <UserCircleIcon className="h-8 w-8 cursor-pointer" />
+                <Avatar className="h-8 w-8 cursor-pointer">
+                  <AvatarImage src={user?.avatar_url || undefined} alt="Profile" />
+                  <AvatarFallback className="text-sm">{getUserInitials(user)}</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {user && (
@@ -183,6 +210,10 @@ export default function Dashboard({ children, className }: { children: any; clas
                     <p className="text-sm text-muted-foreground">{userDisplayName(user)}</p>
                   </div>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/app/profile">Profile Settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {

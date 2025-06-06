@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "gen:types": "supabase gen types typescript --project-id mtjzbcgyfphezaldrnak > types/db.ts"
   },
   "browser": {
     "fs": false

@@ -8,7 +8,6 @@ import {
   StorageType,
 } from "@adobe/photoshop-apis";
 import { adobeAuthConfig } from "@/src/consts/adobe";
-import { ScheduleData } from "../sources";
 import { determinePSDActions, PSDActionType } from "./util";
 
 const photoshop = new PhotoshopClient(adobeAuthConfig);
@@ -20,7 +19,7 @@ export const generateDesign = async ({
   outputUrlPsd,
   outputUrlJpeg,
 }: {
-  scheduleData: ScheduleData;
+  scheduleData: any;
   inputUrl: string;
   inputPsd: Psd;
   outputUrlPsd: string;
